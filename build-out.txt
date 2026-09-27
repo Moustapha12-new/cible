@@ -1,0 +1,55 @@
+
+> cible@0.1.0 build
+> next build
+
+▲ Next.js 16.3.2 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 26ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1353ms
+  Running TypeScript ...
+  Finished TypeScript in 2.5s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/18) ...
+  Generating static pages using 11 workers (4/18) 
+  Generating static pages using 11 workers (8/18) 
+  Generating static pages using 11 workers (13/18) 
+✓ Generating static pages using 11 workers (18/18) in 477ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/ai
+├ ƒ /api/gmail/auth
+├ ƒ /api/gmail/auth/callback
+├ ƒ /api/gmail/callback
+├ ƒ /api/gmail/dashboard
+├ ƒ /api/gmail/deep-recheck
+├ ƒ /api/gmail/disconnect
+├ ƒ /api/gmail/offer-detail
+├ ƒ /api/gmail/progress
+├ ƒ /api/gmail/status
+├ ƒ /api/gmail/sync
+├ ƒ /api/jobs
+├ ƒ /api/scrape
+├ ○ /app
+├ ○ /app/adaptation
+├ ○ /app/alertes-gmail
+├ ○ /app/alertes-gmail/offre
+├ ○ /app/candidatures
+├ ○ /app/cv
+├ ○ /app/cv/builder
+├ ○ /app/cv/nouveau
+├ ○ /app/lettres
+├ ○ /app/matching
+├ ○ /app/offers
+├ ○ /app/recruteurs
+├ ○ /connexion
+└ ○ /inscription
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -1,0 +1,417 @@
+/* ==========================================================
+   CINEMATIC HERO STAGE (.cinema / .cs-*)
+   Sticky rig: section = 100vh + 1500px of scroll distance.
+   All motion via --c-* custom properties written in rAF
+   by components/HeroCinema.tsx. Palette: parchment + gold.
+   ========================================================== */
+
+.cinema {
+  --c-mx: 0;
+  --c-my: 0;
+  --c-title-y: 0px;
+  --c-title-s: 1;
+  --c-title-o: 1;
+  --c-intro-y: 0px;
+  --c-intro-o: 1;
+  --c-cue-o: 1;
+  --c-pl-x: -50%;
+  --c-pr-x: -50%;
+  --c-paper-y: 0px;
+  --c-pl-r: 0deg;
+  --c-pr-r: 0deg;
+  --c-paper-s: 1;
+  --c-paper-o: 1;
+  --c-kw: 0;
+  --c-const-o: 0;
+  --c-const-s: 1.04;
+  --c-arch-o: 0;
+  --c-arch-y: 18px;
+  --c-arch-s: 0.94;
+  --c-shade: 0;
+  --c-blur-px: 0px;
+  --c-bright: 1;
+  --c-cap-kw-o: 0;
+  --c-cap-net-o: 0;
+  --c-cap-arch-o: 0;
+
+  position: relative;
+  height: calc(100vh + 620px);
+}
+
+.cs-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-height: 640px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #f4efe3;
+}
+
+.cs-world {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(calc(var(--c-mx) * -14px), calc(var(--c-my) * -8px), 0);
+  will-change: transform;
+}
+
+.cs-sky {
+  position: absolute;
+  inset: -8%;
+  background:
+    radial-gradient(64% 46% at 50% 108%, rgba(201, 134, 31, 0.16), transparent 70%),
+    radial-gradient(52% 40% at 14% 8%, rgba(11, 107, 79, 0.05), transparent 65%),
+    linear-gradient(180deg, #fbfaf6 0%, #f4eee0 54%, #ecdfc4 100%);
+  filter: blur(var(--c-blur-px)) brightness(var(--c-bright));
+  will-change: filter;
+}
+
+.cs-halo {
+  position: absolute;
+  left: 50%;
+  bottom: -24%;
+  width: 74vw;
+  height: 74vw;
+  max-width: 980px;
+  max-height: 980px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 138, 46, 0.22), rgba(201, 138, 46, 0) 68%);
+  transform: translate3d(-50%, 0, 0);
+}
+
+/* Acts 1 & 2 - the CV sheet split in two halves */
+.cs-paper {
+  position: absolute;
+  bottom: 13vh;
+  width: min(29vw, 350px);
+  aspect-ratio: 3 / 4;
+  z-index: 2;
+  padding: clamp(16px, 1.8vw, 26px);
+  border-radius: 8px;
+  border: 1px solid rgba(122, 97, 48, 0.18);
+  background: linear-gradient(155deg, #fffdf7 0%, #f3e8ce 100%);
+  box-shadow:
+    0 40px 90px rgba(66, 50, 16, 0.22),
+    0 6px 18px rgba(66, 50, 16, 0.1);
+  font-family: Georgia, serif;
+  opacity: var(--c-paper-o);
+  will-change: transform, opacity;
+}
+.cs-pl {
+  transform: translate3d(var(--c-pl-x), var(--c-paper-y), 0)
+    rotate(var(--c-pl-r)) scale(var(--c-paper-s));
+  transform-origin: 78% 50%;
+}
+.cs-pr {
+  transform: translate3d(var(--c-pr-x), var(--c-paper-y), 0)
+    rotate(var(--c-pr-r)) scale(var(--c-paper-s));
+  transform-origin: 22% 50%;
+}
+.cs-paper-head {
+  font-size: clamp(15px, 1.25vw, 18px);
+  font-weight: 700;
+  color: #17130f;
+}
+.cs-paper-sub {
+  margin-top: 2px;
+  font-size: clamp(10px, 0.85vw, 12px);
+  letter-spacing: 0.04em;
+  color: #6a5f4e;
+}
+.cs-paper-rule {
+  height: 1px;
+  margin: clamp(10px, 1.2vw, 16px) 0;
+  background: #dccfa9;
+}
+.cs-paper-section {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #a8863f;
+}
+.cs-line {
+  position: relative;
+  height: 6px;
+  margin-top: 9px;
+  border-radius: 2px;
+  background: #3a3226;
+  opacity: 0.3;
+}
+.cs-line.cs-hl {
+  opacity: 0.42;
+  box-shadow:
+    0 1px 0 0 var(--sb-gold, #c9861f),
+    0 0 calc(5px + var(--c-kw) * 12px) rgba(201, 134, 31, var(--c-kw));
+}
+
+/* Act 3 - constellation of skills */
+.cs-const {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: min(52vw, 560px);
+  aspect-ratio: 1 / 1;
+  z-index: 2;
+  opacity: var(--c-const-o);
+  transform: translate3d(-50%, -50%, 0) scale(var(--c-const-s));
+  will-change: transform, opacity;
+}
+.cs-const svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.cs-const circle {
+  fill: var(--sb-gold, #c9861f);
+  filter: drop-shadow(0 0 7px rgba(201, 134, 31, 0.7));
+}
+.cs-const line {
+  stroke: var(--sb-gold, #c9861f);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+/* Act 4 - the golden door */
+.cs-arch {
+  position: absolute;
+  left: 50%;
+  bottom: 12vh;
+  width: min(23vw, 250px);
+  height: min(11.5vw, 125px);
+  z-index: 2;
+  border-radius: 260px 260px 0 0;
+  border: 3px solid var(--sb-gold, #c9861f);
+  border-bottom: none;
+  box-shadow:
+    0 -24px 70px rgba(201, 134, 31, 0.35),
+    0 -55px 130px rgba(201, 134, 31, 0.18);
+  opacity: var(--c-arch-o);
+  transform: translate3d(-50%, var(--c-arch-y), 0) scale(var(--c-arch-s));
+  will-change: transform, opacity;
+}
+
+/* Gold ambience veil rising through acts 3 & 4 */
+.cs-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(201, 134, 31, calc(var(--c-shade) * 0.26)) 0%,
+    rgba(201, 134, 31, calc(var(--c-shade) * 0.18)) 48%,
+    rgba(201, 134, 31, calc(var(--c-shade) * 0.34)) 100%
+  );
+}
+
+/* Giant display title */
+.cs-title {
+  position: absolute;
+  left: 50%;
+  top: clamp(96px, 15vh, 168px);
+  z-index: 4;
+  margin: 0;
+  width: max-content;
+  max-width: 96vw;
+  color: #17130f;
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 12.5vw, 12rem);
+  font-weight: 540;
+  line-height: 0.82;
+  letter-spacing: -0.03em;
+  text-align: center;
+  text-shadow: 0 20px 60px rgba(66, 50, 16, 0.14);
+  transform: translate3d(-50%, var(--c-title-y), 0) scale(var(--c-title-s));
+  opacity: var(--c-title-o);
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+.cs-title::after {
+  content: ".";
+  color: var(--amber, #c97a26);
+}
+
+/* Act captions */
+.cs-cap {
+  position: absolute;
+  left: 50%;
+  top: 56vh;
+  z-index: 4;
+  margin: 0;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(23, 19, 15, 0.72);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.cs-cap-kw { opacity: var(--c-cap-kw-o); }
+.cs-cap-net { opacity: var(--c-cap-net-o); }
+.cs-cap-arch { opacity: var(--c-cap-arch-o); }
+
+/* Intro block: kicker, sub, pills, CTAs */
+.cs-intro {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(36px, 8.5vh, 84px);
+  z-index: 6;
+  width: min(720px, 92vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transform: translate3d(-50%, var(--c-intro-y), 0);
+  opacity: var(--c-intro-o);
+  will-change: transform, opacity;
+}
+.cs-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border: 1px solid rgba(23, 21, 15, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim, #4b463a);
+}
+.cs-kicker::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--emerald, #0b6b4f);
+}
+.cs-sub {
+  margin: 18px auto 0;
+  max-width: 560px;
+  font-size: 1.05rem;
+  font-weight: 480;
+  line-height: 1.5;
+  color: var(--text-dim, #4b463a);
+  text-wrap: balance;
+}
+.cs-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+.cs-pills span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: #fdf1e1;
+  color: #17130f;
+  font-size: 0.92rem;
+  font-weight: 550;
+  box-shadow: 0 12px 30px rgba(66, 50, 16, 0.16);
+}
+.cs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 26px;
+}
+
+/* Scroll cue */
+.cs-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 6;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(23, 19, 15, 0.55);
+  opacity: var(--c-cue-o);
+  pointer-events: none;
+}
+.cs-cue-line {
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(180deg, rgba(23, 19, 15, 0.5), transparent);
+  animation: csCueDrop 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes csCueDrop {
+  0% { transform: scaleY(0); transform-origin: top; }
+  45% { transform: scaleY(1); transform-origin: top; }
+  55% { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+
+@media (max-width: 900px) {
+  .cs-title {
+    font-size: clamp(4.6rem, 24vw, 8rem);
+    top: clamp(88px, 13vh, 140px);
+  }
+  .cs-paper {
+    width: min(60vw, 300px);
+    bottom: 17vh;
+  }
+  .cs-const {
+    width: min(82vw, 430px);
+    top: 44%;
+  }
+  .cs-arch {
+    width: min(40vw, 210px);
+    height: min(20vw, 105px);
+    bottom: 16vh;
+  }
+  .cs-cap {
+    white-space: normal;
+    width: 86vw;
+    text-align: center;
+    top: 30vh;
+  }
+  .cs-sub {
+    font-size: 0.95rem;
+  }
+  .cs-pills span {
+    min-height: 36px;
+    padding: 0 16px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-cue-line {
+    animation: none;
+  }
+}
+
+/* ==========================================================
+   NAV PILL - floating frosted pill for the desktop menu
+   ========================================================== */
+.nav-pill {
+  gap: 2px;
+  padding: 5px 10px 5px 20px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+.nav-pill .nav-link {
+  padding-inline: 11px;
+}

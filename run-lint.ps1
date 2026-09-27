@@ -1,0 +1,1 @@
+& { set-location 'C:\Users\ROKI\Documents\Default Project\cible'; & '.\node_modules\.bin\eslint' --ext .ts,.tsx src/ 2>&1 }

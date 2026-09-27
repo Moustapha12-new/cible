@@ -1,0 +1,67 @@
+2026-09-16T19:50:21.531Z MOCK KV listening on 7799
+2026-09-16T19:50:59.832Z DEL gmail:state:deadbeef -> false
+2026-09-16T19:50:59.881Z SET gmail:state:75a3503edb74d50ea94c192f9b88b61f len=56
+2026-09-16T19:50:59.890Z GET gmail:state:75a3503edb74d50ea94c192f9b88b61f -> HIT
+2026-09-16T19:50:59.902Z GET gmail:oauth:test.user@mail.com -> MISS
+2026-09-16T19:50:59.907Z GET gmail:token:test.user@mail.com -> MISS
+2026-09-16T19:50:59.920Z SET gmail:oauth:test.user@mail.com len=443
+2026-09-16T19:50:59.925Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:50:59.935Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:50:59.939Z SET gmail:oauth:test.user@mail.com len=443
+2026-09-16T19:50:59.943Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:00.058Z DEL gmail:oauth:test.user@mail.com -> true
+2026-09-16T19:51:00.060Z DEL gmail:token:test.user@mail.com -> false
+2026-09-16T19:51:00.063Z GET gmail:oauth:test.user@mail.com -> MISS
+2026-09-16T19:51:00.070Z GET gmail:state:deadbeef -> MISS
+2026-09-16T19:51:00.077Z SET gmail:state:071dcf2d37c6fc504a84b37ad24fa823 len=56
+2026-09-16T19:51:00.082Z GET gmail:state:071dcf2d37c6fc504a84b37ad24fa823 -> HIT
+2026-09-16T19:51:00.084Z DEL gmail:state:071dcf2d37c6fc504a84b37ad24fa823 -> true
+2026-09-16T19:51:00.120Z GET gmail:state:071dcf2d37c6fc504a84b37ad24fa823 -> MISS
+2026-09-16T19:51:00.198Z SET gmail:oauth:test.user@mail.com len=443
+2026-09-16T19:51:00.205Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:00.208Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:00.219Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:00.222Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:00.224Z SET gmail:oauth:test.user@mail.com len=511
+2026-09-16T19:51:05.128Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:05.168Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:05.179Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:05.196Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:05.199Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:05.204Z SET gmail:oauth:test.user@mail.com len=511
+2026-09-16T19:51:14.820Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-16T19:51:14.823Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T09:54:20.212Z MOCK KV listening on 7799
+2026-09-17T09:55:40.169Z DEL gmail:state:deadbeef -> false
+2026-09-17T09:55:40.285Z SET gmail:state:73cd68c200bf0a37865c48d863d3a367 len=56
+2026-09-17T09:55:40.301Z GET gmail:state:73cd68c200bf0a37865c48d863d3a367 -> HIT
+2026-09-17T09:55:40.313Z GET gmail:oauth:test.user@mail.com -> MISS
+2026-09-17T09:55:40.319Z GET gmail:token:test.user@mail.com -> MISS
+2026-09-17T09:55:40.328Z SET gmail:oauth:test.user@mail.com len=443
+2026-09-17T09:55:40.334Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T09:55:40.346Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T09:55:40.351Z SET gmail:oauth:test.user@mail.com len=443
+2026-09-17T09:55:40.356Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T09:55:40.455Z DEL gmail:oauth:test.user@mail.com -> true
+2026-09-17T09:55:40.458Z DEL gmail:token:test.user@mail.com -> false
+2026-09-17T09:55:40.465Z GET gmail:oauth:test.user@mail.com -> MISS
+2026-09-17T09:55:40.473Z GET gmail:state:deadbeef -> MISS
+2026-09-17T09:55:40.479Z SET gmail:state:ef99d575e3ed30cf687db6a5de63c557 len=56
+2026-09-17T09:55:40.484Z GET gmail:state:ef99d575e3ed30cf687db6a5de63c557 -> HIT
+2026-09-17T09:55:40.486Z DEL gmail:state:ef99d575e3ed30cf687db6a5de63c557 -> true
+2026-09-17T09:55:40.524Z GET gmail:state:ef99d575e3ed30cf687db6a5de63c557 -> MISS
+2026-09-17T10:26:45.214Z MOCK KV listening on 7799
+2026-09-17T10:27:00.205Z SET gmail:oauth:test.user@mail.com len=443
+2026-09-17T10:27:00.288Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:00.303Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:00.322Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:00.327Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:00.331Z SET gmail:oauth:test.user@mail.com len=511
+2026-09-17T10:27:08.416Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:08.490Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:08.502Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:08.519Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:08.523Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:08.529Z SET gmail:oauth:test.user@mail.com len=511
+2026-09-17T10:27:16.661Z GET gmail:oauth:test.user@mail.com -> HIT
+2026-09-17T10:27:16.664Z GET gmail:oauth:test.user@mail.com -> HIT

@@ -43,11 +43,17 @@ export function allowRequest(key: string, limit: number, now = Date.now()): bool
   for (const [k, value] of buckets) if (value.until <= now) buckets.delete(k);
   const value = buckets.get(key);
   if (value && value.until > now) {
-    if (value.count >= limit) return false;
+    if (value.count >= limit) {
+      console.warn(`[rate-limit] Local limit exceeded for ${key} (count=${value.count}/${limit})`);
+      return false;
+    }
     value.count++;
     return true;
   }
-  if (buckets.size >= 10_000) return false;
+  if (buckets.size >= 10_000) {
+    console.error(`[rate-limit] Bucket map size limit reached (${buckets.size})`);
+    return false;
+  }
   buckets.set(key, { count: 1, until: now + 60_000 });
   return true;
 }

@@ -24,7 +24,6 @@ export default function InscriptionForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [cgu, setCgu] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -51,17 +50,15 @@ export default function InscriptionForm() {
     setError(null);
     if (name.trim().length < 2) return setError("Indique ton nom complet.");
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Cet e-mail ne semble pas valide.");
-    if (password.length < 12) return setError("Mot de passe : 12 caractères minimum.");
-    if (password !== confirm) return setError("Les deux mots de passe ne correspondent pas.");
+    if (password.length < 8) return setError("Mot de passe : 8 caractères minimum.");
     if (!cgu) return setError("Accepte les conditions pour continuer.");
     setBusy(true);
     const res = await register(name, email, password);
+    setBusy(false);
     if (res.ok) {
-      setError("Compte créé : confirme ton adresse dans l’e-mail reçu, puis connecte-toi. Tes données locales sont conservées.");
-      setBusy(false);
+      setError("Compte créé : confirme ton adresse dans l'e-mail reçu, puis connecte-toi.");
     } else {
       setError(res.error ?? "Inscription impossible.");
-      setBusy(false);
     }
   };
 
@@ -128,30 +125,17 @@ export default function InscriptionForm() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="mono-label mb-2 block">Mot de passe</span>
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    className="input"
-                    placeholder="6 car. min."
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </label>
-                <label className="block">
-                  <span className="mono-label mb-2 block">Confirmation</span>
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    className="input"
-                    placeholder="••••••••"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                  />
-                </label>
-              </div>
+              <label className="block">
+                <span className="mono-label mb-2 block">Mot de passe</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  className="input"
+                  placeholder="8 caractères min."
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </label>
 
               <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
                 <input

@@ -34,7 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.ok && result.user) setUser(result.user);
     return result;
   }, []);
-  const register = useCallback(async (name: string, email: string, password: string) => request("register", { name, email, password }), []);
+  const register = useCallback(async (name: string, email: string, password: string) => {
+    const result = await request("register", { name, email, password });
+    if (result.ok && !result.confirmationRequired && result.user) setUser(result.user);
+    return result;
+  }, []);
   const logout = useCallback(() => { void request("logout", {}).then(result => { if (result.ok) { setUser(null); router.replace("/connexion"); router.refresh(); } }); }, [router]);
   return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
 }

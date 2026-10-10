@@ -56,7 +56,8 @@ export default function InscriptionForm() {
     const res = await register(name, email, password);
     setBusy(false);
     if (res.ok) {
-      setError("Compte créé : confirme ton adresse dans l'e-mail reçu, puis connecte-toi.");
+      if (res.confirmationRequired) setError("Compte créé : confirme ton adresse dans l'e-mail reçu, puis connecte-toi.");
+      else router.replace(readNext());
     } else {
       setError(res.error ?? "Inscription impossible.");
     }

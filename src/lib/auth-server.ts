@@ -19,6 +19,16 @@ export function authClient() {
   });
 }
 
+// Dedicated client for quota RPC calls with longer timeout (30s) to prevent false quota errors on slow networks.
+export function quotaClient() {
+  const config = supabaseServerConfig();
+  if (!config) throw new Error("Authentification serveur non configurée.");
+  return createClient(config.url, config.key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.any([...(init?.signal ? [init.signal] : []), AbortSignal.timeout(30_000)]) }) },
+  });
+}
+
 export async function verifiedUser(token?: string): Promise<VerifiedUser | null> {
   const access = token ?? (await cookies()).get(SESSION_COOKIE)?.value;
   if (!access) return null;
@@ -84,7 +94,14 @@ export async function authorizeApi(req: NextRequest): Promise<{ user: VerifiedUs
     try {
       const { consumeQuota } = await import("./security-quota");
       if (!await consumeQuota(user.id, url.pathname)) return fail(429, "Trop de demandes. Réessaie dans une minute.");
-    } catch { return fail(503, "Protection des quotas indisponible. Réessaie plus tard."); }
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.startsWith("Protection des quotas indisponible")) {
+        console.error("[quota] Client or network failure before RPC result", {
+          category: error instanceof Error && /configur|clé serveur|URL serveur/i.test(error.message) ? "configuration" : "network_or_runtime",
+        });
+      }
+      return fail(503, "Protection des quotas indisponible. Réessaie plus tard.");
+    }
   }
   return { user };
 }

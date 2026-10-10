@@ -21,6 +21,7 @@ import { POST as login } from "../app/api/auth/login/route";
 import { withGmailAccount } from "./gmail-account";
 import { beginCheckpointCache, endCheckpointCache, checkpointKey, loadCheckpoint } from "./gmail-core";
 import { enrichCacheKey } from "./gmail-enrich";
+import { humanizeGmailError } from "./gmail-dashboard";
 
 const origin = "http://localhost:3981";
 const storage = new Map<string, string>();
@@ -85,9 +86,14 @@ async function main() {
   assert.equal((await detail(request("/api/gmail/offer-detail?id=foreign", "GET", "alice"))).status, 403);
   assert.ok(!calls.some(url => url.includes("processed:foreign")), "foreign checkpoint is never read");
   quotaAvailable = false;
-  assert.equal((await ai(request("/api/ai", "POST", "alice", { task: "letter" }))).status, 503, "missing shared quota fails closed");
+  const unavailable = await ai(request("/api/ai", "POST", "alice", { task: "letter" }));
+  assert.equal(unavailable.status, 503, "missing shared quota fails closed");
+  const unavailableBody = await unavailable.json();
+  assert.match(unavailableBody.error, /Protection des quotas indisponible/);
+  assert.match(humanizeGmailError(new Error(unavailableBody.error)).human, /Protection des quotas indisponible/);
   quotaAvailable = true; quotaAllowed = false;
   assert.equal((await ai(request("/api/ai", "POST", "alice", { task: "letter" }))).status, 429);
+  assert.match(humanizeGmailError(new Error("HTTP 429")).human, /Limite de requêtes atteinte/);
   quotaAllowed = true;
   const own = await authorizeApi(request("/api/gmail/progress", "GET", "alice"));
   assert.equal(own.user?.email, "alice@example.test");

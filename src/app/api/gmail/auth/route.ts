@@ -6,8 +6,6 @@ import { buildAuthUrl } from "@/lib/gmail-oauth";
 
 export const dynamic = "force-dynamic";
 
-const OAUTH_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
-
 /**
  * Démarre la connexion Google OAuth. Seul le scope gmail.readonly est demandé
  * (lecture potentielle de toute la boîte mail ; l'application limite ses

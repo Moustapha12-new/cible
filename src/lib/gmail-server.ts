@@ -602,7 +602,7 @@ export async function consumeOauthState(state: string): Promise<{ email: string 
 export async function getAccessToken(email: string): Promise<string> {
   let conn = await loadOauthRaw(email);
   if (!conn) throw new Error("Compte Gmail non connecté");
-  if (!conn.refreshToken) throw new Error("Session Gmail expirée - reconnecte-toi");
+  if (!conn.refreshToken) throw new Error("Session Gmail expirée - reconnecte-toi (refresh token manquant)");
   if (conn.expiresAt > Date.now() + 60_000 && conn.accessToken) return conn.accessToken;
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -621,13 +621,10 @@ export async function getAccessToken(email: string): Promise<string> {
     }),
     cache: "no-store",
   });
-  const json = (await res.json()) as { access_token?: string; expires_in?: number; error?: string };
+  const json = (await res.json()) as { access_token?: string; expires_in?: number; error?: string; error_description?: string };
   if (!res.ok || !json.access_token) {
-    console.error("[gmail] refresh échoué :", res.status, json.error ?? "");
-    if (res.status === 400 || res.status === 401) {
-      await deleteOauthConnection(email).catch(() => {});
-    }
-    throw new Error("Session Gmail expirée - reconnecte-toi");
+    console.error("[gmail] refresh échoué : HTTP", res.status);
+    throw new Error("Session Gmail expirée - reconnecte-toi.");
   }
   conn = {
     ...conn,

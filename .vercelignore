@@ -2,6 +2,12 @@
 .env*
 _backup_secrets_*
 .validation-tools/
+supabase/.temp/
+validation-sql.json
+_test_keys.ts
+_relance_pending.ts
+_relaunch_deep.ts
+_verify_deep.ts
 *.zip
 *.log
 docs/

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authClient, sameOrigin } from "@/lib/auth-server";
+import { authClient, cookieOptions, sameOrigin, REFRESH_COOKIE, SESSION_COOKIE } from "@/lib/auth-server";
 
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) return NextResponse.json({ ok: false, error: "Origine refusée." }, { status: 403 });
@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
     const { data, error } = await authClient().auth.signUp({ email: email.trim().toLowerCase(), password, options: { data: { name: name.trim() }, emailRedirectTo: `${new URL(req.url).origin}/connexion` } });
     if (error) {
       const msg = error.message || "Inscription impossible.";
-      console.info(`[register] Supabase error for ${email}: ${msg}`);
       
       // Compte déjà existant → proposer de se connecter
       if (msg.includes("User already registered") || msg.includes("already registered")) {
@@ -24,7 +23,6 @@ export async function POST(req: NextRequest) {
       }
       // Supabase rate limit (envoi email, IP, etc.)
       if (msg.includes("rate limit") || msg.includes("too_many_requests")) {
-        console.warn(`[register] Supabase rate limit hit for ${email}: ${msg}`);
         return NextResponse.json({ ok: false, error: "Trop d'inscriptions récentes. Réessaie dans 15 minutes." }, { status: 429, headers: { "Retry-After": "900" } });
       }
       if (msg.includes("signup disabled") || msg.includes("not allowed")) {
@@ -34,10 +32,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: "Ce compte existe mais l'e-mail n'est pas confirmé. <a href=\"/connexion\" class=\"underline\">Connecte-toi</a> pour renvoyer le lien.", status: 400, accountExists: true });
       }
       // Generic fallback
-      return NextResponse.json({ ok: false, error: `Inscription impossible : ${msg}` }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Inscription impossible. Vérifie les informations puis réessaie." }, { status: 400 });
     }
-    return NextResponse.json({ ok: true, confirmationRequired: true, user: data.user ? { email: data.user.email, id: data.user.id } : undefined });
-  } catch (_e) {
+    if (data.session && data.user?.email_confirmed_at) {
+      const response = NextResponse.json({ ok: true, confirmationRequired: false, user: { email: data.user.email?.toLowerCase(), name: name.trim() } });
+      response.cookies.set(SESSION_COOKIE, data.session.access_token, cookieOptions(data.session.expires_in));
+      response.cookies.set(REFRESH_COOKIE, data.session.refresh_token, cookieOptions(30 * 86400));
+      return response;
+    }
+    return NextResponse.json({ ok: true, confirmationRequired: true });
+  } catch {
     return NextResponse.json({ ok: false, error: "Inscription indisponible. Réessaie plus tard." }, { status: 503 });
   }
 }

@@ -492,6 +492,7 @@ const HUMAN_RULES: [RegExp, string][] = [
     /(?:gemini|quota ia|flash-lite)[\s\S]*?(?:HTTP 429|rate.?limit|quota)|(?:HTTP 429|rate.?limit|quota)[\s\S]*?(?:gemini|quota ia|flash-lite)/i,
     "Analyse en attente — quota IA régénéré demain (réessaie plus tard).",
   ],
+  [/Protection des quotas indisponible/i, "Protection des quotas indisponible — la synchronisation n'a pas démarré. Réessaie plus tard."],
   [/HTTP 429|rate.?limit|quota/i, "Limite de requêtes atteinte — réessaie dans quelques minutes."],
   [/HTTP (5\d\d)/i, "Service momentanément indisponible (HTTP $1) — réessaie dans un instant."],
   [/HTTP (401|403)|invalid_grant|Gmail non connect/i, "Session Gmail expirée ou absente — reconnecte-toi."],

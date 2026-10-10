@@ -68,8 +68,10 @@ export default function AlertesGmailDashboard() {
       const qs = new URLSearchParams(window.location.search);
       const connected = qs.get("connected");
       const err = qs.get("error");
-      if (connected) setBanner(`Connecté à Gmail. Libellé surveillé : « ${GMAIL_LABEL} ».`);
-      else if (err) {
+      if (connected) {
+        // Ne pas afficher le banner ici, attendre la confirmation de l'API
+        // L'API confirmera via payload.connected dans refreshDashboard
+      } else if (err) {
         if (err === "token") setBanner("Connexion Gmail interrompue (échec de l'échange de code). Réessaie.");
         else if (err === "config") setBanner("Connexion Gmail interrompue : config Google manquante côté serveur.");
         else if (err === "storage")
@@ -148,6 +150,7 @@ export default function AlertesGmailDashboard() {
         const j = await requestGmailDashboard(email, fresh);
         setPayload(j);
         savePayloadCache(email, j);
+        const newlyConnected = !conn.connected && j.connected;
         setConn((c) => ({
           ...c,
           checking: false,
@@ -158,6 +161,9 @@ export default function AlertesGmailDashboard() {
           lastSync: j.lastSync ?? c.lastSync,
           reason: j.connected ? undefined : j.reason,
         }));
+        if (newlyConnected) {
+          setBanner(`Connecté à Gmail. Libellé surveillé : « ${GMAIL_LABEL} ».`);
+        }
         setExportReady(true);
       } catch (e) {
         setError(toShownError(e));
@@ -166,7 +172,7 @@ export default function AlertesGmailDashboard() {
         setLoading(false);
       }
     },
-    [email]
+    [email, conn.connected]
   );
 
   /* Boot P0-4 : cache local d'abord (affichage immédiat type SWR), puis le

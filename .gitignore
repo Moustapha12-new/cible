@@ -37,6 +37,8 @@ yarn-error.log*
 # sauvegarde locale des secrets (jamais à committer)
 _backup_secrets_*
 .validation-tools/
+/supabase/.temp/
+/validation-sql.json
 
 # vercel
 .vercel

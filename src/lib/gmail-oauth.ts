@@ -11,10 +11,9 @@ export function buildAuthUrl(origin: string, email: string, state: string): stri
     response_type: "code",
     scope: GMAIL_OAUTH_SCOPE,
     access_type: "offline",
-    prompt: "consent",
+    prompt: "select_account consent",
     include_granted_scopes: "true",
     state,
-    login_hint: email,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }

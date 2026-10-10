@@ -25,6 +25,7 @@ async function authCallback(req: NextRequest) {
   let owner;
   try { owner = await verifiedUser(req.cookies.get(SESSION_COOKIE)?.value || ""); } catch { return NextResponse.redirect(new URL(fail, origin)); }
   if (!owner || req.cookies.get(OAUTH_COOKIE)?.value !== state || oauthError || !code || !state) {
+    console.warn(`[oauth-callback] Validation failed: owner=${!!owner}, cookieState=${req.cookies.get(OAUTH_COOKIE)?.value}, paramState=${state}, oauthError=${oauthError}, code=${!!code}`);
     return NextResponse.redirect(new URL(fail, origin));
   }
   if (!storageReady()) {
@@ -38,16 +39,19 @@ async function authCallback(req: NextRequest) {
     return NextResponse.redirect(new URL("/app/alertes-gmail?error=storage", origin));
   }
   if (!ctx || ctx.email.toLowerCase() !== owner.email) {
+    console.warn(`[oauth-callback] Email mismatch: ctx=${ctx?.email}, owner=${owner.email}`);
     return NextResponse.redirect(new URL("/app/alertes-gmail?error=state", origin));
   }
 
   let tok: { access_token?: string; refresh_token?: string; expires_in?: number };
   try {
     tok = await exchangeCode(origin, code);
-  } catch {
+  } catch (e) {
+    console.error(`[oauth-callback] Code exchange failed: ${e instanceof Error ? e.message : String(e)}`);
     return NextResponse.redirect(new URL("/app/alertes-gmail?error=token", origin));
   }
   if (!tok.access_token) {
+    console.warn(`[oauth-callback] No access token in response`);
     return NextResponse.redirect(new URL("/app/alertes-gmail?error=token", origin));
   }
 

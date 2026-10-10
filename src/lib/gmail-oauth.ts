@@ -31,6 +31,8 @@ export async function exchangeCode(origin: string, code: string): Promise<TokenR
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) throw new Error("GOOGLE_CLIENT_ID/SECRET manquants");
+  const redirectUri = `${origin}/api/gmail/auth/callback`;
+  console.info(`[exchangeCode] Exchanging code with redirect_uri: ${redirectUri}`);
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -38,13 +40,20 @@ export async function exchangeCode(origin: string, code: string): Promise<TokenR
       code,
       client_id: clientId,
       client_secret: clientSecret,
-      redirect_uri: `${origin}/api/gmail/auth/callback`,
+      redirect_uri: redirectUri,
       grant_type: "authorization_code",
     }),
     cache: "no-store",
   });
-  const json = (await res.json()) as TokenResponse;
-  if (!res.ok || !json.access_token) throw new Error("Échange de code OAuth échoué");
+  const json = (await res.json()) as TokenResponse & { error?: string; error_description?: string };
+  if (!res.ok) {
+    console.error(`[exchangeCode] Token exchange failed: status=${res.status}, error=${json.error}, description=${json.error_description}`);
+    throw new Error(`Échange de code OAuth échoué: ${json.error_description || json.error || "unknown error"}`);
+  }
+  if (!json.access_token) {
+    console.error(`[exchangeCode] No access_token in response:`, json);
+    throw new Error("Échange de code OAuth échoué: pas de token d'accès");
+  }
   return json;
 }
 

@@ -1,4 +1,31 @@
-$key = "$env:SUPABASE_SERVICE_ROLE_KEY"
+# ============================================================================
+# CIBLE — Test RPC via PowerShell
+# Usage: powershell -ExecutionPolicy Bypass -File test_rpc.ps1
+# Nécessite .env.local avec SUPABASE_SERVICE_ROLE_KEY
+# ============================================================================
+
+# Charger les variables d'environnement depuis .env.local
+if (Test-Path ".env.local") {
+    $envContent = Get-Content ".env.local" -Raw
+    $envLines = $envContent -split "`n"
+    foreach ($line in $envLines) {
+        if ($line -match "^([^#=]+)=(.*)$") {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            if ($value -match '^".*"$' -or $value -match "^'.*'$") {
+                $value = $value.Substring(1, $value.Length - 2)
+            }
+            [Environment]::SetEnvironmentVariable($key, $value, "Process")
+        }
+    }
+}
+
+$key = $env:SUPABASE_SERVICE_ROLE_KEY
+if (-not $key) {
+    Write-Error "SUPABASE_SERVICE_ROLE_KEY non trouvé dans .env.local"
+    exit 1
+}
+
 $headers = @{
     "apikey" = $key
     "Authorization" = "Bearer $key"

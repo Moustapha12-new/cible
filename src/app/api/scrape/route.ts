@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { securedRoute } from "@/lib/auth-server";
+import { NextResponse } from "next/server";
 import { fetchOfferPage } from "@/lib/scrape";
 
 export const dynamic = "force-dynamic";
@@ -6,7 +7,7 @@ export const dynamic = "force-dynamic";
 /* Télécharge une annonce publique (LinkedIn job view, WTTJ, HelloWork…) et
    renvoie son texte brut : le client l'enchaîne ensuite sur /api/ai tâche
    « offer » pour le résumé, les compétences et le niveau attendu. */
-export async function POST(req: NextRequest) {
+export const POST = securedRoute(async (req) => {
   let url = "";
   try {
     const b = (await req.json()) as { url?: string };
@@ -29,4 +30,4 @@ export async function POST(req: NextRequest) {
     { ok: true, url, text: r.text },
     { headers: { "Cache-Control": "no-store" } }
   );
-}
+});

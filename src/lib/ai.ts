@@ -50,6 +50,7 @@ export type Body = {
   keywords?: KwInput[];
   /** Mots-clés choisis par l'utilisateur (depuis Matching) à intégrer en priorité. */
   forceKeywords?: string[];
+  orientation?: "electrical" | "energy";
   cv?: unknown;
   /** E-mails provenant du libellé Gmail « Stages – Alertes offres ». */
   emails?: AiEmailInput[];
@@ -84,6 +85,11 @@ const SYSTEM =
   "Tu es un expert français du recrutement, des ATS et de la rédaction de CV et de lettres. " +
   "Tu réponds TOUJOURS en français, exclusivement en JSON valide, sans texte autour. " +
   "Tu ne génères jamais de PDF, HTML ou rendu : uniquement des données structurées que l'application appliquera avec l'accord de l'utilisateur.\n\n" +
+  "STYLE PROFESSIONNEL NATUREL : phrases sobres et précises, vocabulaire métier de cette annonce, verbes concrets, aucun slogan ni superlatif. " +
+  "Bannis les accroches génériques « passionné », « motivé et dynamique », « profil polyvalent », « relever de nouveaux défis » et « apporter une valeur ajoutée ». " +
+  "Un projet étudiant reste un projet étudiant, une expérience de cours reste une expérience de cours. Ne transforme jamais un objectif en maîtrise déjà acquise. " +
+  "Privilégie ce que le candidat a réalisé et avec quel outil ; aucun résultat chiffré n’est obligatoire. Si aucun chiffre n’existe, écris sans chiffre ni placeholder. " +
+  "Lis la fin de l’annonce : profil, langues, logiciels et qualités. Distingue les exigences obligatoires des atouts facultatifs. Un logiciel cité par l’employeur n’est jamais une preuve de maîtrise par le candidat.\n\n" +
   "MÉTHODE DE RÉÉCRITURE CONSERVATRICE (à appliquer pour adapt, suggest, boost-ats) :\n" +
   "RÈGLE ABSOLUE : jamais de fait, chiffre, compétence, date ou diplôme absent du CV. " +
   "Pour chaque modification, l'« original » doit être une citation EXACTE copiée du CV (mots consécutifs, UNE proposition maximum). " +
@@ -94,7 +100,7 @@ const SYSTEM =
   "• VARIANT FIX → léger ajustement de vocabulaire sans changer les faits.\n" +
   "• KEYWORD INSERT → intégration minimale d'un mot-clé justifié par le CV.\n" +
   "N'utilise JAMAIS la méthode « régénérer tout le CV » : chaque changement est un remplacement ciblé.\n\n" +
-  "SCORING ATS PONDÉRÉ (à renvoyer dans adapt, match, suggest) :\n" +
+  "SCORE INTERNE DE CORRESPONDANCE (ce n’est pas un ATS de recruteur ni une probabilité de recrutement) (à renvoyer dans adapt, match, suggest) :\n" +
   "• hardSkills (compétences techniques explicites) : 2 points par mot-clé couvert.\n" +
   "• titleKeywords (mots-clés du titre du poste) : 1,5 point par mot-clé couvert.\n" +
   "• businessContext (contexte métier, secteur, outils spécifiques) : 1 point par mot-clé couvert.\n" +
@@ -102,8 +108,8 @@ const SYSTEM =
   "ANALYSE DE L'OFFRE :\n" +
   "1. Analyse d'abord l'OFFRE en entier — y compris « Profil recherché » et « Qualités attendues » : titre, hard skills, soft skills, expérience attendue, résultats recherchés, mots-clés ATS.\n" +
   "2. Compare ensuite au CV section par section : ce qui matche, ce qui manque, ce qui est générique.\n" +
-  "3. Réécris les bullets avec la formule : verbe d'action fort + contexte/étendue + résultat chiffré + outil/méthode.\n" +
-  "   Si un chiffre manque, indique le TYPE de donnée que l'utilisateur doit compléter — ne l'invente JAMAIS.\n" +
+  "3. Réécris les bullets avec la formule : verbe concret + action réelle + contexte/outil utile ; résultat chiffré uniquement s’il existe.\n" +
+  "   Si un chiffre manque, ne le remplace ni par une estimation ni par un champ à compléter dans le CV.\n" +
   "4. Cherche le « brief caché » : ce que l'employeur cherche vraiment au-delà du texte de l'offre.\n" +
   "5. N'intègre que les mots-clés JUSTIFIÉS par le CV — cherche dans TOUT le CV : expériences, projets, certifications, langues, centres d'intérêt. Liste explicitement ceux que tu REFUSES et pourquoi.\n" +
   "6. Liste ce qui manque VRAIMENT pour le poste (absent du CV) avec une ressource gratuite PRÉCISE et NOMMÉE pour l'acquérir.\n" +
@@ -213,7 +219,8 @@ async function ask(user: string, temperature = 0.4): Promise<string> {
 function buildPrompt(task: Task, b: Body): string {
   /* Le vrai CV collé par le candidat prime sur le profil structuré. */
   const raw = b.cvOriginal?.trim();
-  const cv = redactPii(raw && raw.length > 40 ? raw.slice(0, 12000) : cvText(b.profile as Profile));
+  const registry = (b.profile?.skillEvidence || []).map(e => `${e.term} : ${e.status}; autonomie ${e.autonomy}; preuve déclarée : ${e.evidence || "aucune"}`).join("\n");
+  const cv = redactPii((raw && raw.length > 40 ? raw.slice(0, 12000) : cvText(b.profile as Profile)) + (registry ? `\nRegistre de compétences :\n${registry}\nUne compétence étudiée, à vérifier ou non acquise ne doit jamais être présentée comme maîtrisée.` : ""));
   switch (task) {
     case "match":
       return `Voici le CV original du candidat :
@@ -234,6 +241,8 @@ Sois strict : ne gonfle pas le score, un CV non fourni = score bas. Ne propose q
     case "adapt":
       return `Voici le CV ORIGINAL du candidat, texte intégral :
 """${cv}"""
+
+Orientation éditoriale choisie : ${b.orientation === "energy" ? "énergie, performance énergétique et renouvelables" : "génie électrique, électrotechnique et bureau d'études"}. Ce cadrage sert uniquement à hiérarchiser les faits déjà présents dans le CV. Il ne constitue aucune preuve de compétence et ne doit ajouter aucun logiciel, projet ou résultat.
 
 Voici l'offre visée :
 """${b.offerText}"""

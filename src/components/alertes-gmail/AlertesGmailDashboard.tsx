@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { requestGmailDashboard } from "@/lib/gmail-dashboard-request";
+import { readGmailJson } from "@/lib/gmail-response";
 import { AppPageHead, NAV_LABEL } from "@/components/app/AppShell";
 import {
   loadGmailStore,
@@ -24,6 +26,8 @@ import GmailConnectionStatus, { type ConnState } from "./GmailConnectionStatus";
 import SyncSummaryCard, { type LiveProgress } from "./SyncSummaryCard";
 import RunHistory from "./RunHistory";
 import EmailList from "./EmailList";
+import OfferExplorer from "./OfferExplorer";
+import EnrichmentQueue from "./EnrichmentQueue";
 import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
 
@@ -70,7 +74,7 @@ export default function AlertesGmailDashboard() {
         else if (err === "config") setBanner("Connexion Gmail interrompue : config Google manquante côté serveur.");
         else if (err === "storage")
           setBanner(
-            "Stockage serveur indisponible (Blob suspendu ou inaccessible) — la connexion Gmail ne peut pas enregistrer le token. Réactive le Blob Vercel, puis réessaie."
+            "Le stockage serveur ne peut pas enregistrer la connexion Gmail. Vérifie la clé privée Supabase, le bucket et l’état du projet, puis réessaie."
           );
         else if (err === "state") setBanner("Session OAuth expirée ou invalide — clique à nouveau sur Connecter Gmail.");
         else setBanner("Connexion Gmail interrompue — réessaie.");
@@ -141,22 +145,13 @@ export default function AlertesGmailDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const qs = new URLSearchParams({ email });
-        if (fresh) qs.set("fresh", "1");
-        const r = await fetch(`/api/gmail/dashboard?${qs.toString()}`, { cache: "no-store" });
-        const j = (await r.json()) as DashboardPayload;
-        if (!r.ok || !j.ok) {
-          const err = new Error(j.error || j.reason || "Chargement impossible") as Error & {
-            detail?: string;
-          };
-          err.detail = j.detail;
-          throw err;
-        }
+        const j = await requestGmailDashboard(email, fresh);
         setPayload(j);
         savePayloadCache(email, j);
         setConn((c) => ({
           ...c,
           checking: false,
+          verificationFailed: false,
           connected: j.connected,
           configured: j.configured,
           gmailAccount: j.gmailAccount ?? c.gmailAccount,
@@ -166,6 +161,7 @@ export default function AlertesGmailDashboard() {
         setExportReady(true);
       } catch (e) {
         setError(toShownError(e));
+        setConn(c => ({ ...c, checking: false, verificationFailed: true }));
       } finally {
         setLoading(false);
       }
@@ -179,8 +175,8 @@ export default function AlertesGmailDashboard() {
      pattern que les autres effets de chargement (hydration). */
   useEffect(() => {
     if (!user || bootRef.current) return;
-    bootRef.current = true;
     const id = window.setTimeout(() => {
+      bootRef.current = true;
       const cached = loadPayloadCache(email);
       if (cached) {
         setPayload(cached);
@@ -208,12 +204,25 @@ export default function AlertesGmailDashboard() {
       try {
         const body: Record<string, unknown> = { email, action };
         if (emailId) body.emailId = emailId;
-        const res = await fetch("/api/gmail/sync", {
+        const sendBatch = () => fetch("/api/gmail/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        const json = await res.json();
+        let res = await sendBatch();
+        // An enrichment batch already running finishes before this sync starts.
+        for (let attempt = 0; res.status === 409 && attempt < 24; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          res = await sendBatch();
+        }
+        const json = await readGmailJson<{
+          ok?: boolean; error?: string; detail?: string; labelFound?: boolean; hint?: string;
+          emails?: SyncEmailResult[]; summary?: SyncSummaryGlobal; emailsRead?: number;
+          checkpointStats?: { processedThisRun?: number }; totalInLabel?: number;
+          truncated?: boolean; interrupted?: boolean; remaining?: number;
+          arrivedDuringRun?: number; enrichDeferred?: boolean; fetchSkipped?: number;
+          enrichRetry?: { tried: number; okNow: number; stillBlocked: number };
+        }>(res);
         if (!res.ok || !json.ok) {
           const err = new Error(json.error || "Synchronisation impossible") as Error & {
             detail?: string;
@@ -270,8 +279,8 @@ export default function AlertesGmailDashboard() {
           durationMs: Math.max(0, Date.now() - (syncStartRef.current || Date.now())),
         });
         setRunHist(loadRunHist(email));
-        /* P0-4 : post-sync on reconstruit (fresh=1) → le snapshot est réécrit. */
-        await refreshDashboard(true);
+        // Le serveur a déjà fusionné ce lot dans le catalogue persistant.
+        await refreshDashboard();
         /* Messages listés mais non lus (fetch échoué) : jamais silencieux. */
         const fetchSkipped = Number(json.fetchSkipped ?? 0);
         const er = json.enrichRetry as
@@ -291,7 +300,9 @@ export default function AlertesGmailDashboard() {
         const found = s?.totalOffersDetected ?? 0;
         const dupes = s?.duplicatesIgnored ?? 0;
         const syncNote =
-          analyzed === 0
+          (lr.remaining ?? 0) > 0
+            ? `Lot enregistré : ${analyzed} e-mail(s) analysé(s). Encore ${lr.remaining} à traiter — synchronise à nouveau pour continuer.`
+            : analyzed === 0
             ? "Aucun nouvel e-mail — tout est déjà à jour."
             : `Synchro terminée : ${nfr(analyzed, "e-mail analysé", "e-mails analysés")} → ${nfr(found, "offre trouvée", "offres trouvées")} → ${nfr(dupes, "déjà connue", "déjà connues")}`;
         const errLeft = s?.errors ?? 0;
@@ -378,7 +389,8 @@ export default function AlertesGmailDashboard() {
   );
   /* État « nouveaux e-mails » (P1-10) : watermark du dernier run synchronisé. */
   const newRunArrived =
-    lastRun && lastRun.action === "sync" ? lastRun.arrivedDuringRun ?? 0 : 0;
+    lastRun && lastRun.action === "sync" && lastRun.emailsRead > 0
+      ? lastRun.arrivedDuringRun ?? 0 : 0;
   const showArrivals = newRunArrived > 0 && arrivalsDismissed !== (lastRun?.at ?? "");
 
   return (
@@ -386,8 +398,9 @@ export default function AlertesGmailDashboard() {
       <AppPageHead
         eyebrow={NAV_LABEL["/app/alertes-gmail"]}
         title={NAV_LABEL["/app/alertes-gmail"]}
-        sub={`Observabilité complète de la synchronisation : chaque e-mail, sa méthode de détection, ses preuves et ses erreurs. Libellé « ${GMAIL_LABEL} ».`}
+        sub="Retrouve les stages de tes alertes et prépare ton dossier. Les offres déjà chargées s’affichent immédiatement ; la vérification se fait en arrière-plan."
       />
+      <EnrichmentQueue email={email} paused={syncing} enabled={emails.some(item => item.offers.some(offer => offer.enrichStatus !== "ok" && !offer.searchFallback))} refresh={refreshDashboard} />
 
       {/* P0-4 : cache local affiché tout de suite, ce refresh de fond tourne. */}
       {loading && payload && (
@@ -476,6 +489,8 @@ export default function AlertesGmailDashboard() {
         </div>
       ) : payload ? (
         <>
+          <OfferExplorer emails={emails} />
+          <details className="glass-card p-5 mb-6"><summary className="cursor-pointer font-semibold text-sm">Synchronisation et historique des e-mails</summary><div className="mt-5">
           <SyncSummaryCard
             summary={summary}
             totalInLabel={totalInLabel}
@@ -557,6 +572,7 @@ export default function AlertesGmailDashboard() {
             onFirstSync={() => runAction("sync")}
             firstSyncDisabled={syncing}
           />
+          </div></details>
         </>
       ) : null}
 

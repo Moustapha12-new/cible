@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { cookieOptions, OAUTH_COOKIE } from "@/lib/auth-server";
+import { securedRoute } from "@/lib/auth-server";
+import { NextResponse } from "next/server";
 import { createOauthState, storageReady } from "@/lib/gmail-server";
 
 export const dynamic = "force-dynamic";
@@ -7,13 +9,13 @@ const OAUTH_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
 /**
  * Démarre la connexion Google OAuth. Seul le scope gmail.readonly est demandé
- * (aucune lecture hors du libellé n'est possible avec ce scope, et surtout
- * aucune écriture/modification/suppression).
+ * (lecture potentielle de toute la boîte mail ; l’application limite ses
+ * requêtes au libellé choisi, sans écriture/modification/suppression).
  * ?email=<adresse du compte cible> → c'est l'identifiant du « propriétaire ».
  */
-export async function GET(req: NextRequest) {
+export const GET = securedRoute(async (req, auth) => {
   const origin = new URL(req.url).origin;
-  const email = (new URL(req.url).searchParams.get("email") || "").trim().toLowerCase();
+  const email = auth.user.email;
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -50,5 +52,7 @@ export async function GET(req: NextRequest) {
     include_granted_scopes: "true",
     state,
   });
-  return NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
-}
+  const response = NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  response.cookies.set(OAUTH_COOKIE, state, cookieOptions(600));
+  return response;
+});

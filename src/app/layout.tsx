@@ -45,7 +45,7 @@ const jsClassScript = `document.documentElement.classList.add('js');`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr" className="h-full">
+    <html lang="fr" className="h-full" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: jsClassScript }} />
       </head>

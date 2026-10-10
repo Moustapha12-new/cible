@@ -5,6 +5,7 @@ import { GMAIL_LABEL } from "@/lib/gmail-client";
 
 export type ConnState = {
   checking: boolean;
+  verificationFailed?: boolean;
   connected: boolean;
   configured: boolean;
   gmailAccount?: string;
@@ -51,7 +52,8 @@ export default function GmailConnectionStatus({
                 Vérification de la connexion…
               </span>
             )}
-            {!conn.checking &&
+            {!conn.checking && conn.verificationFailed && <span className="pill pill--wait" data-testid="conn-badge" data-state="unavailable">Vérification indisponible</span>}
+            {!conn.checking && !conn.verificationFailed &&
               (conn.connected ? (
                 <span className="pill pill--ok" data-testid="conn-badge" data-state="connected">
                   <span className="w-1.5 h-1.5 rounded-full bg-mint mr-1.5 inline-block" />
@@ -65,13 +67,13 @@ export default function GmailConnectionStatus({
               ))}
           </div>
           <p className="text-[0.78rem] text-muted mt-1">
-            Lecture seule · étiquette Gmail surveillée :{" "}
+            Google autorise la lecture de la boîte mail. Cible lit les alertes du libellé :{" "}
             <code className="font-mono bg-surface-2/70 px-1.5 py-0.5 rounded text-[0.72rem]">
               « {GMAIL_LABEL} »
             </code>
           </p>
           <p className="text-[0.8rem] text-text-dim mt-2" data-testid="last-sync">
-            Dernière synchronisation : <b>{syncLabel}</b>
+            Dernière synchronisation : <b>{conn.checking && !lastSync && !conn.lastSync ? "vérification en cours" : conn.verificationFailed && !lastSync && !conn.lastSync ? "non vérifiée" : syncLabel}</b>
           </p>
           {conn.reason && !conn.connected && !conn.checking && (
             <p className="text-[0.72rem] text-amber mt-1">{conn.reason}</p>

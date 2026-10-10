@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.gmail-tokens/
 
 # next.js
 /.next/
@@ -35,6 +36,7 @@ yarn-error.log*
 
 # sauvegarde locale des secrets (jamais à committer)
 _backup_secrets_*
+.validation-tools/
 
 # vercel
 .vercel

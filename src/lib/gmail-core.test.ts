@@ -427,7 +427,7 @@ async function main() {
   /* Étape 3 — flag truncated : plafond MAX_MESSAGES (500) remonté. */
   {
     const origFetch = globalThis.fetch;
-    let idsSet: string[] = Array.from({ length: 550 }, (_, i) => `m${i}`);
+    let idsSet: string[] = Array.from({ length: 2050 }, (_, i) => `m${i}`);
     const json = (data: unknown) =>
       new Response(JSON.stringify(data), {
         status: 200,
@@ -459,12 +459,12 @@ async function main() {
         metaFor: () => meta,
         getDelayMs: 0,
       });
-      assert(big.truncated === true, "550 ids > plafond 500 → truncated=true");
+      assert(big.truncated === true, "2050 ids > plafond 2000 → truncated=true");
       assert(
-        big.emails.length === 500,
-        `plafond appliqué (500 max), obtenu ${big.emails.length}`
+        big.emails.length === 2000,
+        `plafond appliqué (2000 max), obtenu ${big.emails.length}`
       );
-      assert(big.total >= 550, `total (~550) conservé, obtenu ${big.total}`);
+      assert(big.total >= 2050, `total (~2050) conservé, obtenu ${big.total}`);
 
       idsSet = Array.from({ length: 150 }, (_, i) => `s${i}`);
       const small = await fetchLabelEmails("tok", { id: "Label_1" }, {
@@ -712,6 +712,7 @@ async function main() {
       company: "ACME",
       applicationUrl: "https://www.linkedin.com/jobs/view/111/",
       source: "LinkedIn",
+      description: "Conception des installations électriques et rédaction des documents techniques détaillés, dimensionnement des câbles et simulations des équipements." , missions: ["Dimensionner les installations électriques"], skills: ["CANECO"], prerequisites: ["Bac+5 en génie électrique"],
       ...(enrichStatus ? { enrichStatus } : {}),
     });
     const processed = [
@@ -719,8 +720,8 @@ async function main() {
     ] as unknown as ProcessedEmail[];
     const norm = buildEnrichCandidates(processed, emailsById);
     assert(
-      norm.length === 2,
-      `normal : ok + blocked exclus, obtenu ${norm.length}`
+      norm.length === 3,
+      `normal : seule une fiche ok est exclue, obtenu ${norm.length}`
     );
     const retry = buildEnrichCandidates(processed, emailsById, { retryOnly: true });
     assert(
@@ -866,7 +867,7 @@ async function main() {
             text: "Page annonce complète Stage Dev ACME Paris.",
           }),
           askImpl: async () => ({
-            results: [{ id: "eo1#0", title: "Stage Dev", company: "ACME", location: "Paris" }],
+            results: [{ id: "eo1#0", title: "Stage Dev", company: "ACME", location: "Paris", description: "Développement des applications internes du service, réalisation des tests fonctionnels et documentation des interfaces pour les équipes techniques." , missions: ["Développer les applications internes"], skills: ["React"], prerequisites: ["Master informatique en préparation"] }],
           }),
         },
       });

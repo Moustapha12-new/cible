@@ -249,6 +249,8 @@ function main() {
     assertEq(qs, key, "clé round-trip via query param");
   }
 
+  const prefix = "https://example.com/careers/engineering/student-internship/";
+  assert(offerToDetectedOffer({ ...sampleOffer(), applicationUrl: prefix + "123" }).id !== offerToDetectedOffer({ ...sampleOffer(), applicationUrl: prefix + "456" }).id, "deux longues URLs proches gardent des dossiers distincts");
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);
 }

@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import { emptyData } from "./data";
+import { gmailImportRecords, localImportRecords, validateImportBatch } from "./catalog-import";
+import type { ProcessedEmail } from "./gmail-dashboard";
+
+const data = emptyData("Test", "test@example.test");
+data.offers = [{ id: "old-1", title: "Stage HTA", company: "Entreprise", location: "France", salary: "", match: 0, keywords: ["ETAP"], text: "Mission HTA", source: "manual" }];
+data.applications = [{ id: "app-1", offerId: "old-1", company: "Entreprise", role: "Stage HTA", status: "sent", daysAgo: 0, source: "manual", cvText: "CV envoyé" }];
+data.dossiers = { "old-1": { cvText: "CV", letterText: "", notes: "", updatedAt: "2026-10-10T00:00:00Z" } };
+const local = localImportRecords(data);
+assert.equal(local[0].id, "old-1");
+assert.equal(local[0].applicationId, "app-1");
+assert.equal(local[0].dossierId, "old-1");
+assert.match(local[0].searchText, /ETAP/);
+assert.equal(local[0].publishedAt, undefined);
+assert.ok(validateImportBatch(local));
+assert.equal(validateImportBatch([]), false);
+assert.equal(validateImportBatch(Array.from({ length: 51 }, () => local[0])), false);
+
+const offer = { title: "Stage PFE électrique", company: "Entreprise", location: "Paris", applicationUrl: "https://example.test/job/1", description: "Études HTA", skills: ["ETAP"] };
+const email = { id: "mail-1", receivedAt: "2026-10-01T10:00:00Z", offers: [offer] } as ProcessedEmail;
+const repeated = { ...email, id: "mail-2", receivedAt: "2026-10-02T10:00:00Z" };
+const gmail = gmailImportRecords([email, repeated]);
+assert.equal(gmail.length, 1);
+assert.equal(gmail[0].id, `gmail-${encodeURIComponent(`u:${offer.applicationUrl}`)}`);
+assert.equal(gmail[0].sources.length, 2);
+assert.equal(gmail[0].detectedAt, new Date(email.receivedAt).toISOString());
+assert.equal(gmail[0].publishedAt, undefined, "Gmail receipt date is not publication date");
+assert.match(gmail[0].searchText, /HTA/);
+console.log("P4-A import conversion passed");

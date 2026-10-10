@@ -1,3 +1,4 @@
+import { securedRoute } from "@/lib/auth-server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getAccessToken,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/gmail-core";
 import {
   buildSummary,
+  mergeCatalogue,
   emptySummary,
   humanizeGmailError,
   parseDashboardQuery,
@@ -38,22 +40,24 @@ export const dynamic = "force-dynamic";
  * Cache checkpoints borné à la requête (P1-3) : try/finally → endCheckpointCache
  * garanti sur tous les chemins de sortie.
  */
-export async function GET(req: NextRequest) {
+export const GET = securedRoute(async (req, auth) => {
   beginCheckpointCache();
   try {
-    return await handleDashboard(req);
+    return await handleDashboard(req, auth.user.email);
   } finally {
     endCheckpointCache();
   }
-}
+});
 
-async function handleDashboard(req: NextRequest) {
+async function handleDashboard(req: NextRequest, owner: string) {
   const url = new URL(req.url);
-  const q = parseDashboardQuery(url.search);
+  const query = new URLSearchParams(url.search);
+  query.set("email", owner);
+  const q = parseDashboardQuery(query.toString());
   if (!q.ok) {
     return NextResponse.json({ ok: false, error: q.error }, { status: 400 });
   }
-  const email = q.email;
+  const email = owner;
   const fresh = url.searchParams.get("fresh") === "1";
 
   const configured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -72,71 +76,31 @@ async function handleDashboard(req: NextRequest) {
     return NextResponse.json(payload);
   }
 
-  /* ── P0-4 : lecture directe du snapshot (pas de rebuild) ───────── */
-  if (!fresh) {
-    const snap = await loadSnapshot(email);
-    if (snap) {
-      const [tokR, connR] = await Promise.allSettled([
-        getAccessToken(email),
-        getOauthConnection(email),
-      ]);
-      if (tokR.status === "rejected") {
-        const h = humanizeGmailError(tokR.reason);
-        const payload: DashboardPayload = {
-          ok: true,
-          labelFound: false,
-          label: GMAIL_LABEL,
-          totalInLabel: 0,
-          connected: false,
-          configured: true,
-          ...(h.detail ? { reason: h.human, detail: h.detail } : { reason: h.human }),
-          emails: [],
-          summary: emptySummary(),
-        };
-        return NextResponse.json(payload);
-      }
-      const conn = connR.status === "fulfilled" ? connR.value : null;
-      return NextResponse.json({
-        ...snap,
-        connected: true,
-        configured: true,
-        gmailAccount: pickGmailDisplayAddress(conn?.gmailEmail, email) ?? snap.gmailAccount ?? email,
-        lastSync: conn?.lastSync ?? snap.lastSync ?? null,
-        fromSnapshot: true,
-      });
-    }
-  }
-
-  /* ── Reconstruction (?fresh=1 ou premier passage) ─────────────────
-     Token + métadonnées OAuth en parallèle (Promise.allSettled : la perte
-     des métadonnées reste non bloquante, l'échec du token reste fatal). */
-  let lastSync: string | null = null;
-  let oauthEmail: string | undefined;
-  const [tokR, connR] = await Promise.allSettled([
+  // Snapshot et informations OAuth lus ensemble : pas de round-trip série.
+  const [snapR, tokR, connR] = await Promise.allSettled([
+    loadSnapshot(email),
     getAccessToken(email),
     getOauthConnection(email),
   ]);
+  if (snapR.status === "rejected") throw snapR.reason;
   if (tokR.status === "rejected") {
     const h = humanizeGmailError(tokR.reason);
-    const payload: DashboardPayload = {
-      ok: true,
-      labelFound: false,
-      label: GMAIL_LABEL,
-      totalInLabel: 0,
-      connected: false,
-      configured: true,
-      ...(h.detail ? { reason: h.human, detail: h.detail } : { reason: h.human }),
-      emails: [],
-      summary: emptySummary(),
-    };
-    return NextResponse.json(payload);
+    if (snapR.status === "fulfilled" && snapR.value) {
+      return NextResponse.json({ ...snapR.value, connected: false, configured: true, reason: h.human, detail: h.detail });
+    }
+    return NextResponse.json({ ok: true, labelFound: false, label: GMAIL_LABEL, totalInLabel: 0,
+      connected: false, configured: true, reason: h.human, detail: h.detail,
+      emails: [], summary: emptySummary() });
   }
   const accessToken = tokR.value;
-  if (connR.status === "fulfilled" && connR.value) {
-    lastSync = connR.value.lastSync;
-    oauthEmail = connR.value.gmailEmail;
+  const conn = connR.status === "fulfilled" ? connR.value : null;
+  const lastSync = conn?.lastSync ?? null;
+  const gmailAccount = pickGmailDisplayAddress(conn?.gmailEmail, email) ?? email;
+  const snap = snapR.status === "fulfilled" ? snapR.value : null;
+  if (snap && !fresh) {
+    return NextResponse.json({ ...snap, connected: true, configured: true,
+      gmailAccount, lastSync: lastSync ?? snap.lastSync ?? null, fromSnapshot: true });
   }
-  const gmailAccount = pickGmailDisplayAddress(oauthEmail, email) ?? email;
 
   let label: { id: string; name: string } | null = null;
   try {
@@ -159,8 +123,7 @@ async function handleDashboard(req: NextRequest) {
       summary: emptySummary(lastSync ?? ""),
       hint: `Crée un libellé Gmail nommé exactement « ${GMAIL_LABEL} », puis synchronise.`,
     };
-    /* État de vérité (connecté, libellé retiré) : aussi mis en snapshot. */
-    await saveSnapshot(email, payload);
+    if (snap) return NextResponse.json({ ...snap, connected: true, configured: true, gmailAccount, lastSync, hint: payload.hint });
     return NextResponse.json(payload);
   }
 
@@ -268,7 +231,8 @@ async function handleDashboard(req: NextRequest) {
     }
   }
 
-  const summary = buildSummary(emails, lastSync, fetched.total);
+  const catalogue = mergeCatalogue(snap?.emails ?? [], emails);
+  const summary = buildSummary(catalogue, lastSync, fetched.total);
   const payload: DashboardPayload = {
     ok: true,
     labelFound: true,
@@ -278,7 +242,7 @@ async function handleDashboard(req: NextRequest) {
     configured: true,
     gmailAccount,
     lastSync,
-    emails,
+    emails: catalogue,
     summary,
     truncated: fetched.truncated === true,
   };

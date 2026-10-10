@@ -1,3 +1,6 @@
+import { takeSyncLease, releaseSyncLease } from "./security-quota";
+import { gmailAccountContext } from "./gmail-account";
+import { supabaseServerConfig, supabaseAuthHeaders, supabaseStorageError } from "@/lib/supabase-server";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -48,13 +51,17 @@ export type ParsedEmail = {
 
 export type FetchLabelEmailsResult = {
   emails: ParsedEmail[];
+  /** Complete listing, including messages deferred by the batch budget. */
+  listedIds?: string[];
   total: number;
-  /** Libellé listé au-delà du plafond MAX_MESSAGES → « 500 premiers sur ~N ». */
+  /** Le libellé dépasse le plafond configurable MAX_MESSAGES. */
   truncated?: boolean;
   /** Messages listés mais échoués au fetch (jamais avalés sans trace). */
   skipped?: number;
   /** Dernières erreurs de fetch (max 5), pour diagnostic UI. */
   skipErrors?: string[];
+  /** Messages reportés au prochain lot, sans être marqués en erreur. */
+  deferred?: number;
 };
 
 /** En-têtes d'affichage d'un e-mail (sans corps — évite messages.get full). */
@@ -68,6 +75,10 @@ export type ParsedEmailMeta = {
 export type FetchMode = "full" | "meta" | "skip";
 
 export type FetchLabelEmailsOpts = {
+  /** Already saved complete messages need no checkpoint or Gmail read. */
+  excludeIds?: string[];
+  maxFullMessages?: number;
+  deadlineAt?: number;
   /** full = corps complet · meta = en-têtes · skip = aucun appel messages.get. */
   resolveMode?: (id: string) => Promise<FetchMode> | FetchMode;
   /** Métadonnées locales (checkpoint) quand resolveMode renvoie « skip ». */
@@ -82,9 +93,8 @@ export const GMAIL_LABEL = "Stages – Alertes offres";
 
 const ENC_PREFIX = "enc:v1:";
 const STATE_TTL_MS = 15 * 60 * 1000;
-/* 500 par défaut : le libellé a atteint 250 (= ancienne limite) et grandit
-   chaque jour — au-delà, les plus anciens sortiraient silencieusement. */
-const MAX_MESSAGES = Math.max(50, Number(process.env.GMAIL_MAX_MESSAGES || 500) || 500);
+/* 2 000 messages par défaut ; plusieurs offres peuvent provenir d'un message. */
+const MAX_MESSAGES = Math.max(50, Number(process.env.GMAIL_MAX_MESSAGES || 2000) || 2000);
 const GMAIL_API_BASE = process.env.GMAIL_API_BASE || "https://gmail.googleapis.com/gmail/v1";
 
 // ── Chiffrement des fiches OAuth ────────────────────────────────
@@ -143,13 +153,7 @@ function hasBlob(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 
-function supabaseConfig(): { url: string; key: string; bucket: string } | null {
-  const url = process.env.SUPABASE_URL?.trim().replace(/\/$/, "");
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || process.env.SUPABASE_ANON_KEY?.trim();
-  if (!url || !key || !/^https?:\/\//i.test(url)) return null;
-  const bucket = (process.env.SUPABASE_BUCKET || "cible-gmail-storage").trim();
-  return { url, key, bucket };
-}
+const supabaseConfig = supabaseServerConfig;
 
 const STORAGE_MISSING =
   "Persistance OAuth non configurée : SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, KV_REST_API_URL/KV_REST_API_TOKEN, ou BLOB_READ_WRITE_TOKEN requis en production";
@@ -178,8 +182,18 @@ function localKeyPath(key: string): string {
 
 type StorageMode = "supabase" | "kvrest" | "blob" | "local";
 
-function storageMode(): StorageMode {
-  if (supabaseConfig()) return "supabase";
+export function storageMode(): StorageMode {
+  const requested = process.env.GMAIL_STORAGE_PROVIDER || (process.env.FORCE_SUPABASE === "1" ? "supabase" : "auto");
+  if (requested === "supabase") {
+    if (!supabaseConfig()) throw new Error("Supabase non configuré : SUPABASE_URL et SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY) requis.");
+    return requested;
+  }
+  if (requested !== "auto") throw new Error("GMAIL_STORAGE_PROVIDER invalide : auto ou supabase attendus.");
+  // Une configuration Supabase incomplète ne doit jamais retomber sur Blob.
+  if (process.env.SUPABASE_URL || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!supabaseConfig()) throw new Error("Supabase : configuration incomplète. Renseigne l’URL et une clé serveur privée.");
+    return "supabase";
+  }
   if (kvConfig()) return "kvrest";
   if (hasBlob()) return "blob";
   if (process.env.VERCEL === "1") throw new Error(STORAGE_MISSING);
@@ -200,39 +214,36 @@ function supabaseHeaders(): Record<string, string> {
   const cfg = supabaseConfig();
   if (!cfg) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants");
   return {
-    Authorization: `Bearer ${cfg.key}`,
-    apikey: cfg.key,
+    ...supabaseAuthHeaders(cfg.key),
     "Content-Type": "application/octet-stream",
   };
 }
 
 async function supabaseGet(key: string): Promise<string | null> {
-  if (!supabaseConfig()) return null;
-  try {
-    const res = await fetch(supabaseObjectPath(key), {
-      method: "GET",
-      headers: supabaseHeaders(),
-      cache: "no-store",
-    });
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
-    const text = await res.text();
-    return text.length ? text : null;
-  } catch {
-    return null;
+  const res = await fetch(supabaseObjectPath(key), {
+    headers: supabaseHeaders(), cache: "no-store", signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({})) as { message?: string; error?: string };
+    const message = error.message || error.error || "";
+    if (/object.*not found/i.test(message) || (res.status === 404 && !/bucket/i.test(message))) return null;
+    throw supabaseStorageError(res.status, message);
   }
+  const text = await res.text();
+  return text.length ? text : null;
 }
 
 async function supabasePut(key: string, value: string): Promise<void> {
   const res = await fetch(supabaseObjectPath(key), {
-    method: "PUT",
+    method: "POST",
     headers: { ...supabaseHeaders(), "x-upsert": "true" },
     body: value,
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Supabase PUT ${res.status}: ${body.slice(0, 200)}`);
+    throw supabaseStorageError(res.status, body);
   }
 }
 
@@ -242,6 +253,7 @@ async function supabaseDelete(key: string): Promise<void> {
       method: "DELETE",
       headers: supabaseHeaders(),
       cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok && res.status !== 404) {
       /* best-effort */
@@ -385,14 +397,19 @@ export function isSyncLockFresh(raw: string | null, now: number = Date.now()): b
 
 /**
  * Tente de prendre le verrou de sync. Retourne le token si pris, null si un
- * run est déjà en cours. Échec de stockage → on prend quand même (jamais
- * bloquant : la synchro reste possible même si la persistance est en rade).
+   * run est déjà en cours. Échec du verrou partagé → aucune synchro lancée.
+   * Le KV injectable est réservé aux tests hors production.
  */
 export async function acquireSyncLock(
   email: string,
   kv: SimpleKv = defaultSyncKv,
   now: number = Date.now()
 ): Promise<string | null> {
+  if (kv === defaultSyncKv) {
+    if (storageMode() !== "supabase") throw new Error("Un stockage avec verrou atomique est requis. Configure Supabase.");
+    const token = randomBytes(24).toString("hex");
+    return await takeSyncLease(createHash("sha256").update(email.toLowerCase()).digest("hex"), token) ? token : null;
+  }
   try {
     const raw = await kv.get(syncLockKey(email));
     if (isSyncLockFresh(raw, now)) return null;
@@ -400,7 +417,7 @@ export async function acquireSyncLock(
     await kv.set(syncLockKey(email), JSON.stringify({ at: now, token }));
     return token;
   } catch {
-    return `${now}:fallback`;
+    throw new Error("Verrou indisponible : synchronisation interrompue.");
   }
 }
 
@@ -410,6 +427,10 @@ export async function releaseSyncLock(
   token: string,
   kv: SimpleKv = defaultSyncKv
 ): Promise<void> {
+  if (kv === defaultSyncKv) {
+    await releaseSyncLease(createHash("sha256").update(email.toLowerCase()).digest("hex"), token);
+    return;
+  }
   try {
     const raw = await kv.get(syncLockKey(email));
     if (!raw) return;
@@ -854,10 +875,11 @@ function emptyParsed(id: string, meta: ParsedEmailMeta): ParsedEmail {
     pendant la synchro) sans re-télécharger les corps. */
 export async function listLabelIds(
   accessToken: string,
-  label: { id: string }
-): Promise<{ ids: string[]; total: number; truncated: boolean }> {
+  label: { id: string },
+  startPageToken = ""
+): Promise<{ ids: string[]; total: number; truncated: boolean; nextPageToken: string }> {
   const ids: string[] = [];
-  let pageToken = "";
+  let pageToken = startPageToken;
   let estimate = 0;
   do {
     const list = await gmailJson<{
@@ -878,7 +900,7 @@ export async function listLabelIds(
     pageToken = list.nextPageToken ?? "";
   } while (pageToken && ids.length < MAX_MESSAGES);
   const truncated = Boolean(pageToken) && ids.length >= MAX_MESSAGES;
-  return { ids, total: Math.max(estimate, ids.length), truncated };
+  return { ids, total: Math.max(estimate, ids.length), truncated, nextPageToken: pageToken };
 }
 
 export async function fetchLabelEmails(
@@ -886,8 +908,32 @@ export async function fetchLabelEmails(
   label: { id: string },
   opts?: FetchLabelEmailsOpts
 ): Promise<FetchLabelEmailsResult> {
-  const listing = await listLabelIds(accessToken, label);
-  const ids = listing.ids;
+  const excluded = new Set(opts?.excludeIds ?? []);
+  const owner = gmailAccountContext()?.email;
+  const cursorKey = owner && opts?.excludeIds ? `gmail:cursor:${createHash("sha256").update(owner).digest("hex")}:${label.id}` : "";
+  let cursor = cursorKey ? (await storeGet(cursorKey) || "") : "";
+  let listing;
+  try { listing = await listLabelIds(accessToken, label, cursor); }
+  catch (error) {
+    if (!cursor || !/400|invalid.*page.*token/i.test(String(error))) throw error;
+    cursor = "";
+    listing = await listLabelIds(accessToken, label);
+  }
+  let ids = listing.ids.filter(id => !excluded.has(id));
+  // Advance only after every message in this window is durably completed.
+  if (cursorKey && !ids.length) {
+    cursor = listing.nextPageToken;
+    await storeSet(cursorKey, cursor);
+    if (cursor) {
+      listing = await listLabelIds(accessToken, label, cursor);
+      ids = listing.ids.filter(id => !excluded.has(id));
+    }
+  }
+  if (cursor) {
+    const head = await gmailJson<{ messages?: { id: string }[] }>(`users/me/messages?labelIds=${encodeURIComponent(label.id)}&maxResults=100&fields=messages(id)`, accessToken);
+    listing.ids = [...new Set([...(head.messages || []).map(m => m.id), ...listing.ids])];
+    ids = listing.ids.filter(id => !excluded.has(id));
+  }
   const estimate = listing.total;
 
   const delay = Math.max(
@@ -903,7 +949,7 @@ export async function fetchLabelEmails(
      checkpoints). Les fetch Gmail restent séquentiels (quota + délai). */
   const resolved = new Map<string, { mode: FetchMode; meta: ParsedEmailMeta | null }>();
   const RESOLVE_CHUNK = 10;
-  for (let i = 0; i < ids.length; i += RESOLVE_CHUNK) {
+  const resolveChunk = async (i: number) => {
     await Promise.all(
       ids.slice(i, i + RESOLVE_CHUNK).map(async (id) => {
         let mode: FetchMode = "full";
@@ -924,11 +970,27 @@ export async function fetchLabelEmails(
         resolved.set(id, { mode, meta });
       })
     );
-  }
+  };
 
-  for (const id of ids) {
+  let fullFetched = 0;
+  let deferred = 0;
+  for (let index = 0; index < ids.length; index++) {
+    const id = ids[index];
+    // Read the first batch before spending the budget checking the whole archive.
+    if (index % RESOLVE_CHUNK === 0 && (!opts?.deadlineAt || Date.now() < opts.deadlineAt)) {
+      await resolveChunk(index);
+    }
+    if (!resolved.has(id) || (opts?.deadlineAt && Date.now() >= opts.deadlineAt)) {
+      deferred++;
+      continue;
+    }
     const pre = resolved.get(id);
     let mode: FetchMode = pre?.mode ?? "full";
+    if (mode === "full" && fullFetched >= (opts?.maxFullMessages ?? Infinity)) {
+      deferred += ids.length - index;
+      break;
+    }
+    if (mode === "full") fullFetched++;
 
     if (mode === "skip") {
       const meta = pre?.meta ?? null;
@@ -1013,10 +1075,12 @@ export async function fetchLabelEmails(
   }
   return {
     emails,
+    listedIds: listing.ids,
     total: Math.max(estimate, emails.length),
     truncated: listing.truncated,
     skipped,
     skipErrors,
+    deferred,
   };
 }
 

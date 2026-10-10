@@ -288,9 +288,9 @@ export function enrichBadge(status: RawOffer["enrichStatus"] | undefined): Enric
     case "partial":
       return { label: "enrichie (partielle)", cls: "pill pill--wait" };
     case "blocked":
-      return { label: "site protégé — réessai auto", cls: "pill" };
+      return { label: "source inaccessible", cls: "pill" };
     case "skipped":
-      return { label: "non enrichie (délai dépassé)", cls: "pill" };
+      return { label: "enrichissement en attente", cls: "pill" };
     default:
       return { label: "non enrichie", cls: "pill" };
   }
@@ -710,4 +710,15 @@ export function findVariantKeys(
     }
   }
   return out;
+}
+
+/** A partial refresh must never erase previously extracted offers. */
+export function mergeCatalogue(previous: ProcessedEmail[], incoming: ProcessedEmail[]): ProcessedEmail[] {
+  const catalogue = new Map(previous.map(item => [item.id, item]));
+  for (const item of incoming) {
+    const old = catalogue.get(item.id);
+    const incomplete = item.checkpoint?.status !== "done";
+    catalogue.set(item.id, old?.offers.length && !item.offers.length && incomplete ? old : item);
+  }
+  return [...catalogue.values()];
 }

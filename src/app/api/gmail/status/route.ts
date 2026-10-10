@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { securedRoute } from "@/lib/auth-server";
+import { NextResponse } from "next/server";
 import {
   getAccessToken,
   gmailJson,
@@ -11,8 +12,8 @@ import { humanizeGmailError } from "@/lib/gmail-dashboard";
 export const dynamic = "force-dynamic";
 
 /** Sans révéler aucun token : état de connexion + compte Gmail associé. */
-export async function GET(req: NextRequest) {
-  const email = (new URL(req.url).searchParams.get("email") || "").trim().toLowerCase();
+export const GET = securedRoute(async (req, auth) => {
+  const email = auth.user.email;
   if (!email) {
     return NextResponse.json({ ok: false, error: "Compte utilisateur manquant" }, { status: 400 });
   }
@@ -63,4 +64,4 @@ export async function GET(req: NextRequest) {
       label: GMAIL_LABEL,
     });
   }
-}
+});

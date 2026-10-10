@@ -8,11 +8,11 @@ import { BrandMark } from "@/components/Navbar";
 
 const readNext = () => {
   const n = new URLSearchParams(window.location.search).get("next");
-  return n && n.startsWith("/") ? n : "/app";
+  return n && n.startsWith("/") && !n.startsWith("//") && !n.includes("\\") ? n : "/app";
 };
 
 export default function ConnexionForm() {
-  const { user, loading, login, register } = useAuth();
+  const { user, loading, login } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -37,20 +37,18 @@ export default function ConnexionForm() {
     }
   }, [loading, user, router]);
 
-  const submit = async (e?: React.FormEvent) => {
+  const submit = async (e?: React.FormEvent, credentials?: { email: string; password: string }) => {
+    const enteredEmail = credentials?.email ?? email;
+    const enteredPassword = credentials?.password ?? password;
     e?.preventDefault();
     if (busy) return;
     setError(null);
-    if (!email.trim() || !password) {
+    if (!enteredEmail.trim() || !enteredPassword) {
       setError("Renseigne ton e-mail et ton mot de passe.");
       return;
     }
     setBusy(true);
-    let res = await login(email, password);
-    /* Compte démo : créé à la volée s'il n'existe pas encore */
-    if (!res.ok && email.trim().toLowerCase() === "demo@cible.app") {
-      res = await register("Camille Dubois", "demo@cible.app", "demo123");
-    }
+    const res = await login(enteredEmail, enteredPassword);
     if (res.ok) {
       router.replace(readNext());
     } else {
@@ -111,23 +109,7 @@ export default function ConnexionForm() {
             </button>
           </form>
 
-          <div className="mt-5 rounded-xl border border-dashed border-mint/35 bg-mint/5 p-4 text-center">
-            <p className="text-[0.78rem] text-text-dim leading-relaxed">
-              Envie d&apos;essayer sans créer de compte ?
-            </p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setEmail("demo@cible.app");
-                setPassword("demo123");
-                void submit();
-              }}
-              className="btn-line mt-3"
-            >
-              Entrer avec le compte démo
-            </button>
-          </div>
+          <p className="mt-5 text-[0.8rem] text-muted">Ancien compte local ? Crée un compte sécurisé avec la même adresse. Tes CV et candidatures conservés sur cet appareil resteront disponibles. Confirme ensuite ton adresse par e-mail.</p>
 
           <p className="mt-6 text-center text-[0.85rem] text-muted">
             Pas encore de compte ?{" "}

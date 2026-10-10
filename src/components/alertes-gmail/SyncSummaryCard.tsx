@@ -30,7 +30,7 @@ const TONE_ICON: Record<Metric["tone"], string> = {
 const METRIC_DEFS: Record<string, string> = {
   read: "Cumul depuis le début : e-mails listés dans le libellé surveillé.",
   detected: "Cumul depuis le début : offres brutes extraites, avant dédoublonnage.",
-  imported: "Cumul depuis le début : offres uniques réellement ajoutées au Module 03.",
+  imported: "Cumul depuis le début : offres uniques réellement ajoutées à ton espace de préparation.",
   dupes: "Cumul depuis le début : offres ignorées car déjà présentes.",
   nooffer: "Cumul depuis le début : e-mails vérifiés sans aucune offre de stage.",
   errors: "Cumul depuis le début : e-mails en erreur — relançables un par un.",

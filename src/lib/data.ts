@@ -1,5 +1,8 @@
 "use client";
 
+/* ══════════════════ Imports Supabase ══════════════════ */
+import { DEFAULT_CV_DESIGN } from "./cv";
+
 /* ══════════════════ Types ══════════════════ */
 
 export type CvVersion = {
@@ -14,6 +17,7 @@ export type CvVersion = {
 export type AppStatus = "sent" | "interview" | "offer" | "rejected";
 
 export type Application = {
+  offerId?: string;
   id: string;
   company: string;
   role: string;
@@ -30,6 +34,9 @@ export type Application = {
   date?: string;
   /** Notes libres (relance, date d'entretien, contact…). */
   notes?: string;
+  sentCvAdaptationId?: string;
+  sentDocumentVersions?: { documentId: string; versionId: string }[];
+  statusHistory?: { status: AppStatus; at: string }[];
 };
 
 export type Letter = {
@@ -54,6 +61,15 @@ export type DetectedOffer = {
   level?: string;
   url?: string;
   source?: string;
+  contract?: string;
+  duration?: string;
+  startDate?: string;
+  description?: string;
+  missions?: string[];
+  skills?: string[];
+  prerequisites?: string[];
+  profile?: string;
+  enrichStatus?: string;
   reason?: string;
 };
 
@@ -80,7 +96,22 @@ export type Tailoring = {
   headline: string;
 };
 
+export type SkillEvidence = {
+  id?: string;
+  term: string;
+  title?: string;
+  description?: string;
+  kind?: "project" | "experience" | "simulation" | "training" | "achievement" | "document" | "self";
+  source?: string;
+  skills?: string[];
+  status: "declared" | "demonstrated" | "studied" | "verify" | "missing";
+  evidence: string;
+  autonomy: "unknown" | "assisted" | "independent";
+  sourceOffer?: string;
+  updatedAt: string;
+};
 export type Profile = {
+  skillEvidence?: SkillEvidence[];
   firstName: string;
   lastName: string;
   title: string;
@@ -93,11 +124,20 @@ export type Profile = {
 };
 
 export type UserData = {
+  documents?: import("./pfe-documents").DocumentRecord[];
+  gmailAssociations?: import("./pfe-documents").GmailAssociation[];
+  pfeAnalyses?: Record<string, import("./pfe-matching").PfeAnalysis>;
+  cvAdaptations?: Record<string, import("./cv-adaptation").CvAdaptation[]>;
+  dossiers?: Record<string, { cvText: string; letterText: string; notes: string; updatedAt: string; applicationId?: string }>;
+  offerQualifications?: Record<string, import("./offer-qualification").OfferQualification>;
   v?: number;
   /** Texte du vrai CV du candidat : source de vérité pour toutes les analyses IA. */
   originalCv?: { name: string; text: string };
   /** CV structuré éditable (builder) : la source du rendu et du PDF. */
   cvData?: import("./cv").CvData;
+  cvDesignVersion?: number;
+  cvDesign?: import("./cv").CvDesign;
+  cvPreservedData?: import("./cv").CvData;
   /** Historique des tailoring réalisés (8 derniers). */
   tailorings?: Tailoring[];
   profile: Profile;
@@ -120,6 +160,7 @@ export function emptyData(name: string, email: string): UserData {
   const [firstName = "", ...rest] = name.split(" ");
   return {
     v: APP_VERSION,
+    cvDesign: { ...DEFAULT_CV_DESIGN }, cvDesignVersion: 2,
     profile: {
       firstName,
       lastName: rest.join(" "),
@@ -145,6 +186,7 @@ export function seedData(name: string, email: string): UserData {
   const lastName = rest.join(" ") || "Dubois";
   return {
     v: APP_VERSION,
+    cvDesign: { ...DEFAULT_CV_DESIGN }, cvDesignVersion: 2,
     profile: {
       firstName,
       lastName,
@@ -255,12 +297,18 @@ export function seedData(name: string, email: string): UserData {
    JAMAIS : seul un blob déjà estampillé v:2 peut migrer vers la clé v2. */
 const keyFor = (email: string) => `cible:data:v2:${email.toLowerCase()}`;
 const legacyKeyFor = (email: string) => `cible:data:${email.toLowerCase()}`;
+function assertStoredData(value: unknown): asserts value is UserData {
+  if (!value || typeof value !== "object") throw new Error("Dossier invalide");
+  const data = value as Partial<UserData>;
+  if (!data.profile || typeof data.profile !== "object" || !Array.isArray(data.applications) || !Array.isArray(data.cvs) || !Array.isArray(data.offers)) throw new Error("Structure du dossier invalide");
+}
 
 export function loadData(email: string): UserData | null {
   try {
     const raw = window.localStorage.getItem(keyFor(email));
     if (raw) {
       const parsed = JSON.parse(raw) as UserData;
+      assertStoredData(parsed);
       const migrated = migrateData(parsed);
       if (migrated !== parsed) saveData(email, migrated);
       return migrated;
@@ -268,22 +316,24 @@ export function loadData(email: string): UserData | null {
 
     const legacyRaw = window.localStorage.getItem(legacyKeyFor(email));
     if (!legacyRaw) return null;
-    window.localStorage.removeItem(legacyKeyFor(email));
+    // Legacy data stays available until the reversible migration is validated.
     let legacy: UserData | null = null;
     try {
       legacy = JSON.parse(legacyRaw) as UserData;
     } catch {
-      legacy = null;
+      throw new Error("Dossier ancien illisible ; copie conservée.");
     }
     /* Reprise refusée sauf données déjà propres (v2) d'un compte non-démo. */
-    if (!legacy || legacy.v !== 2 || email.trim().toLowerCase() === DEMO_EMAIL) {
+    if (email.trim().toLowerCase() === DEMO_EMAIL) {
       return null;
     }
+    if (!legacy || legacy.v !== 2) throw new Error("Version ancienne à récupérer explicitement ; copie conservée.");
+    assertStoredData(legacy);
     const migrated = migrateData(legacy);
     window.localStorage.setItem(keyFor(email), JSON.stringify(migrated));
     return migrated;
   } catch {
-    return null;
+    throw new Error("Lecture du dossier impossible. Aucune création ni remplacement automatique ; tes données sont conservées.");
   }
 }
 
@@ -292,10 +342,11 @@ export function loadData(email: string): UserData | null {
    reçoit une date ISO (déduite de joursAgo quand elle manque). */
 const APP_VERSION = 3 as const;
 function migrateData(d: UserData): UserData {
-  if (d && d.v === APP_VERSION) return d;
+  if (d && d.v === APP_VERSION && d.cvDesignVersion === 2) return d;
   const next: UserData = {
     ...d,
     v: APP_VERSION,
+    ...(d.cvDesignVersion !== 2 ? { cvDesign: { ...DEFAULT_CV_DESIGN }, cvDesignVersion: 2 } : {}),
     applications: (d?.applications ?? []).map((a) => {
       const rawStatus = (a as { status?: string }).status || "sent";
       return {
@@ -313,8 +364,9 @@ function migrateData(d: UserData): UserData {
 export function saveData(email: string, data: UserData) {
   try {
     window.localStorage.setItem(keyFor(email), JSON.stringify(data));
+    window.dispatchEvent?.(new CustomEvent("cible:data-changed", { detail: { email } }));
   } catch {
-    /* quota dépassé — tant pis pour la démo */
+    throw new Error("Stockage de cet appareil plein : exporte ton dossier avant de réessayer.");
   }
 }
 
@@ -333,7 +385,7 @@ export function getOrCreateData(name: string, email: string): UserData {
 /* Remise à zéro manuelle de l'espace (bouton Réinitialiser). */
 export function resetData(name: string, email: string): UserData {
   try {
-    window.localStorage.removeItem(legacyKeyFor(email));
+    // Legacy data stays available until the reversible migration is validated.
   } catch {
     /* ignore */
   }

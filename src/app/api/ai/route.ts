@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { securedRoute } from "@/lib/auth-server";
+import { NextResponse } from "next/server";
 import { askJson, type Body, type Task } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ const TASKS: Task[] = [
 /* Tâches qui exigent un texte d'offre assez long pour être analysé. */
 const NEEDS_OFFER: Task[] = ["offer", "match", "adapt", "keywords", "entretien", "boost-ats", "improve", "trim"];
 
-export async function POST(req: NextRequest) {
+export const POST = securedRoute(async (req) => {
   let body: Body;
   try {
     body = (await req.json()) as Body;
@@ -74,4 +75,4 @@ export async function POST(req: NextRequest) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
     return NextResponse.json({ ok: false, error: msg }, { status: 502 });
   }
-}
+});

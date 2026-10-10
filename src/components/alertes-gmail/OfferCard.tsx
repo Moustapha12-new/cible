@@ -1,10 +1,17 @@
 "use client";
+import { pfeEligibility } from "@/lib/pfe-target";
 
+import ConfirmedSkills from "@/components/cv/ConfirmedSkills";
+import { markOfferApplied } from "@/lib/cv-keywords";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { cvToText } from "@/lib/cv";
+import { useAuth } from "@/lib/auth";
+import { getOrCreateData, saveData } from "@/lib/data";
 import Link from "next/link";
 import type { RawOffer } from "@/lib/gmail-dashboard";
 import { enrichBadge, extractLogoSrc, isIndirectOfferUrl, shortUrl, stripHtml } from "@/lib/gmail-dashboard";
-import { offerBridgeKey, offerToOfferText, writeQuickAdapt } from "@/lib/gmail-bridge";
+import { offerBridgeKey, offerToOfferText, offerToDetectedOffer, writeQuickAdapt } from "@/lib/gmail-bridge";
 
 /** Clique Postuler : écrit le pont Module 03 puis navigue vers Adaptation IA. */
 export function applyToModule03(offer: RawOffer) {
@@ -45,11 +52,22 @@ function OfferLogo({ src, alt }: { src: string; alt: string }) {
 export default function OfferCard({
   offer,
   isVariant = false,
+  applied = false,
 }: {
   offer: RawOffer;
+  applied?: boolean;
   /** P1-6 : badge « variante probable » (groupement UI, jamais exclusion). */
   isVariant?: boolean;
 }) {
+  const { user } = useAuth();
+  const router = useRouter();
+  function prepare(destination: "dossier" | "matching" = "dossier") {
+    if (!user) return;
+    const d = getOrCreateData(user.name, user.email);
+    const detected = offerToDetectedOffer(offer);
+    saveData(user.email, { ...d, offers: [detected, ...d.offers.filter(o => o.id !== detected.id)], dossiers: { ...d.dossiers, [detected.id]: { cvText: d.cvData ? cvToText(d.cvData) : d.originalCv?.text || "", letterText: "", notes: "", updatedAt: new Date().toISOString(), ...d.dossiers?.[detected.id] } } });
+    router.push(`/app/${destination}?offer=${encodeURIComponent(detected.id)}`);
+  }
   const eb = enrichBadge(offer.enrichStatus);
   const detailHref = `/app/alertes-gmail/offre?k=${encodeURIComponent(offerBridgeKey(offer))}`;
   const preview = stripHtml(offer.summary?.trim() || offer.description?.trim() || "");
@@ -58,7 +76,7 @@ export default function OfferCard({
      antérieur au champ `indirect` → dérivation par l'URL). */
   const indirect = offer.indirect ?? isIndirectOfferUrl(offer.applicationUrl);
   return (
-    <article className="rounded-xl border border-line bg-surface p-4" data-testid="offer-card">
+    <article className="gmail-opportunity glass-card p-5 flex flex-col" data-testid="offer-card">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-2.5 min-w-0">
           {logoSrc && <OfferLogo src={logoSrc} alt={offer.company || "logo"} />}
@@ -112,6 +130,7 @@ export default function OfferCard({
         )}
       </div>
 
+      <p className="text-xs text-muted mt-3">{pfeEligibility(offer).status === "eligible" ? "Critères PFE identifiés" : pfeEligibility(offer).reasons.join(" · ")}</p>
       {preview && (
         <p className="text-[0.78rem] text-text-dim leading-relaxed mt-2 line-clamp-3" data-testid="offer-summary">
           {preview}
@@ -130,7 +149,7 @@ export default function OfferCard({
 
       {(offer.keywords?.length ?? 0) > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2" data-testid="offer-keywords">
-          <span className="mono-label mr-1 self-center">ATS</span>
+          <span className="mono-label mr-1 self-center">Mots-clés</span>
           {(offer.keywords ?? []).slice(0, 8).map((k) => (
             <span key={k} className="kw-chip is-added text-[0.68rem]">
               {k}
@@ -161,8 +180,10 @@ export default function OfferCard({
         </details>
       )}
 
+      <ConfirmedSkills offer={offerToDetectedOffer(offer)} />
+
       {/* Preuves d'extraction — jamais inventées */}
-      <div className="mt-3 pt-3 border-t border-line space-y-1">
+      <details className="mt-3 pt-3 border-t border-line space-y-1"><summary className="text-xs text-muted cursor-pointer">Source et détails d’extraction</summary>
         {offer.sourceUrl && (
           <p className="text-[0.68rem] text-muted truncate" title={offer.sourceUrl}>
             <span className="mono-label mr-1">sourceUrl</span>
@@ -187,18 +208,20 @@ export default function OfferCard({
             {stripHtml(offer.description)}
           </p>
         )}
-      </div>
+      </details>
 
       <div className="flex flex-wrap items-center gap-2 mt-3">
         <button
           type="button"
           className="btn-primary btn-sm"
           data-testid="btn-apply"
-          data-adapt-href="/app/adaptation"
-          onClick={() => applyToModule03(offer)}
+          data-adapt-href="/app/dossier"
+          onClick={() => prepare()}
         >
-          Postuler{offer.searchFallback ? " (recherche)" : " →"} Module 03
+          Préparer ma candidature →
         </button>
+        <button type="button" className="btn-line btn-sm" onClick={() => prepare("matching")}>Analyser PFE et mes preuves</button>
+        <button type="button" className="btn-line btn-sm" disabled={applied} onClick={() => { if (user) saveData(user.email, markOfferApplied(getOrCreateData(user.name, user.email), offerToDetectedOffer(offer))); }}>{applied ? "✓ Déjà postulée" : "J’ai déjà postulé"}</button>
         <Link href={detailHref} className="btn-line btn-sm" data-testid="btn-detail">
           Détail
         </Link>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { getOrCreateData, saveData, type UserData } from "@/lib/data";
 import { AppPageHead } from "@/components/app/AppShell";
@@ -72,6 +73,7 @@ function Pipeline({ status }: { status: CandidatureStatus }) {
 }
 
 export default function OfferDetailPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [data, setData] = useState<UserData | null>(null);
   const [payload, setPayload] = useState<DashboardPayload | null>(null);
@@ -171,9 +173,7 @@ export default function OfferDetailPage() {
     };
   }, [found, queryKey]);
 
-  /* Restaure l'état de candidature dès que l'offre est trouvée,
-     puis lance le matching ATS une fois (si aucun score déjà calculé). */
-  const matchStarted = useRef(false);
+  /* Restaure l'état existant ; l'analyse IA ne démarre que sur demande. */
   useEffect(() => {
     if (!email || !queryKey) return;
     const id = window.setTimeout(() => {
@@ -253,7 +253,7 @@ export default function OfferDetailPage() {
     return list;
   }, [data, origText]);
 
-  /* ── Matching ATS (task match — module existant) ─────────────── */
+  /* ── Correspondance CV / offre (task match — module existant) ─────────────── */
   const upsertOfferIntoData = useCallback(
     (score: number) => {
       if (!user || !offer || !data) return;
@@ -262,12 +262,22 @@ export default function OfferDetailPage() {
       const d = getOrCreateData(user.name, user.email);
       saveData(user.email, {
         ...d,
-        offers: [detected, ...others].slice(0, 40),
+        offers: [detected, ...others],
       });
       setData(getOrCreateData(user.name, user.email));
     },
     [user, offer, data]
   );
+
+  const openPfeMatching = () => {
+    if (!user || !offer) return;
+    try {
+      const latest = getOrCreateData(user.name, user.email);
+      const detected = offerToDetectedOffer(offer);
+      saveData(user.email, { ...latest, offers: [detected, ...latest.offers.filter(item => item.id !== detected.id)] });
+      router.push(`/app/matching?offer=${encodeURIComponent(detected.id)}`);
+    } catch (error) { setToast(error instanceof Error ? error.message : "Ouverture impossible : dossier non sauvegardé."); }
+  };
 
   const runMatch = async () => {
     if (!data || !offer || !offerText || matchBusy || offerText.trim().length < 30) return;
@@ -299,9 +309,9 @@ export default function OfferDetailPage() {
         strategy: r.strategy,
       });
       upsertOfferIntoData(score);
-      setToast(`Matching ATS — ${score}% de compatibilité`);
+      setToast(`Correspondance CV / offre — ${score}% de compatibilité`);
     } catch {
-      /* Analyse locale de secours (même moteur que Matching ATS). */
+      /* Analyse locale de secours (même moteur que Correspondance CV / offre). */
       const local = analyzeOffer(offerText);
       const score = Math.max(0, Math.min(100, Math.round(local.score)));
       const matched = local.found.map((f) => f.key);
@@ -326,20 +336,6 @@ export default function OfferDetailPage() {
       setMatchBusy(false);
     }
   };
-
-  /* Auto-matching ATS une fois l'offre chargée (si aucun score déjà calculé).
-     Déféré pour éviter setState synchrone dans l'effet React. */
-  useEffect(() => {
-    if (matchStarted.current) return;
-    if (!data || !offer || !offerText || offerText.trim().length < 30) return;
-    if (match || matchBusy || cand?.score != null) return;
-    matchStarted.current = true;
-    const id = window.setTimeout(() => {
-      void runMatch();
-    }, 0);
-    return () => window.clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, offer, offerText, match, matchBusy, cand?.score]);
 
   const toggleMissing = (key: string) => {
     setSelMissing((prev) => {
@@ -435,7 +431,7 @@ export default function OfferDetailPage() {
       const d = getOrCreateData(user.name, user.email);
       saveData(user.email, {
         ...d,
-        offers: [detected, ...d.offers.filter((o) => o.id !== detected.id)].slice(0, 40),
+        offers: [detected, ...d.offers.filter((o) => o.id !== detected.id)],
         letters: [
           {
             id: uid(),
@@ -486,6 +482,7 @@ export default function OfferDetailPage() {
       applications: [
         {
           id: uid(),
+          offerId: offerToDetectedOffer(offer).id,
           company: offer.company || "Entreprise non précisée",
           role: offer.title || "Offre Gmail",
           status: "sent",
@@ -804,10 +801,11 @@ export default function OfferDetailPage() {
             <Pipeline status={status} />
           </div>
 
-          {/* 1 · Matching ATS */}
+          {/* 1 · Correspondance CV / offre */}
           <div className="border-t border-line pt-4 mb-4" data-testid="block-matching">
+            <button type="button" className="btn-line mb-3" onClick={openPfeMatching}>Analyse PFE et preuves →</button>
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <p className="mono-label">1 · Matching ATS</p>
+              <p className="mono-label">1 · Correspondance CV / offre</p>
               <button
                 type="button"
                 className="btn-primary text-[0.8rem]!"
@@ -916,7 +914,7 @@ export default function OfferDetailPage() {
               </div>
             ) : (
               <p className="text-[0.78rem] text-muted">
-                Score, mots-clés présents et manquants — même moteur que Matching ATS.
+                Score, mots-clés présents et manquants — même moteur que Correspondance CV / offre.
               </p>
             )}
           </div>

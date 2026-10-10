@@ -1,0 +1,67 @@
+import { strict as assert } from "node:assert";
+import { emptyData, loadData, saveData, type DetectedOffer } from "./data";
+import { analyzePfeOffer } from "./pfe-matching";
+import { adaptationStale, assembleCv, cvMasterText, normalizeAiChanges, saveAdaptation, sectionCanBeOmitted, validateCvChange, type CvAdaptation, type CvChange } from "./cv-adaptation";
+import { parseCvText } from "./cv";
+
+const email = "cv-adaptation-test@example.com";
+const master = "Nadia Martin\nÉlève ingénieure en génie électrique\nProjet académique : simulation de réseau électrique avec MATLAB en 2025.\nFormation ingénieur énergie 2023-2027.";
+const offer: DetectedOffer = { id: "offer-pfe-1", title: "Stage PFE ingénieur études électriques", company: "Entreprise Test", location: "Paris", salary: "", match: 0, keywords: ["MATLAB", "CANECO BT"], text: "Stage ingénieur de six mois en France dès février 2027. Missions : simulation de réseaux électriques. MATLAB requis ; CANECO BT est un plus.", missions: ["Simulation de réseaux électriques"], prerequisites: ["MATLAB requis ; CANECO BT est un plus"] };
+const data = emptyData("Nadia Martin", email);
+data.originalCv = { name: "Maître", text: master };
+data.offers = [offer];
+data.profile.title = "Élève ingénieure en génie électrique";
+data.profile.educations = [{ degree: "Ingénieur énergie", school: "École Test", period: "2023-2027" }];
+data.profile.skillEvidence = [
+  { id: "proof-matlab", term: "MATLAB", status: "demonstrated", evidence: "Projet de simulation", source: "Projet académique 2025", autonomy: "independent", updatedAt: "2026-10-10" },
+  { id: "proof-caneco", term: "CANECO BT", status: "declared", evidence: "Utilisé une fois", source: "Déclaration personnelle", autonomy: "assisted", updatedAt: "2026-10-10" },
+];
+const analysis = analyzePfeOffer(offer, data);
+analysis.selectedEvidenceIds = ["proof-matlab", "proof-caneco"];
+data.pfeAnalyses = { [offer.id]: analysis };
+const proofText = "Projet de simulation\nProjet académique 2025\nMATLAB";
+const source = "simulation de réseau électrique avec MATLAB en 2025";
+const safe: CvChange = { id: "change-1", section: "Projet", original: source, proposed: "simulation de réseau électrique avec MATLAB en 2025", reason: "Missions", source, decision: "pending" };
+
+assert.equal(cvMasterText(data), master);
+assert.equal(validateCvChange({ ...safe, proposed: "simulation de réseau électrique avec CANECO BT en 2025" }, master, proofText).length > 0, true);
+assert.equal(validateCvChange({ ...safe, proposed: "simulation de réseau électrique avec outil secret en 2025" }, master, proofText, ["outil secret"]).length > 0, true);
+assert.equal(validateCvChange({ ...safe, proposed: "simulation de réseau électrique avec MATLAB en 2026" }, master, proofText).length > 0, true);
+assert.equal(validateCvChange({ ...safe, proposed: "simulation de réseau électrique avec MATLAB chez Siemens en 2025" }, master, proofText).length > 0, true);
+assert.equal(validateCvChange({ ...safe, proposed: "certification MATLAB en 2025" }, master, proofText).length > 0, true);
+assert.equal(validateCvChange({ ...safe, original: "expérience imaginaire" }, master, proofText).length > 0, true);
+const suggestions = normalizeAiChanges([{ section: "Projet", original: source, rewritten: "simulation de réseau électrique avec MATLAB en 2025" }, { section: "Projet", original: source, rewritten: "simulation de réseau électrique avec CANECO BT en 2025" }], master, proofText, analysis);
+assert.equal(suggestions.length, 0, "unchanged and unsupported suggestions are rejected");
+assert.equal(normalizeAiChanges([{ section: "Projet", original: source, rewritten: "simulation et analyse de réseau électrique avec MATLAB en 2025" }], master, proofText, analysis).length, 1, "a grounded useful rewrite remains available");
+assert.deepEqual(normalizeAiChanges(undefined, master, proofText, analysis), [], "unavailable or malformed Gemini output cannot become an approved change");
+const draft: CvAdaptation = { id: "v1", offerId: offer.id, createdAt: "2026-10-10T10:00:00Z", updatedAt: "2026-10-10T10:00:00Z", status: "draft", orientation: "electrical", masterFingerprint: analysis.fingerprint, matchingFingerprint: analysis.fingerprint, matchingAnalyzedAt: analysis.analyzedAt, selectedEvidenceIds: analysis.selectedEvidenceIds, masterText: master, headline: "", suggestions: [{ ...safe, proposed: "simulation du réseau électrique avec MATLAB en 2025", decision: "rejected" }] };
+assert.equal(assembleCv(draft, proofText).text, master, "rejecting retains original");
+const accepted = { ...draft, suggestions: [{ ...draft.suggestions[0], decision: "accepted" as const }] };
+assert.ok(assembleCv(accepted, proofText).text.includes("simulation du réseau électrique"));
+const sectionsMaster = "Nadia Martin\nÉlève ingénieure en génie électrique\nEXPÉRIENCE\nProjet réseau électrique (2025) : simulation MATLAB\nCENTRES D'INTÉRÊT\nLecture et randonnée\nFORMATION\nIngénieur énergie (2023-2027)";
+const sections = parseCvText(sectionsMaster).sections;
+assert.equal(sections.length, 3);
+assert.equal(sectionCanBeOmitted(sections[0]), false);
+assert.equal(sectionCanBeOmitted(sections[1]), true);
+const reordered = assembleCv({ ...draft, masterText: sectionsMaster, suggestions: [], sectionOrder: [2, 0, 1] });
+assert.ok(reordered.text.indexOf("FORMATION") < reordered.text.indexOf("EXPÉRIENCE"));
+const reduced = assembleCv({ ...draft, masterText: sectionsMaster, suggestions: [], hiddenSections: [1] });
+assert.ok(!reduced.text.includes("Lecture et randonnée"));
+assert.ok(reduced.text.includes("Projet réseau électrique"));
+assert.equal(assembleCv({ ...draft, masterText: sectionsMaster, suggestions: [], hiddenSections: [0] }).issues.length > 0, true);
+assert.equal(adaptationStale(draft, offer, data), false);
+assert.equal(adaptationStale(draft, { ...offer, text: offer.text + " Nouvelle mission" }, data), true);
+assert.equal(adaptationStale(draft, offer, { ...data, originalCv: { name: "Nouveau", text: "CV différent" } }), true);
+assert.equal(adaptationStale(draft, offer, { ...data, pfeAnalyses: { [offer.id]: { ...analysis, selectedEvidenceIds: [] } } }), true);
+const local = new Map<string, string>();
+Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: { getItem: (key: string) => local.get(key) ?? null, setItem: (key: string, value: string) => local.set(key, value) }, dispatchEvent: () => {} } });
+const saved = saveAdaptation(data, draft);
+saveData(email, saved);
+const reopened = loadData(email)!;
+assert.equal(reopened.cvAdaptations?.[offer.id]?.[0].id, "v1");
+assert.equal(reopened.originalCv?.text, master);
+const withApproved = saveAdaptation(reopened, { ...draft, id: "v2", status: "approved", approvedText: master });
+const withNewDraft = saveAdaptation(withApproved, { ...draft, id: "v3" });
+assert.deepEqual(withNewDraft.cvAdaptations?.[offer.id]?.map(version => version.id), ["v3", "v2", "v1"]);
+assert.equal(withNewDraft.cvAdaptations?.[offer.id]?.[1].approvedText, master);
+console.log("P1-B CV : source immuable, contrôles anti-invention, acceptation/refus, péremption, historique et reprise vérifiés.");

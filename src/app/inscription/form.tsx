@@ -8,7 +8,7 @@ import { BrandMark } from "@/components/Navbar";
 
 const readNext = () => {
   const n = new URLSearchParams(window.location.search).get("next");
-  return n && n.startsWith("/") ? n : "/app";
+  return n && n.startsWith("/") && !n.startsWith("//") && !n.includes("\\") ? n : "/app";
 };
 
 const PERKS = [
@@ -51,13 +51,14 @@ export default function InscriptionForm() {
     setError(null);
     if (name.trim().length < 2) return setError("Indique ton nom complet.");
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Cet e-mail ne semble pas valide.");
-    if (password.length < 6) return setError("Mot de passe : 6 caractères minimum.");
+    if (password.length < 12) return setError("Mot de passe : 12 caractères minimum.");
     if (password !== confirm) return setError("Les deux mots de passe ne correspondent pas.");
     if (!cgu) return setError("Accepte les conditions pour continuer.");
     setBusy(true);
     const res = await register(name, email, password);
     if (res.ok) {
-      router.replace(readNext());
+      setError("Compte créé : confirme ton adresse dans l’e-mail reçu, puis connecte-toi. Tes données locales sont conservées.");
+      setBusy(false);
     } else {
       setError(res.error ?? "Inscription impossible.");
       setBusy(false);

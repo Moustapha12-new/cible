@@ -33,6 +33,36 @@ export function htmlToText(html: string): string {
     .trim();
 }
 
+/** Les données JobPosting restent disponibles sur certaines pages rendues
+ * en JavaScript. On les lit avant de supprimer les scripts. */
+export function extractJobPostingText(html: string): string {
+  const $ = cheerio.load(html);
+  const jobs: Record<string, unknown>[] = [];
+  function visit(value: unknown) {
+    if (Array.isArray(value)) { value.forEach(visit); return; }
+    if (!value || typeof value !== "object") return;
+    const row = value as Record<string, unknown>;
+    const types = Array.isArray(row["@type"]) ? row["@type"] : [row["@type"]];
+    if (types.includes("JobPosting")) jobs.push(row);
+    if (row["@graph"]) visit(row["@graph"]);
+  }
+  $('script[type="application/ld+json"]').each((_i, el) => {
+    try { visit(JSON.parse($(el).text())); } catch { /* Un bloc invalide n'empêche pas de lire les suivants. */ }
+  });
+  // Une page de résultats avec plusieurs annonces n'est pas une fiche d'offre.
+  if (jobs.length !== 1) return "";
+  const job = jobs[0];
+  const text = (value: unknown): string => typeof value === "string" || typeof value === "number" ? String(value) : "";
+  const org = job.hiringOrganization as Record<string, unknown> | undefined;
+  const locations = Array.isArray(job.jobLocation) ? job.jobLocation : [job.jobLocation];
+  const place = locations.map(location => {
+    if (!location || typeof location !== "object") return "";
+    const address = (location as Record<string, unknown>).address as Record<string, unknown> | undefined;
+    return address ? [address.addressLocality, address.addressRegion, address.addressCountry].map(text).filter(Boolean).join(", ") : "";
+  }).filter(Boolean).join(" · ");
+  return [job.title ? `Poste : ${text(job.title)}` : "", org?.name ? `Entreprise : ${text(org.name)}` : "", place ? `Lieu : ${place}` : "", Array.isArray(job.employmentType) ? job.employmentType.map(text).join(", ") : text(job.employmentType), htmlToText(text(job.description)), text(job.qualifications), text(job.skills), text(job.responsibilities), job.validThrough ? `Date limite : ${text(job.validThrough)}` : ""].filter(Boolean).join("\n\n");
+}
+
 /* Marqueurs de pages dédiées au bot/au login : même si la requête aboutit,
    le contenu n'est pas une annonce exploitable. */
 const BLOCK_MARKERS =
@@ -117,6 +147,10 @@ async function isSafeOfferUrlResolved(raw: string): Promise<boolean> {
 function extractMainHtml(html: string): string {
   const $ = cheerio.load(html, { scriptingEnabled: false });
   $("script, style, noscript, svg, template, iframe, form, nav, header, footer, aside").remove();
+  const linkedinDescription = $(".description__text .show-more-less-html__markup, .description__text").first();
+  if (linkedinDescription.text().trim().length >= 250) {
+    return [`Poste : ${$(".top-card-layout__title").first().text().trim()}`, `Entreprise : ${$(".topcard__org-name-link").first().text().trim()}`, `Lieu : ${$(".topcard__flavor--bullet").first().text().trim()}`, $.html(linkedinDescription)].filter(Boolean).join("\n\n");
+  }
   const selectors = [
     "article",
     "main",
@@ -144,14 +178,14 @@ function extractMainHtml(html: string): string {
   return $.html($("body")) || html;
 }
 
-async function fetchOnce(url: string, ua: string): Promise<Response> {
+async function fetchOnce(url: string, ua: string, timeoutMs = 15_000): Promise<Response> {
   return fetch(url, {
     headers: {
       "User-Agent": ua,
       "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.5",
       Accept: "text/html,application/xhtml+xml",
     },
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
     redirect: "manual",
     cache: "no-store",
   });
@@ -160,18 +194,21 @@ async function fetchOnce(url: string, ua: string): Promise<Response> {
 /** Télécharge la page d'une annonce et renvoie son texte exploitable (≤ 9 000
     caractères). En cas de blocage anti-robot / login / page morte / URL non
     sûre, renvoie { ok:false, reason } pour repli propre côté appelant. */
-export async function fetchOfferPage(url: string): Promise<PageResult> {
+export async function fetchOfferPage(url: string, options: { timeoutMs?: number } = {}): Promise<PageResult> {
+  const deadline = Date.now() + (options.timeoutMs ?? 20_000);
   if (!(await isSafeOfferUrlResolved(url))) {
     return { ok: false, reason: "Lien non autorisé (hôte local ou protocole invalide)" };
   }
   let lastErr = "Page illisible";
   for (const ua of SCRAPE_UAS) {
+    if (Date.now() >= deadline) return { ok: false, reason: "Délai de lecture de l’annonce dépassé" };
     try {
       let current = url;
       let res: Response | null = null;
       let redirects = 0;
       while (redirects <= MAX_REDIRECTS) {
-        const r = await fetchOnce(current, ua);
+        if (Date.now() >= deadline) return { ok: false, reason: "Délai de lecture de l’annonce dépassé" };
+        const r = await fetchOnce(current, ua, Math.min(15_000, deadline - Date.now()));
         if (r.status >= 300 && r.status < 400) {
           const loc = r.headers.get("location");
           r.body?.cancel().catch(() => {});
@@ -217,10 +254,13 @@ export async function fetchOfferPage(url: string): Promise<PageResult> {
         continue;
       }
       const html = new TextDecoder("utf-8", { fatal: false }).decode(buf);
-      if (BLOCK_MARKERS.test(html.slice(0, 20000))) {
+      const structured = extractJobPostingText(html);
+      const $ = cheerio.load(html);
+      const publicDescription = $(".description__text").first().text().trim();
+      if (structured.length < 250 && publicDescription.length < 250 && BLOCK_MARKERS.test(html.slice(0, 20000))) {
         return { ok: false, reason: "Page inaccessible : connexion ou anti-robot exigé" };
       }
-      const text = htmlToText(extractMainHtml(html));
+      const text = structured.length >= 250 ? structured : htmlToText(extractMainHtml(html));
       if (text.length < 250) {
         lastErr = "Contenu trop court pour être une annonce — fiche basée sur l'e-mail";
         continue;

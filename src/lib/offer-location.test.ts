@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import { offerLocation, locationKey } from "./offer-location";
+assert.deepEqual(offerLocation("Paris 3e (75)il y a 1 jour"), { city: "Paris", region: "Île-de-France" });
+assert.deepEqual(offerLocation("Courbevoie (92)"), { city: "Courbevoie", region: "Île-de-France" });
+assert.equal(offerLocation("Nanterre").region, "Île-de-France");
+assert.equal(offerLocation("Colombes, Île-de-France, FR").region, "Île-de-France");
+assert.equal(offerLocation("Marseille (13)il y a 7 joursSTAGIAIRE INGENIEUR IA F/H – ANGERS (49)").city, "Marseille");
+assert.equal(offerLocation("Bordeaux").region, "Nouvelle-Aquitaine");
+assert.equal(offerLocation("Recrutement actif").city, "");
+assert.equal(offerLocation("Candidature simplifiéeil y a 7 jours").city, "");
+assert.equal(offerLocation("Île-de-France").city, "");
+assert.equal(offerLocation("Ce stage permet de découvrir concrètement plusieurs métiers de la transition énergétique").city, "");
+assert.equal(offerLocation(undefined).region, "");
+assert.equal(locationKey("Évry-Courcouronnes"), locationKey("Evry Courcouronnes"));
+console.log("Localisations vérifiées : villes, départements, régions, arrondissements et bruit d’extraction.");

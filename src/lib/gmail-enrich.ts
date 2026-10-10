@@ -1,9 +1,11 @@
+import { isCompleteOffer } from "./offer-quality";
 /* ══════════════════ Enrichissement des offres Gmail ══════════════════
    Module 2 — 1 appel IA par offre, cache serveur, isolation par offre.
    Types + helpers purs uniquement : l'appel IA vit dans gmail-core
    (askJsonRaw résilient) pour éviter un cycle de dépendances. */
 
 import { createHash } from "node:crypto";
+import { gmailAccountContext } from "./gmail-account";
 
 export type EnrichStatus = "none" | "ok" | "partial" | "blocked" | "skipped";
 
@@ -35,6 +37,8 @@ export type EnrichedOfferData = {
   diploma: string;
   /** Langues exigées (ex: "Français, Anglais", "Espagnol courant"). */
   langues: string[];
+  /** Score de correspondance ATS (0-100) entre l'offre et ton CV original. */
+  atsScore: number;
 };
 
 export type EnrichResult = {
@@ -57,6 +61,8 @@ export type EnrichCandidate = {
 export function enrichCacheKey(applicationUrl: string): string {
   const url = (applicationUrl || "").trim();
   const hash = createHash("sha1").update(url).digest("hex");
+  const account = gmailAccountContext()?.email;
+  if (account) return `gmail:enrich:v4:${createHash("sha256").update(account).digest("hex")}:${hash}`;
   return `gmail:enrich:v3:${hash}`;
 }
 
@@ -80,9 +86,5 @@ export function isUsefulEnrichRow(
     ni blocked (P1-4) — un anti-robot peut être temporaire, la reprise se fait
     via l'action relaunch_offer, jamais une exclusion figée à vie. */
 export function isCacheableEnrichResult(r: EnrichResult): boolean {
-  return (
-    r.enrichStatus !== "skipped" &&
-    r.enrichStatus !== "none" &&
-    r.enrichStatus !== "blocked"
-  );
+  return r.enrichStatus === "ok" && isCompleteOffer(r.data);
 }

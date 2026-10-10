@@ -208,7 +208,7 @@ export default function CvWizardPage() {
                 </dd></div>
             </dl>
             <p className="mt-6 text-[0.8rem] text-muted">
-              Un CV de départ sera créé avec un score ATS estimé à 68/100 — améliore-le ensuite via le matching.
+              Un CV de départ sera créé avec un score de correspondance estimé à 68/100 — améliore-le ensuite via le matching.
             </p>
           </>
         )}

@@ -22,6 +22,7 @@ import type { ParsedEmail } from "./gmail-server";
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
 
 function assert(cond: boolean, msg: string) {
   if (cond) {
@@ -122,7 +123,7 @@ async function main() {
     assert(isUsefulEnrichRow({ title: "Stage" }) === true, "title → utile");
     assert(isUsefulEnrichRow({ skills: ["a"] }) === true, "skills[] → utile");
     assert(isUsefulEnrichRow({ description: "" }) === false, "description vide → pas utile");
-    assert(isCacheableEnrichResult({ enrichStatus: "ok", enrichReason: "x" }) === true, "ok → cachable");
+    assert(isCacheableEnrichResult({ enrichStatus: "ok", enrichReason: "x" }) === false, "ok sans contenu complet → non cachable");
     assert(isCacheableEnrichResult({ enrichStatus: "skipped", enrichReason: "x" }) === false, "skipped → non cachable");
     assert(
       isCacheableEnrichResult({ enrichStatus: "blocked", enrichReason: "x" }) === false,
@@ -197,10 +198,10 @@ async function main() {
               salary: "",
               skills: ["React"],
               keywords: ["node"],
-              missions: ["dev"],
-              prerequisites: [],
+              missions: ["Développer les applications internes de l’équipe"],
+              prerequisites: ["Formation Bac+5 en informatique"],
               profile: "",
-              description: "Description enrichie",
+              description: "Développement des applications internes du service, réalisation des tests fonctionnels et documentation des interfaces pour les équipes techniques.",
               summary: "Résumé en 3 phrases de l'offre enrichie.",
               applicationInfo: "Formulaire",
               applicationUrl: url,
@@ -215,7 +216,7 @@ async function main() {
     assert(fetchCalls === 3, `3 fetch (1 / offre), obtenu ${fetchCalls}`);
     assert(askCalls === 2, `2 appel IA (job/2 bloqué avant IA), obtenu ${askCalls}`);
     assertEq(o1.enrichStatus, "ok", "offre 1 enrichie ok");
-    assertEq(o1.description, "Description enrichie", "données IA appliquées");
+    assertEq(o1.description, "Développement des applications internes du service, réalisation des tests fonctionnels et documentation des interfaces pour les équipes techniques.", "données IA appliquées");
     assertEq(o1.summary, "Résumé en 3 phrases de l'offre enrichie.", "summary 3 phrases appliqué");
     assertEq(o1.applicationUrl, "https://example.com/job/1", "applicationUrl jamais remplacée");
     assertEq(o2.enrichStatus, "blocked", "offre 2 blocked (isolation)");
@@ -391,7 +392,8 @@ async function main() {
       batchRaw = JSON.parse(readFileSync(join(backupDir, "_raw_batch_000.json"), "utf8"));
       assert(true, "corpus_171_ids.json + _raw_batch_000.json lus");
     } catch {
-      assert(false, "fichiers backup introuvables (skip si hors repo)");
+      skipped++;
+      console.log("  ↷ corpus privé optionnel absent : test historique non exécuté (aucune donnée de production importée)");
     }
 
     if (corpus && typeof corpus.count === "number") {
@@ -496,13 +498,25 @@ async function main() {
 
   {
     const scrapeSrc = readFileSync(join(process.cwd(), "src/lib/scrape.ts"), "utf8");
-    assert(/AbortSignal\.timeout\(15_000\)|AbortSignal\.timeout\(15000\)/.test(scrapeSrc), "timeout 15s");
+    assert(scrapeSrc.includes("timeoutMs = 15_000"), "timeout par requête 15s");
     assert(/MAX_REDIRECTS = 5/.test(scrapeSrc), "MAX_REDIRECTS = 5");
     assert(/MAX_PAGE_BYTES = 500_000/.test(scrapeSrc), "MAX_PAGE_BYTES = 500000");
     assert(/isSafeOfferUrlResolved/.test(scrapeSrc), "SSRF DNS resolve conservé");
   }
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  {
+    const offer = makeOffer({ snippet: "Stage développement React. ".repeat(20) });
+    const processed = [makeEmail("fallback", [offer])];
+    await enrichProcessed(processed, new Map(), {
+      max: 1, skipCache: true, cvText: "Compétences : React",
+      fetchPageImpl: async () => ({ ok: false, reason: "Anti-robot" }),
+      askImpl: async () => ({ results: [{ id: "fallback#0", title: "Stage React", description: "Développer une application React", keywords: ["React"] }] }),
+    });
+    assertEq(offer.enrichStatus, "partial", "page bloquée + e-mail riche = fiche partielle, jamais complète");
+    assertEq(offer.title, "Stage React", "informations exploitables de l’e-mail conservées");
+    assert(offer.atsScore !== undefined, "score seulement quand un CV a été fourni");
+  }
+  console.log(`\n${passed} passed, ${failed} failed, ${skipped} skipped`);
   if (failed > 0) process.exit(1);
 }
 

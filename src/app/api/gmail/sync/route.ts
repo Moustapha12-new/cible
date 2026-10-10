@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { securedRoute } from "@/lib/auth-server";
+import { NextResponse } from "next/server";
 import {
   getAccessToken,
   findLabel,
@@ -6,17 +7,18 @@ import {
   acquireSyncLock,
   releaseSyncLock,
   GMAIL_LABEL,
+  getOauthConnection,
 } from "@/lib/gmail-server";
 import { runSync, type ProcessedEmail } from "@/lib/gmail-core";
-import { humanizeGmailError } from "@/lib/gmail-dashboard";
+import { humanizeGmailError, buildSummary, mergeCatalogue, slimOffers } from "@/lib/gmail-dashboard";
+import { loadSnapshot, saveSnapshot } from "@/lib/gmail-snapshot";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/* Deadline murale du run (P0-5) : on s'arrête ~65 s avant maxDuration pour
-   laisser la place à l'enrichissement, la sérialisation et la réponse.
-   GMAIL_RUN_DEADLINE_MS permet de tester / ajuster sans redéployer. */
-const RUN_DEADLINE_MS = Math.max(10_000, Number(process.env.GMAIL_RUN_DEADLINE_MS) || 235_000);
+/* Lots courts et checkpoints persistants : conserver une large marge avant
+   la coupure Vercel, y compris pour la sérialisation et le stockage. */
+const RUN_DEADLINE_MS = Math.min(120_000, Math.max(45_000, Number(process.env.GMAIL_RUN_DEADLINE_MS) || 90_000));
 
 /** Réponse compatible avec SyncEmailResult de gmail-client.ts (ingestSyncResults). */
 type ClientEmail = ProcessedEmail;
@@ -30,7 +32,7 @@ type SyncBody = {
   emailId?: string;
 };
 
-export async function POST(req: NextRequest) {
+export const POST = securedRoute(async (req, auth) => {
   let email = "";
   let debug = false;
   let force = false;
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
   let emailId = "";
   try {
     const body = (await req.json()) as SyncBody;
-    email = (body.email || "").trim().toLowerCase();
+    email = auth.user.email;
     debug = body.debug === true;
     force = body.force === true;
     emailId = (body.emailId || "").trim();
@@ -60,6 +62,11 @@ export async function POST(req: NextRequest) {
       { ok: false, error: `emailId manquant pour ${action}` },
       { status: 400 }
     );
+  }
+
+  if (emailId) {
+    const snapshot = await loadSnapshot(auth.user.email);
+    if (!snapshot?.emails.some(item => item.id === emailId)) return NextResponse.json({ ok: false, error: "E-mail inaccessible pour ce compte." }, { status: 403 });
   }
 
   /* 1 — Token Gmail (chiffré, serveur uniquement). */
@@ -135,12 +142,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  try {
   /* 3–4 — Fetch + traitement email-unique avec checkpoints (gmail-core).
      Relance sélective : resetErrors repasse les cp error → pending (resolveMode
      full les re-filtre) — PAS de force global qui re-fetcherait tout le libellé. */
   let outcome;
   try {
+    const saved = await loadSnapshot(email);
     outcome = await runSync({
+      completedEmailIds: !force && !["relaunch_offer", "relaunch_email"].includes(action)
+        ? saved?.emails.filter(item => item.checkpoint?.status === "done" || (item.checkpoint?.status === "error" && item.checkpoint.retries >= 3)).map(item => item.id) : undefined,
       accessToken,
       label,
       force,
@@ -151,6 +162,9 @@ export async function POST(req: NextRequest) {
       enrichOnly: action === "relaunch_offer",
       userKey: email,
       deadlineMs: RUN_DEADLINE_MS,
+      maxProcess: 8,
+      enrichMax: 8,
+      enrichOpts: { groundedOnly: true },
     });
   } catch (e) {
     const h = humanizeGmailError(e);
@@ -158,8 +172,6 @@ export async function POST(req: NextRequest) {
       { ok: false, error: h.human, ...(h.detail ? { detail: h.detail } : {}) },
       { status: 502 }
     );
-  } finally {
-    await releaseSyncLock(email, lockToken);
   }
 
   /* Run réussi → on valide la date de synchronisation. */
@@ -178,7 +190,18 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const emails: ClientEmail[] = outcome.emails;
+  const emails: ClientEmail[] = outcome.emails.map(item => ({ ...item, offers: slimOffers(item.offers) }));
+  // Actualiser le catalogue depuis les checkpoints du lot, sans relire tout Gmail.
+  const [previous, connection] = await Promise.all([loadSnapshot(email), getOauthConnection(email).catch(() => null)]);
+  const catalogue = mergeCatalogue(previous?.emails ?? [], emails);
+  const lastSync = connection?.lastSync ?? outcome.summary.lastSync;
+  await saveSnapshot(email, {
+    ok: true, connected: true, configured: true, labelFound: true,
+    label: outcome.label, totalInLabel: outcome.totalInLabel,
+    gmailAccount: connection?.gmailEmail || email, lastSync,
+    emails: catalogue, summary: buildSummary(catalogue, lastSync, outcome.totalInLabel),
+    truncated: outcome.truncated === true,
+  });
 
   const mailDebug = debug
     ? emails.map((e) => ({
@@ -240,4 +263,7 @@ export async function POST(req: NextRequest) {
     summary: outcome.summary,
     ...(mailDebug ? { mailDebug } : {}),
   });
-}
+  } finally {
+    await releaseSyncLock(email, lockToken);
+  }
+});

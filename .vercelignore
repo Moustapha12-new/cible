@@ -1,0 +1,9 @@
+.gmail-tokens/
+.env*
+_backup_secrets_*
+.validation-tools/
+*.zip
+*.log
+docs/
+scripts/
+**/*.test.ts

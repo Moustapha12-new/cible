@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { securedRoute } from "@/lib/auth-server";
+import { NextResponse } from "next/server";
 import {
   buildDeepReport,
   deepStatus,
@@ -19,7 +20,7 @@ type Body = {
   offersPerStep?: number;
 };
 
-export async function POST(req: NextRequest) {
+export const POST = securedRoute(async (req, auth) => {
   let body: Body;
   try {
     body = (await req.json()) as Body;
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Requête invalide" }, { status: 400 });
   }
 
-  const email = (body.email || "").trim().toLowerCase();
+  const email = auth.user.email;
   const action = body.action || "status";
   if (!email) {
     return NextResponse.json({ ok: false, error: "Compte utilisateur manquant" }, { status: 400 });
@@ -102,4 +103,4 @@ export async function POST(req: NextRequest) {
     const status = /non connecté|expirée/i.test(msg) ? 401 : 502;
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
-}
+});

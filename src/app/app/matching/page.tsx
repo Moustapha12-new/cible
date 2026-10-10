@@ -3,364 +3,169 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { getOrCreateData, type UserData } from "@/lib/data";
-import { analyzeOffer, profileHas, type Analysis } from "@/lib/skills";
+import { getOrCreateData, saveData, type SkillEvidence, type UserData } from "@/lib/data";
+import { cvToText } from "@/lib/cv";
 import { AppPageHead } from "@/components/app/AppShell";
+import ApplicationJourney from "@/components/app/ApplicationJourney";
+import { analyzePfeOffer, canSelectProof, matchingEvidence, pfeFingerprint, proofRecordId, savePfeAnalysis, type PfeAnalysis } from "@/lib/pfe-matching";
 
-const EXAMPLES = [
-  {
-    label: "Alternance marketing — L'Oréal",
-    text: "Vous piloterez la stratégie de contenu du site : SEO on-page, rédaction d'articles optimisés, analyse d'audience via Google Analytics, animation du CRM et reporting mensuel des KPI au comité marketing. Vous travaillez en équipe avec les équipes e-commerce et communication.",
-  },
-  {
-    label: "Community manager — Doctolib",
-    text: "Vous animez nos communautés sur Instagram, LinkedIn et TikTok : calendrier éditorial, rédaction de contenus engageants, veille et reporting analytics hebdomadaire. Autonomie, rigueur et bon niveau d'anglais attendus.",
-  },
-  {
-    label: "Communication interne — SNCF",
-    text: "Vous rédigez la newsletter des collaborateurs (emailing), préparez les supports de présentation sur Pack Office et contribuez à l'organisation d'événements internes. Rigueur et esprit d'équipe indispensables.",
-  },
-];
-
-const R = 54;
-const CIRC = 2 * Math.PI * R;
+const kindLabels: Record<NonNullable<SkillEvidence["kind"]>, string> = {
+  project: "Projet académique", experience: "Expérience professionnelle", simulation: "Simulation",
+  training: "Formation pratique", achievement: "Réalisation technique", document: "Document", self: "Confirmation personnelle",
+};
+const statusLabels: Record<SkillEvidence["status"], string> = {
+  demonstrated: "Démontrée par une preuve décrite", declared: "Déclarée par moi", studied: "Étudiée",
+  verify: "À vérifier", missing: "Non acquise",
+};
+const emptyProof = (): SkillEvidence => ({ id: crypto.randomUUID(), term: "", title: "", description: "", source: "", skills: [], kind: "project", status: "verify", evidence: "", autonomy: "unknown", updatedAt: "" });
+const clean = (text: string) => text.trim().replace(/\s+/g, " ");
 
 export default function MatchingPage() {
   const { user } = useAuth();
   const [data, setData] = useState<UserData | null>(null);
-  const [offer, setOffer] = useState("");
+  const [offerId, setOfferId] = useState("");
+  const [proof, setProof] = useState<SkillEvidence | null>(null);
+  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<Analysis | null>(null);
-  const [gauge, setGauge] = useState(CIRC);
-  const [aiNote, setAiNote] = useState<string | null>(null);
-  const [selMissing, setSelMissing] = useState<Set<string>>(new Set());
-  type Report = {
-    strategy: string;
-    changes: { area: string; change: string; keywords: string[] }[];
-    addedKeywords: string[];
-    considerations: { title: string; detail: string }[];
-  };
-  const [report, setReport] = useState<Report | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    const id = window.setTimeout(() => setData(getOrCreateData(user.name, user.email)), 0);
-    return () => window.clearTimeout(id);
+    const timer = setTimeout(() => {
+      try {
+        const loaded = getOrCreateData(user.name, user.email);
+        const requested = new URLSearchParams(window.location.search).get("offer") || "";
+        setData(loaded);
+        const selected = loaded.offers.some(item => item.id === requested) ? requested : loaded.offers[0]?.id || "";
+        setOfferId(selected);
+        if (selected && selected !== requested) window.history.replaceState(null, "", `/app/matching?offer=${encodeURIComponent(selected)}`);
+      } catch (error) { setMessage(error instanceof Error ? error.message : "Dossier indisponible"); }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [user]);
-
-  /* Animation de l'aiguille : part de 0 puis atteint le score. */
   useEffect(() => {
-    if (!result) return;
-    const id = window.setTimeout(
-      () => setGauge(CIRC * (1 - result.score / 100)),
-      60
-    );
-    return () => window.clearTimeout(id);
-  }, [result]);
+    if (!data) return;
+    const sync = () => {
+      const requested = new URLSearchParams(window.location.search).get("offer") || "";
+      setOfferId(data.offers.some(item => item.id === requested) ? requested : data.offers[0]?.id || "");
+    };
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, [data]);
 
-  const analyze = async () => {
-    if (offer.trim().length < 40 || busy || !data) return;
-    setBusy(true);
-    setAiNote(null);
-    setReport(null);
-    setSelMissing(new Set());
+  function persist(next: UserData) {
+    if (!user) return;
+    try { saveData(user.email, next); setData(next); setMessage("Enregistré dans ton dossier local."); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "Sauvegarde impossible."); }
+  }
+  const offer = data?.offers.find(item => item.id === offerId);
+  const saved = offer && data?.pfeAnalyses?.[offer.id];
+  const stale = !!saved && !!offer && !!data && saved.fingerprint !== pfeFingerprint(offer, data);
+  const active: PfeAnalysis | undefined = saved;
+  function analyze() {
+    if (!offer || !data) return;
+    const next = analyzePfeOffer(offer, data);
+    if (saved) next.selectedEvidenceIds = saved.selectedEvidenceIds.filter(id => (data.profile.skillEvidence || []).some((item, index) => proofRecordId(item, index) === id && canSelectProof(item)));
+    persist(savePfeAnalysis(data, next));
+  }
+  function toggleProof(id: string) {
+    if (!data || !active || stale) return;
+    const selected = active.selectedEvidenceIds.includes(id) ? active.selectedEvidenceIds.filter(item => item !== id) : [...active.selectedEvidenceIds, id];
+    persist(savePfeAnalysis(data, { ...active, selectedEvidenceIds: selected }));
+  }
+  function saveProof() {
+    if (!data || !proof) return;
+    const term = clean(proof.term).slice(0, 100);
+    const title = clean(proof.title || term).slice(0, 120);
+    if (!term || !title) { setMessage("Indique au moins la compétence et l’intitulé de la preuve."); return; }
+    const description = (proof.description || proof.evidence || "").trim().slice(0, 1500);
+    const source = clean(proof.source || "").slice(0, 160);
+    if (proof.status === "demonstrated" && (!description || !source)) { setMessage("Pour marquer cette compétence démontrée, ajoute une description et sa source."); return; }
+    const item: SkillEvidence = { ...proof, id: proof.id?.startsWith("legacy:") ? crypto.randomUUID() : proof.id || crypto.randomUUID(), term, title, description, evidence: description, source,
+      skills: [...new Set([term, ...(proof.skills || [])].map(clean).filter(Boolean))].slice(0, 15), updatedAt: new Date().toISOString() };
+    const existing = data.profile.skillEvidence || [];
+    const updated = existing.some((old, index) => proofRecordId(old, index) === proof.id)
+      ? existing.map((old, index) => proofRecordId(old, index) === proof.id ? item : old) : [...existing, item];
+    persist({ ...data, profile: { ...data.profile, skillEvidence: updated } });
+    setProof(null);
+  }
+  function removeProof(id: string) {
+    if (!data) return;
+    if (!window.confirm("Retirer cette preuve du registre ? Les analyses déjà sauvegardées resteront consultables comme périmées.")) return;
+    persist({ ...data, profile: { ...data.profile, skillEvidence: (data.profile.skillEvidence || []).filter((item, index) => proofRecordId(item, index) !== id) } });
+    setProof(null);
+  }
+  async function askGemini() {
+    if (!offer || !data || !active || stale || busy) return;
+    const cvOriginal = data.originalCv?.text || (data.cvData ? cvToText(data.cvData) : "");
+    if (!cvOriginal.trim()) { setMessage("Ajoute d’abord ton CV maître pour demander une piste personnalisée à Gemini."); return; }
+    setBusy(true); setMessage("");
     try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: "match",
-          profile: data.profile,
-          cvOriginal: data.originalCv?.text,
-          offerText: offer,
-        }),
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error);
-      const r = json.result as {
-        score: number;
-        matched: string[];
-        missing: string[];
-        strategy?: string;
-        changes?: Report["changes"];
-        addedKeywords?: string[];
-        considerations?: Report["considerations"];
-      };
-      setResult({
-        score: Math.max(0, Math.min(100, Math.round(r.score))),
-        found: (r.matched ?? []).map((key) => ({ key, weight: 6 })),
-        missing: (r.missing ?? []).map((key) => ({ key, aliases: [], weight: 6 })),
-        wordCount: offer.trim().split(/\s+/).filter(Boolean).length,
-      });
-      setReport({
-        strategy: r.strategy ?? "",
-        changes: r.changes ?? [],
-        addedKeywords: r.addedKeywords ?? [],
-        considerations: r.considerations ?? [],
-      });
-      setAiNote("Analyse par Gemini de ton CV original face à cette offre");
-    } catch {
-      setResult(analyzeOffer(offer));
-      setAiNote("IA indisponible — analyse locale de secours");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const toggleMissing = (key: string) => {
-    setSelMissing((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const adaptWithSelection = () => {
-    if (!offer.trim() || !data) return;
+      const response = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        task: "match", profile: data.profile, cvOriginal, offerText: offer.text,
+      }) });
+      const result = await response.json();
+      if (!response.ok || !result.ok || typeof result.result?.strategy !== "string") throw new Error(result.error || "Suggestion indisponible");
+      const suggestion = result.result.strategy.trim().slice(0, 1200);
+      if (!suggestion) throw new Error("Suggestion vide");
+      persist(savePfeAnalysis(data, { ...active, aiSuggestion: suggestion }));
+      setMessage("Piste Gemini ajoutée comme hypothèse. Vérifie les faits avant de l’utiliser.");
+    } catch { setMessage("Gemini indisponible. L’analyse locale sauvegardée est conservée."); }
+    finally { setBusy(false); }
+  }
+  async function readOfferPage() {
+    if (!offer?.url || !data || busy) return;
+    setBusy(true); setMessage("");
     try {
-      window.localStorage.setItem(
-        "cible:quick-adapt",
-        JSON.stringify({
-          offerText: offer,
-          selected: [...selMissing],
-          at: Date.now(),
-        })
-      );
-    } catch {
-      /* stockage indisponible → on navigue quand même */
-    }
-    // Navigation full-page volontaire après persistance locale.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/app/adaptation";
-  };
-
-  const skills = data?.profile.skills ?? [];
-  const hasCvSource =
-    !!data?.originalCv?.text || skills.length > 0 || !!data?.profile.title;
-
-  return (
-    <>
-      <AppPageHead
-        eyebrow="Module 02"
-        title="Matching ATS"
-        sub="Colle l'annonce qui te fait de l'œil. Gemini la compare à ton CV original et te dit exactement où tu te situes — mots-clés réels, conseils concrets."
-      />
-
-      {!hasCvSource && (
-        <div className="glass-card p-5 mb-4 border-l-2! border-l-amber!">
-          <p className="text-[0.85rem] text-text-dim leading-relaxed">
-            <b>Ton espace est encore vide.</b> Sans CV, Gemini n&apos;a rien à comparer et le score
-            sera forcément bas. Colle ton CV original dans{" "}
-            <Link href="/app/cv" className="text-mint hover:text-mint-strong underline underline-offset-2">
-              CV intelligent
-            </Link>{" "}
-            (30 secondes) puis reviens ici — l&apos;analyse deviendra réelle.
-          </p>
+      const response = await fetch("/api/scrape", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: offer.url }) });
+      const result = await response.json();
+      if (!response.ok || !result.ok || typeof result.text !== "string" || result.text.trim().length < 80) throw new Error(result.error || "Annonce trop courte pour être analysée");
+      persist({ ...data, offers: data.offers.map(item => item.id === offer.id ? { ...item, text: result.text.slice(0, 12000) } : item) });
+      setMessage("Texte réel de l’annonce enregistré. Lance ou actualise l’analyse.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Lecture de l’annonce impossible. L’offre reste consultable."); }
+    finally { setBusy(false); }
+  }
+  return <>
+    <AppPageHead eyebrow="Mission PFE · février 2027" title="Comprendre chaque opportunité" sub="Éligibilité, pertinence et preuves sont analysées séparément. Aucune note ne prédit ton recrutement." />
+    <div className="glass-card p-5 mb-5">
+      <label className="mono-label block mb-2" htmlFor="matching-offer">Offre enregistrée</label>
+      <select id="matching-offer" className="input max-w-2xl" value={offerId} onChange={event => { const nextId = event.target.value; setOfferId(nextId); setMessage(""); window.history.pushState(null, "", `/app/matching?offer=${encodeURIComponent(nextId)}`); }}>
+        {!offerId && <option value="">Choisir une offre</option>}
+        {data?.offers.map(item => <option key={item.id} value={item.id}>{item.title} · {item.company}</option>)}
+      </select>
+      <p className="text-sm text-muted mt-3">Les offres ouvertes depuis Gmail apparaissent ici après « Analyser » ou « Préparer ma candidature ». Tu peux aussi reprendre un dossier déjà enregistré.</p>
+      {!data?.offers.length && <Link href="/app/alertes-gmail" className="btn-primary mt-3">Voir mes offres Gmail →</Link>}
+    </div>
+    {offer && data && <>
+      <ApplicationJourney data={data} offerId={offer.id} current="matching" />
+      <section className="glass-card p-6 mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="mono-label">Offre choisie</p><h2 className="font-display text-xl font-semibold mt-1">{offer.title}</h2><p className="text-sm text-muted mt-1">{offer.company} · {offer.location || "Lieu à confirmer"} · {offer.duration || "Durée à confirmer"}</p></div><button className="btn-primary" onClick={analyze}>{saved ? "Actualiser l’analyse" : "Analyser cette offre"}</button></div>
+        {offer.summary && <p className="text-sm mt-4">{offer.summary}</p>}
+        {offer.url && offer.text.trim().length < 80 && <button className="btn-line btn-sm mt-3" disabled={busy} onClick={readOfferPage}>Lire le texte de cette annonce</button>}
+        {!offer.description && !offer.text.trim() && <p className="text-sm text-amber mt-3">Fiche courte : l’analyse indiquera les informations à vérifier.</p>}
+        {offer.url && <a className="text-sm text-mint underline mt-3 inline-block" href={offer.url} target="_blank" rel="noopener noreferrer">Voir l’annonce source ↗</a>}
+      </section>
+      {stale && <p role="status" className="glass-card p-4 mb-5 border-l-2! border-l-amber!">L’offre, ton CV ou tes preuves ont changé. Cette analyse est conservée mais périmée ; actualise-la avant de choisir des preuves.</p>}
+      {active && <>
+        <div className="grid lg:grid-cols-2 gap-4 mb-5">
+          <section className="glass-card p-6"><p className="mono-label">Éligibilité PFE</p><h3 className="font-display text-xl mt-2">{active.eligibility.status === "eligible" ? "Compatible selon la fiche" : active.eligibility.status === "excluded" ? "Incompatible selon la fiche" : "À vérifier"}</h3><ul className="list-disc pl-5 text-sm mt-3 space-y-2">{active.eligibility.reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul></section>
+          <section className="glass-card p-6"><p className="mono-label">Pertinence technique</p><h3 className="font-display text-xl mt-2">{active.relevance.level === "forte" ? "Forte correspondance à explorer" : active.relevance.level === "faible" ? "Lien technique limité" : "À examiner"}</h3><ul className="list-disc pl-5 text-sm mt-3 space-y-2">{active.relevance.reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul></section>
         </div>
-      )}
-
-      <div className="grid lg:grid-cols-[1.25fr_1fr] gap-4 items-start">
-        {/* Entrée */}
-        <section className="glass-card p-7">
-          <label htmlFor="offer" className="mono-label mb-3 block">Texte de l&apos;offre</label>
-          <textarea
-            id="offer"
-            className="input"
-            rows={9}
-            value={offer}
-            onChange={(e) => setOffer(e.target.value)}
-            placeholder="Colle ici l'intégralité de l'offre (missions, profil recherché…). Plus c'est complet, plus le diagnostic est juste."
-          />
-          <div className="flex flex-wrap items-center gap-2 mt-4">
-            <span className="mono-label">Exemples :</span>
-            {EXAMPLES.map((ex) => (
-              <button key={ex.label} type="button" className="chip" onClick={() => setOffer(ex.text)}>
-                {ex.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
-            <p className="text-[0.75rem] text-muted">
-              {offer.trim().split(/\s+/).filter(Boolean).length} mots ·{" "}
-              comparé par IA à ton CV original
-            </p>
-            <button type="button" className="btn-primary" onClick={analyze} disabled={busy || offer.trim().length < 40}>
-              {busy ? (
-                <>
-                  <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                  Analyse…
-                </>
-              ) : (
-                "Analyser cette offre"
-              )}
-            </button>
-          </div>
+        <section className="glass-card p-6 mb-5"><h3 className="font-display text-lg font-semibold">Exigences et preuves</h3><p className="text-sm text-muted mt-2">« Citée dans le CV » indique une mention textuelle, pas une compétence vérifiée. « Prouvée » désigne une preuve que tu as décrite et sourcée.</p>
+          {!active.requirements.length && <p className="text-sm text-amber mt-4">Aucune compétence technique exploitable dans cette fiche. Consulte l’annonce source et complète-la si nécessaire.</p>}
+          <div className="space-y-4 mt-5">{active.requirements.map(req => <article key={req.term} className="border-t border-line pt-4"><div className="flex flex-wrap gap-2 items-center"><strong>{req.term}</strong><span className="pill">{req.priority}</span><span className="pill">{req.match}</span></div><p className="text-xs text-muted mt-2">Annonce : « {req.source} »</p>{req.cvExcerpt && <p className="text-xs text-text-dim mt-1">CV : « {req.cvExcerpt} »</p>}
+            {matchingEvidence(data.profile, req).map((item, index) => { const id = proofRecordId(item, (data.profile.skillEvidence || []).indexOf(item)); return <label key={`${id}-${index}`} className="flex gap-2 text-sm mt-2 items-start"><input type="checkbox" checked={active.selectedEvidenceIds.includes(id)} disabled={stale || !canSelectProof(item)} onChange={() => toggleProof(id)} /><span>{item.title || item.term} · {statusLabels[item.status]} · {canSelectProof(item) ? item.source : "Description et source à compléter avant sélection"}</span></label>; })}
+            {!req.evidenceIds.length && <button className="text-sm text-mint underline mt-2" onClick={() => setProof({ ...emptyProof(), term: req.term, title: `Preuve de ${req.term}` })}>Ajouter une preuve</button>}</article>)}</div>
         </section>
-
-        {/* Résultat */}
-        <section className="glass-card p-7 lg:sticky lg:top-24">
-          {!result ? (
-            <div className="py-14 text-center">
-              <p className="font-display text-5xl font-semibold text-surface-2 select-none">◎</p>
-              <p className="mt-4 text-sm text-muted leading-relaxed max-w-[26ch] mx-auto">
-                Le score apparaîtra ici dès que tu auras collé une offre.
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Jauge */}
-              <div className="relative w-fit mx-auto mb-6">
-                <svg width="150" height="150" viewBox="0 0 128 128" role="img" aria-label={`Score de compatibilité ${result.score} sur 100`}>
-                  <circle cx="64" cy="64" r={R} fill="none" stroke="var(--surface-2)" strokeWidth="10" />
-                  <circle
-                    cx="64" cy="64" r={R} fill="none"
-                    stroke="var(--emerald)"
-                    strokeWidth="10"
-                    strokeLinecap="round"
-                    strokeDasharray={CIRC}
-                    strokeDashoffset={gauge}
-                    transform="rotate(-90 64 64)"
-                    style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(.16,1,.3,1)" }}
-                  />
-                </svg>
-                <div className="absolute inset-0 grid place-items-center pointer-events-none">
-                  <p className="font-display text-4xl font-semibold tabular-nums">{result.score}<span className="text-lg text-muted">%</span></p>
-                </div>
-              </div>
-              <p className="text-center mono-label mb-2">
-                compatibilité de ton CV original avec l&apos;offre
-              </p>
-              {aiNote && (
-                <p className="text-center text-[0.7rem] text-muted mb-5">{aiNote}</p>
-              )}
-
-              {/* Mots-clés trouvés */}
-              <p className="mono-label mb-3">
-                Mots-clés de l&apos;offre ({result.found.length})
-              </p>
-              <div className="flex flex-wrap gap-1.5 mb-6">
-                {result.found.map((f) =>
-                  profileHas(skills, f.key) ? (
-                    <span key={f.key} className="kw-chip is-added">{f.key} ✓</span>
-                  ) : (
-                    <span key={f.key} className="kw-chip is-added border-violet/40! text-violet!">{f.key} · à prouver</span>
-                  )
-                )}
-              </div>
-
-              {/* Manquants — sélectionnables */}
-              {result.missing.length > 0 && (
-                <>
-                  <p className="mono-label mb-3">
-                    À ajouter si c&apos;est vrai pour toi ·{" "}
-                    <span className="text-text-dim">
-                      clique pour sélectionner
-                    </span>
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {result.missing.map((m) => {
-                      const on = selMissing.has(m.key);
-                      return (
-                        <button
-                          key={m.key}
-                          type="button"
-                          onClick={() => toggleMissing(m.key)}
-                          aria-pressed={on}
-                          className={`kw-chip cursor-pointer transition-all active:scale-95 ${
-                            on
-                              ? "border-mint/60! bg-mint/10! text-mint!"
-                              : "border-amber/40! text-amber!"
-                          }`}
-                        >
-                          {on ? "✓ " : ""}{m.key}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selMissing.size > 0 && (
-                    <p className="text-[0.72rem] text-mint mb-6">
-                      {selMissing.size} sélectionné{selMissing.size > 1 ? "s" : ""} —
-                      ils seront intégrés en priorité dans ton CV.
-                    </p>
-                  )}
-                </>
-              )}
-
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="btn-primary justify-center" onClick={adaptWithSelection}>
-                  {selMissing.size > 0
-                    ? `Adapter mon CV (+${selMissing.size})`
-                    : "Adapter mon CV"}
-                </button>
-                <Link href="/app/lettres" className="btn-line">Lettre adaptée</Link>
-              </div>
-            </>
-          )}
-        </section>
-      </div>
-
-      {/* Rapport détaillé Gemini */}
-      {report && (report.strategy || report.changes.length > 0 || report.considerations.length > 0) && (
-        <div className="mt-10 space-y-6">
-          {report.strategy && (
-            <section className="glass-card p-7">
-              <p className="mono-label mb-3">Stratégie globale</p>
-              <p className="text-[0.95rem] text-text-dim leading-relaxed max-w-4xl">{report.strategy}</p>
-            </section>
-          )}
-
-          {report.changes.length > 0 && (
-            <section>
-              <div className="flex items-baseline justify-between gap-4 mb-5">
-                <h2 className="font-display text-xl font-semibold">Ce qu&apos;il faut modifier</h2>
-                <span className="mono-label">{report.changes.length} changement{report.changes.length > 1 ? "s" : ""}</span>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                {report.changes.map((c, i) => (
-                  <article key={i} className="glass-card p-6">
-                    <div className="flex items-start gap-3">
-                      <span className="score-pill shrink-0"><b className="tabular-nums">{i + 1}</b></span>
-                      <div className="min-w-0">
-                        <p className="mono-label">{c.area}</p>
-                        <p className="mt-2 text-[0.88rem] leading-relaxed text-text-dim">{c.change}</p>
-                        {c.keywords?.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-3">
-                            {c.keywords.map((k) => <span key={k} className="chip chip--mint">{k}</span>)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {report.addedKeywords.length > 0 && (
-            <section className="glass-card p-7">
-              <p className="mono-label mb-3">Mots-clés légitimes à mettre en avant ({report.addedKeywords.length})</p>
-              <div className="flex flex-wrap gap-1.5">
-                {report.addedKeywords.map((k) => <span key={k} className="kw-chip is-added">{k}</span>)}
-              </div>
-            </section>
-          )}
-
-          {report.considerations.length > 0 && (
-            <section>
-              <h2 className="font-display text-xl font-semibold mb-5">Points de vigilance</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {report.considerations.map((c, i) => (
-                  <article key={i} className="glass-card p-6 border-l-2! border-l-amber!">
-                    <p className="font-medium text-[0.9rem]">{c.title}</p>
-                    <p className="mt-2 text-[0.82rem] text-text-dim leading-relaxed">{c.detail}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
-    </>
-  );
+        <div className="grid md:grid-cols-3 gap-4 mb-5">{([["Points forts", active.strengths], ["Écarts obligatoires", active.gaps], ["À vérifier", active.unknowns]] as const).map(([title, rows]) => <section key={title} className="glass-card p-5"><h3 className="font-semibold">{title}</h3>{rows.length ? <ul className="list-disc pl-5 text-sm mt-3 space-y-1">{rows.map((row, i) => <li key={i}>{row}</li>)}</ul> : <p className="text-sm text-muted mt-3">Aucun élément identifié dans la fiche disponible.</p>}</section>)}</div>
+        <div className="glass-card p-5 mb-5 flex flex-wrap gap-3 items-center"><button className="btn-line" disabled={busy || stale} onClick={askGemini}>{busy ? "Gemini analyse…" : "Demander une piste à Gemini"}</button><Link className="btn-primary" href={`/app/adaptation?offer=${encodeURIComponent(offer.id)}`}>Adapter mon CV avec ces preuves →</Link><Link className="btn-line" href={`/app/dossier?offer=${encodeURIComponent(offer.id)}`}>Ouvrir le dossier</Link><span className="text-xs text-muted">Analyse locale enregistrée · {active.selectedEvidenceIds.length} preuve(s) choisie(s)</span></div>
+        {active.aiSuggestion && <section className="glass-card p-5 mb-5"><h3 className="font-semibold">Piste Gemini · hypothèse à vérifier</h3><p className="text-sm mt-2">{active.aiSuggestion}</p></section>}
+      </>}
+      <section className="glass-card p-6 mb-5"><div className="flex justify-between items-start gap-3"><div><h3 className="font-display text-lg font-semibold">Mon registre de preuves</h3><p className="text-sm text-muted mt-2">Une preuve peut appuyer plusieurs compétences. Tu décides de son statut et de son usage dans chaque candidature.</p></div><button className="btn-line" onClick={() => setProof(emptyProof())}>Ajouter</button></div>
+        {(data.profile.skillEvidence || []).map((item, index) => <article key={proofRecordId(item, index)} className="border-t border-line py-3 mt-3"><div className="flex flex-wrap justify-between gap-2"><div><strong>{item.title || item.term}</strong><p className="text-xs text-muted">{[item.term, ...(item.skills || []).filter(skill => skill !== item.term)].join(" · ")} · {statusLabels[item.status]} · {item.autonomy === "independent" ? "Autonome" : item.autonomy === "assisted" ? "Accompagné" : "Autonomie à préciser"}</p><p className="text-sm mt-1">{item.description || item.evidence || "Description à ajouter"}</p><p className="text-xs text-muted">{item.source || "Source non renseignée"}</p></div><div className="flex gap-2"><button className="btn-line btn-sm" onClick={() => setProof({ ...item, id: proofRecordId(item, index) })}>Modifier</button><button className="btn-line btn-sm" onClick={() => removeProof(proofRecordId(item, index))}>Retirer</button></div></div></article>)}
+        {!data.profile.skillEvidence?.length && <p className="text-sm text-muted mt-4">Aucune preuve enregistrée. Les compétences simplement listées dans ton profil restent des déclarations.</p>}
+      </section>
+    </>}
+    {proof && <section className="glass-card p-6 mb-5" aria-label="Éditeur de preuve"><h3 className="font-display text-lg font-semibold">{(data?.profile.skillEvidence || []).some(item => item.id === proof.id) ? "Modifier la preuve" : "Ajouter une preuve"}</h3><div className="grid md:grid-cols-2 gap-3 mt-4"><label className="text-sm">Compétence principale<input className="input mt-1" value={proof.term} onChange={e => setProof({ ...proof, term: e.target.value })} /></label><label className="text-sm">Intitulé<input className="input mt-1" value={proof.title || ""} onChange={e => setProof({ ...proof, title: e.target.value })} /></label><label className="text-sm">Type<select className="input mt-1" value={proof.kind || "project"} onChange={e => setProof({ ...proof, kind: e.target.value as SkillEvidence["kind"] })}>{Object.entries(kindLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label className="text-sm">Source réelle (projet, cours, employeur, document…)<input className="input mt-1" value={proof.source || ""} onChange={e => setProof({ ...proof, source: e.target.value })} /></label><label className="text-sm md:col-span-2">Description factuelle<textarea className="input mt-1" rows={3} value={proof.description ?? proof.evidence} onChange={e => setProof({ ...proof, description: e.target.value })} /></label><label className="text-sm">Autres compétences liées (séparées par une virgule)<input className="input mt-1" value={(proof.skills || []).filter(skill => skill !== proof.term).join(", ")} onChange={e => setProof({ ...proof, skills: e.target.value.split(",").map(clean) })} /></label><label className="text-sm">Autonomie<select className="input mt-1" value={proof.autonomy} onChange={e => setProof({ ...proof, autonomy: e.target.value as SkillEvidence["autonomy"] })}><option value="unknown">À préciser</option><option value="assisted">Avec accompagnement</option><option value="independent">En autonomie</option></select></label><label className="text-sm">Statut<select className="input mt-1" value={proof.status} onChange={e => setProof({ ...proof, status: e.target.value as SkillEvidence["status"] })}>{Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div><div className="flex gap-3 mt-4"><button className="btn-primary" onClick={saveProof}>Enregistrer la preuve</button><button className="btn-line" onClick={() => setProof(null)}>Annuler</button></div></section>}
+    {message && <p role="status" className="text-sm mb-5">{message}</p>}
+  </>;
 }

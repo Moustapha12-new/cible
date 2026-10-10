@@ -1,7 +1,10 @@
 "use client";
+import CloudBackup from "@/components/cv/CloudBackup";
+import SkillEvidence from "@/components/cv/SkillEvidence";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { cvDocumentHtml, parseCvText, DEFAULT_CV_DESIGN, type CvData } from "@/lib/cv";
 import { useAuth } from "@/lib/auth";
 import { getOrCreateData, saveData, type UserData } from "@/lib/data";
 import { AppPageHead, NAV_LABEL } from "@/components/app/AppShell";
@@ -107,22 +110,16 @@ export default function CvPage() {
     }
   };
 
-  /* Téléchargement : génère un document HTML autonome depuis le profil.
-     Toutes les valeurs sont échappées : un champ malveillant ne peut pas
-     injecter de balises dans le fichier téléchargé. */
-  const esc = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const download = (cvName: string) => {
     const p = data.profile;
-    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(p.firstName)} ${esc(p.lastName)} — CV</title>
-<style>body{font-family:Georgia,serif;max-width:720px;margin:48px auto;color:#111;line-height:1.6;padding:0 24px}
-h1{margin:0;font-size:2rem}h2{border-bottom:1px solid #ddd;padding-bottom:4px;margin-top:32px;font-size:1.1rem;text-transform:uppercase;letter-spacing:.08em}
-.sub{color:#555}.kw{color:#0a7a54;font-weight:bold}</style></head><body>
-<h1>${esc(p.firstName)} ${esc(p.lastName)}</h1><p class="sub">${esc(p.title)} — ${esc(p.city)} · ${esc(p.email)} · ${esc(p.phone)}</p>
-<h2>Compétences</h2><p>${p.skills.map((s) => `<span class="kw">${esc(s)}</span>`).join(" · ")}</p>
-<h2>Expériences</h2>${p.experiences.map((e) => `<p><strong>${esc(e.title)}</strong> — ${esc(e.place)} (${esc(e.period)})<br/>${esc(e.detail)}</p>`).join("")}
-<h2>Formation</h2>${p.educations.map((e) => `<p><strong>${esc(e.degree)}</strong> — ${esc(e.school)} (${esc(e.period)})</p>`).join("")}
-<p style="margin-top:40px;color:#999;font-size:.8rem">Calibré par cible. pour : ${esc(cvName)}</p></body></html>`;
+    const cv: CvData = data.cvData ?? (data.originalCv?.text ? parseCvText(data.originalCv.text) : {
+      basics: { name: `${p.firstName} ${p.lastName}`, headline: p.title, contact: [p.city, p.email, p.phone].filter(Boolean).join("\n") }, summary: "", sections: [
+        { key: "formation", title: "Formation", kind: "list", text: "", items: p.educations.map((e, i) => ({ id: String(i), title: e.degree, meta: `${e.school} · ${e.period}`, detail: "" })) },
+        { key: "experience", title: "Expériences", kind: "list", text: "", items: p.experiences.map((e, i) => ({ id: String(i), title: e.title, meta: `${e.place} · ${e.period}`, detail: e.detail })) },
+        { key: "skills", title: "Compétences", kind: "text", text: p.skills.join("\n"), items: [] },
+      ],
+    });
+    const html = cvDocumentHtml(cv, data.cvDesign ?? DEFAULT_CV_DESIGN, cvName);
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -140,8 +137,9 @@ h1{margin:0;font-size:2rem}h2{border-bottom:1px solid #ddd;padding-bottom:4px;ma
       <AppPageHead
         eyebrow={NAV_LABEL["/app/cv"]}
         title="CV intelligent"
-        sub="Chaque version est notée sur sa force ATS réelle : structure lisible, mots-clés présents, densité d'information."
+        sub="Évaluation interne : structure lisible et mots-clés justifiés. Ce score ne mesure pas un ATS de recruteur."
       />
+      <details className="glass-card p-5 mb-6"><summary className="cursor-pointer font-semibold">Sauvegarde et preuves de mes compétences</summary><div className="mt-4"><CloudBackup /><SkillEvidence /></div></details>
 
       {/* CV original : source de vérité pour l'IA */}
       <section className="glass-card p-7 mb-8">
@@ -156,7 +154,7 @@ h1{margin:0;font-size:2rem}h2{border-bottom:1px solid #ddd;padding-bottom:4px;ma
         </div>
         <p className="text-[0.78rem] text-muted leading-relaxed max-w-3xl">
           Colle ici le texte de ton vrai CV (copie-le depuis ton PDF). C&apos;est{" "}
-          <b>ce texte exact</b> que l&apos;IA utilise pour le Matching ATS, l&apos;Adaptation et les
+          <b>ce texte exact</b> que l&apos;IA utilise pour le Correspondance CV / offre, l&apos;Adaptation et les
           Lettres — pas un profil résumé. Sans lui, les analyses restent approximatives.
         </p>
         <textarea
@@ -233,7 +231,7 @@ h1{margin:0;font-size:2rem}h2{border-bottom:1px solid #ddd;padding-bottom:4px;ma
           Mes versions <span className="text-muted font-normal text-base">({data.cvs.length})</span>
         </h2>
         <Link href="/app/cv/nouveau" className="btn-line">＋ Créer avec l&apos;assistant</Link>
-        <Link href="/app/cv/builder" className="btn-line">🧱 Ouvrir dans le builder</Link>
+        <Link href="/app/cv/builder" className="btn-line">Créer mon CV · modèle gris Canva</Link>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 mb-12">
@@ -248,7 +246,7 @@ h1{margin:0;font-size:2rem}h2{border-bottom:1px solid #ddd;padding-bottom:4px;ma
                 <>
                   <div
                     className={`score-pill shrink-0 ${i === 0 ? "border-mint/50" : ""}`}
-                    title="Score ATS"
+                    title="Correspondance interne"
                   >
                     <b className={`tabular-nums ${i === 0 ? "text-mint" : ""}`}>{cv.score}</b>
                     <span className="text-muted text-[0.68rem]">/100</span>
@@ -301,7 +299,7 @@ h1{margin:0;font-size:2rem}h2{border-bottom:1px solid #ddd;padding-bottom:4px;ma
           </button>
         </div>
         <p className="text-[0.78rem] text-muted leading-relaxed">
-          L&apos;IA lit ton profil et te donne un score ATS honnête, tes points forts et ce qui manque
+          L&apos;IA lit ton profil et te donne un score de correspondance honnête, tes points forts et ce qui manque
           vraiment. Ton texte de CV est envoyé à l&apos;IA le temps de l&apos;analyse, rien n&apos;est stocké.
         </p>
 

@@ -1,3 +1,4 @@
+import { verifiedUser, SESSION_COOKIE, OAUTH_COOKIE, cookieOptions } from "@/lib/auth-server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   consumeOauthState,
@@ -21,7 +22,9 @@ async function authCallback(req: NextRequest) {
   const oauthError = url.searchParams.get("error");
   const fail = "/app/alertes-gmail?error=1";
 
-  if (oauthError || !code || !state) {
+  let owner;
+  try { owner = await verifiedUser(req.cookies.get(SESSION_COOKIE)?.value || ""); } catch { return NextResponse.redirect(new URL(fail, origin)); }
+  if (!owner || req.cookies.get(OAUTH_COOKIE)?.value !== state || oauthError || !code || !state) {
     return NextResponse.redirect(new URL(fail, origin));
   }
   if (!storageReady()) {
@@ -34,7 +37,7 @@ async function authCallback(req: NextRequest) {
   } catch {
     return NextResponse.redirect(new URL("/app/alertes-gmail?error=storage", origin));
   }
-  if (!ctx) {
+  if (!ctx || ctx.email.toLowerCase() !== owner.email) {
     return NextResponse.redirect(new URL("/app/alertes-gmail?error=state", origin));
   }
 
@@ -80,7 +83,7 @@ async function authCallback(req: NextRequest) {
   } catch {
     return NextResponse.redirect(new URL("/app/alertes-gmail?error=storage", origin));
   }
-  return NextResponse.redirect(
-    new URL(`/app/alertes-gmail?connected=${encodeURIComponent(ctx.email)}`, origin)
-  );
+  const response = NextResponse.redirect(new URL(`/app/alertes-gmail?connected=${encodeURIComponent(ctx.email)}`, origin));
+  response.cookies.set(OAUTH_COOKIE, "", cookieOptions(0));
+  return response;
 }

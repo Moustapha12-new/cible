@@ -1,3 +1,7 @@
+import { isCompleteOffer, missingOfferContent, validateOfferQuality } from "./offer-quality";
+import { hasCvTerm } from "./cv-keywords";
+import { gmailAccountContext } from "./gmail-account";
+import { createHash } from "node:crypto";
 /* ═══════════════════════════════════════════════════════════════════
    gmail-core — refonte Module 1 « Alertes Gmail »
    · fetchLabelEmails / extractOfferLinks : conservés (ré-export)
@@ -22,6 +26,7 @@ import { enrichCacheKey, isUsefulEnrichRow, isCacheableEnrichResult, type Enrich
 import { repairCheckpoint } from "@/lib/text-repair";
 import { stampAnalysis } from "@/lib/gmail-dashboard";
 import type { DetectSummary, AnchorEntry } from "@/lib/offer-links";
+import { groundedOfferData } from "./grounded-offer";
 
 export { stampAnalysis };
 
@@ -45,6 +50,7 @@ export function canonicalizeOffers(offers: RawOffer[]): RawOffer[] {
 export type CheckpointStatus = "pending" | "done" | "error" | "pending_retry";
 
 export type RawOffer = {
+  atsScore?: number;
   title: string;
   company: string;
   location: string;
@@ -66,6 +72,8 @@ export type RawOffer = {
   enrichStatus?: EnrichStatus;
   enrichReason?: string;
   enrichedAt?: string;
+  enrichAttempts?: number;
+  enrichAttemptedAt?: string;
   searchFallback?: boolean;
   keywords?: string[];
   prerequisites?: string[];
@@ -226,21 +234,31 @@ const TRACKER_RE =
 
 /* ── Checkpoints ───────────────────────────────────────────────── */
 
-const checkpointKey = (emailId: string) => `gmail:processed:${emailId}`;
+export const checkpointKey = (emailId: string) => {
+  const account = gmailAccountContext()?.email;
+  if (!account && process.env.VERCEL === "1") throw new Error("Propriétaire du checkpoint absent.");
+  return account ? `gmail:processed:owner:${createHash("sha256").update(account).digest("hex")}:${emailId}` : `gmail:processed:${emailId}`;
+};
 
 /* ── Cache checkpoints par run/requête (P1-3) ───────────────────
    Map write-through : à l'intérieur d'un run sync (ou d'une requête
    dashboard), chaque checkpoint n'est lu/écrit qu'une fois — ~856
    storeGet/storeSet par sync → ~267. Inactif par défaut : begin()
    (re)crée la Map, end() la libère (try/finally côté appelant). */
-let cpMem: Map<string, EmailCheckpoint | null> | null = null;
+let legacyTestCache: Map<string, EmailCheckpoint | null> | null = null;
+function checkpointCache(): Map<string, EmailCheckpoint | null> | null {
+  const ctx = gmailAccountContext();
+  return ctx ? (ctx.checkpoints as Map<string, EmailCheckpoint | null> | undefined) ?? null : legacyTestCache;
+}
 
 export function beginCheckpointCache(): void {
-  cpMem = new Map();
+  const ctx = gmailAccountContext();
+  if (ctx) ctx.checkpoints = new Map(); else legacyTestCache = new Map();
 }
 
 export function endCheckpointCache(): void {
-  cpMem = null;
+  const ctx = gmailAccountContext();
+  if (ctx) ctx.checkpoints = undefined; else legacyTestCache = null;
 }
 
 function cpCopy(j: EmailCheckpoint): EmailCheckpoint {
@@ -248,6 +266,7 @@ function cpCopy(j: EmailCheckpoint): EmailCheckpoint {
 }
 
 export async function loadCheckpoint(emailId: string): Promise<EmailCheckpoint | null> {
+  const cpMem = checkpointCache();
   if (cpMem && cpMem.has(emailId)) {
     const hit = cpMem.get(emailId) ?? null;
     return hit ? cpCopy(hit) : null;
@@ -275,23 +294,19 @@ export async function loadCheckpoint(emailId: string): Promise<EmailCheckpoint |
     }
     /* P0-3 : migration des offres Indeed stockées avant applyIndeedTargets
        (cts → cible décodée, chrome éjecté, opaques marquées indirect). */
-    cp.offers = migrateIndeedOffers(cp.offers ?? []);
+    cp.offers = migrateIndeedOffers(cp.offers ?? []).map(validateOfferQuality);
     if (cpMem) cpMem.set(emailId, cpCopy(cp));
     return cp;
   } catch {
-    /* pas de mise en cache sur erreur transitoire */
-    return null;
+    throw new Error("Lecture du checkpoint indisponible : reprise interrompue pour protéger les données.");
   }
 }
 
 export async function saveCheckpoint(emailId: string, cp: EmailCheckpoint): Promise<void> {
-  try {
-    const stored = { ...cp, at: new Date().toISOString() };
-    await storeSet(checkpointKey(emailId), JSON.stringify(stored));
-    if (cpMem) cpMem.set(emailId, cpCopy(stored));
-  } catch {
-    /* best-effort : un checkpoint non écrit ne bloque pas le sync */
-  }
+  const cpMem = checkpointCache();
+  const stored = { ...cp, at: new Date().toISOString() };
+  await storeSet(checkpointKey(emailId), JSON.stringify(stored));
+  if (cpMem) cpMem.set(emailId, cpCopy(stored));
 }
 
 /** true si l'e-mail doit être (re)traité à ce sync. */
@@ -585,6 +600,8 @@ export type AskJsonOptions = {
   models?: string[];
   /** Timeout ms (défaut 45s, 90s si modèle « pro »). */
   timeoutMs?: number;
+  /** Budget partagé entre tous les modèles et toutes les tentatives. */
+  deadlineAt?: number;
 };
 
 /**
@@ -615,8 +632,11 @@ export async function askJsonRaw<T>(
     const timeout = opts.timeoutMs ?? (isPro ? 90_000 : 45_000);
 
     for (let attempt = 0; attempt < 3; attempt++) {
+      if (opts.deadlineAt && Date.now() >= opts.deadlineAt) throw new Error("Budget d’analyse atteint — reprise au prochain lot.");
       const delay = backoffDelay(attempt);
       if (delay > 0) await doSleep(delay);
+      const remainingMs = opts.deadlineAt ? opts.deadlineAt - Date.now() : timeout;
+      if (remainingMs <= 0) throw new Error("Budget d’analyse atteint — reprise au prochain lot.");
 
       try {
         const res = await doFetch(
@@ -634,7 +654,7 @@ export async function askJsonRaw<T>(
                 ...(isPro ? { thinkingConfig: { thinkingLevel: "medium" } } : {}),
               },
             }),
-            signal: AbortSignal.timeout(timeout),
+            signal: AbortSignal.timeout(Math.max(1, Math.min(timeout, remainingMs))),
             cache: "no-store",
           }
         );
@@ -976,6 +996,7 @@ export function migrateIndeedOffers(offers: RawOffer[]): RawOffer[] {
 }
 
 export type ProcessEmailOptions = {
+  deadlineAt?: number;
   /** Force le retraitement même si le checkpoint dit done. */
   force?: boolean;
   /** Désactive l'appel IA (code seul) — utile pour tests. */
@@ -1038,6 +1059,7 @@ export async function processEmail(
         fetchImpl: opts.fetchImpl,
         sleepImpl: opts.sleepImpl,
         models: opts.models,
+        deadlineAt: opts.deadlineAt,
       };
 
       /* 1er appel : email complet (ou 1ère moitié si >40k). */
@@ -1261,6 +1283,13 @@ Réponds avec ce JSON exact :
 {"results": [{"id": "<id fourni>", "title": "...", "company": "...", "location": "...", "contract": "...", "duration": "...", "deadline": "...", "salary": "...", "skills": ["..."], "keywords": ["..."], "missions": ["..."], "prerequisites": ["..."], "profile": "...", "description": "...", "summary": "...", "applicationInfo": "...", "applicationUrl": "<copie exacte>", "source": "..."}]}`;
 }
 
+export function calculateAtsScore(offerKeywords: string[], cvText: string): number {
+  if (!offerKeywords || offerKeywords.length === 0) return 0;
+  const unique = [...new Set(offerKeywords.map(k => k.trim()).filter(Boolean))];
+  return unique.length ? Math.round(100 * unique.filter(term => hasCvTerm(cvText, term)).length / unique.length) : 0;
+}
+
+/* ═══════════════════════════════════════════════ */
 type EnrichRow = { id: string } & Partial<EnrichedOfferData>;
 
 async function loadEnrichCache(key: string): Promise<EnrichResult | null> {
@@ -1269,7 +1298,7 @@ async function loadEnrichCache(key: string): Promise<EnrichResult | null> {
     if (!raw) return null;
     const j = JSON.parse(raw) as EnrichResult;
     if (!j || typeof j !== "object" || !j.enrichStatus) return null;
-    return j;
+    return isCacheableEnrichResult(j) && !!j.enrichedAt && Date.now() - Date.parse(j.enrichedAt) < 7 * 86400000 ? j : null;
   } catch {
     return null;
   }
@@ -1284,7 +1313,7 @@ async function saveEnrichCache(key: string, value: EnrichResult): Promise<void> 
   }
 }
 
-function applyEnrichData(o: RawOffer, r: EnrichResult): void {
+function applyEnrichData(o: RawOffer, r: EnrichResult, cvText: string): void {
   const hasPage = r.data && r.enrichStatus !== "blocked" && r.enrichStatus !== "skipped";
   if (hasPage && r.data) {
     const originalUrl = o.applicationUrl;
@@ -1304,9 +1333,13 @@ function applyEnrichData(o: RawOffer, r: EnrichResult): void {
       /* on ignore l'URL IA — garde la réelle */
     }
   }
-  o.enrichStatus = r.enrichStatus;
-  o.enrichReason = r.enrichReason;
+  o.enrichStatus = r.enrichStatus === "ok" && !isCompleteOffer(o) ? "partial" : r.enrichStatus;
+  o.enrichReason = o.enrichStatus === "partial" ? `${r.enrichReason} — à compléter : ${missingOfferContent(o).join(", ")}` : r.enrichReason;
   if (r.enrichedAt) o.enrichedAt = r.enrichedAt;
+  /* Calcul et stockage du score ATS (0-100) */
+  const keywords = o.keywords ?? [];
+  if (cvText.trim() && keywords.length) o.atsScore = calculateAtsScore(keywords, cvText);
+  else delete o.atsScore;
 }
 
 export function buildEnrichCandidates(
@@ -1323,8 +1356,7 @@ export function buildEnrichCandidates(
     a.offers.forEach((o, idx) => {
       /* P1-4 : jamais re-candidater une offre déjà enrichie (ok) ; un
          blocked n'est retenté qu'en mode retryOnly (relaunch_offer). */
-      if (o.enrichStatus === "ok") return;
-      if (o.enrichStatus === "blocked" && !opts?.retryOnly) return;
+      if (o.enrichStatus === "ok" && isCompleteOffer(o)) return;
       if (!o.applicationUrl || !/^https?:\/\//i.test(o.applicationUrl)) return;
       if (isSearchFallbackUrl(o.applicationUrl)) return;
       /* La preuve réelle a été vérifiée à la détection ; en relance ciblée
@@ -1352,6 +1384,8 @@ export function buildEnrichCandidates(
 }
 
 export type EnrichProcessedOptions = {
+  /** Extraction locale du texte source : ne dépend pas du quota Gemini. */
+  groundedOnly?: boolean;
   max?: number;
   timeBudgetMs?: number;
   /** Injection tests : fetch de page. */
@@ -1363,6 +1397,8 @@ export type EnrichProcessedOptions = {
   concurrency?: number;
   /** P1-4 (relaunch_offer) : ne retente QUE les offres non-ok (dont blocked). */
   retryOnly?: boolean;
+  /** Texte du CV original pour calculer le score ATS. */
+  cvText?: string;
 };
 
 /** P1-4 : compteur de la relance ciblée d'enrichissement. */
@@ -1400,7 +1436,7 @@ export async function enrichProcessed(
      On traite TOUTES les candidates éligibles avec une concurrency contrôlée
      pour ne pas surcharger les services externes. Le budget timeBudgetMs
      reste la vraie borne d'arrêt. */
-  const pool = candidates;
+  const pool = opts.max === undefined ? candidates : candidates.slice(0, Math.max(0, opts.max));
   const deadline = Date.now() + (opts.timeBudgetMs ?? 110_000);
   const concurrency = Math.max(1, opts.concurrency ?? 4);
   const fetchPage = opts.fetchPageImpl ?? ((url: string) => import("@/lib/scrape").then((m) => m.fetchOfferPage(url)));
@@ -1430,6 +1466,10 @@ export async function enrichProcessed(
         }
 
         const page = await fetchPage(c.applicationUrl);
+        if (!page.ok && (c.emailText || "").trim().length < 250) {
+          results.set(c.id, { enrichStatus: "blocked", enrichReason: `${page.reason} — texte de l’e-mail insuffisant pour compléter la fiche` });
+          continue;
+        }
         let pageText = "";
         if (page.ok) {
           pageText = page.text;
@@ -1440,7 +1480,9 @@ export async function enrichProcessed(
         const enrichmentMark = page.ok ? "" : " (based on email only)";
         let row: EnrichRow | undefined;
         try {
-          if (opts.askImpl) {
+          if (opts.groundedOnly) {
+            row = { id: c.id, ...groundedOfferData(page.ok ? pageText : c.emailText) };
+          } else if (opts.askImpl) {
             const r = await opts.askImpl(
               buildEnrichPrompt({ ...c, pageText })
             );
@@ -1449,24 +1491,28 @@ export async function enrichProcessed(
             const ask = await askJsonRaw<{ results?: EnrichRow[] }>(
               buildEnrichPrompt({ ...c, pageText }),
               GMAIL_SYSTEM,
-              { temperature: 0.2 }
+              { temperature: 0.2, deadlineAt: deadline }
             );
             row = (ask.data.results ?? [])[0];
           }
         } catch {
+          const grounded = { title: c.title, ...groundedOfferData(page.ok ? pageText : c.emailText) };
           const partial: EnrichResult = {
-            enrichStatus: "partial",
-            enrichReason: "Erreur d'analyse — fiche basée sur l'e-mail" + enrichmentMark,
+            enrichStatus: page.ok && isCompleteOffer(grounded) ? "ok" : "partial",
+            enrichReason: page.ok ? "Fiche extraite de l’annonce ; analyse IA indisponible" : "Fiche extraite de l’e-mail ; page inaccessible",
+            enrichedAt: new Date().toISOString(),
+            data: grounded,
           };
           results.set(c.id, partial);
-          if (!opts.skipCache) await saveEnrichCache(cacheKey, partial);
+          if (page.ok && !opts.skipCache) await saveEnrichCache(cacheKey, partial);
           continue;
         }
 
+        if (row && !row.title?.trim()) row = { ...row, title: c.title };
         const useful = isUsefulEnrichRow(row);
         const okResult: EnrichResult = useful
           ? {
-              enrichStatus: "ok",
+              enrichStatus: page.ok && isCompleteOffer(row) ? "ok" : "partial",
               enrichReason:
                 page.ok || enrichmentMark
                   ? page.ok
@@ -1488,7 +1534,7 @@ export async function enrichProcessed(
                   : "Analyse sans données exploitables — fiche basée sur la page",
             };
         results.set(c.id, okResult);
-        if (!opts.skipCache) await saveEnrichCache(cacheKey, okResult);
+        if (page.ok && !opts.skipCache) await saveEnrichCache(cacheKey, okResult);
       } catch (e) {
         results.set(c.id, {
           enrichStatus: "partial",
@@ -1504,7 +1550,7 @@ export async function enrichProcessed(
     a.offers.forEach((o, idx) => {
       const r = results.get(`${a.id}#${idx}`);
       if (!r) return;
-      applyEnrichData(o, r);
+      applyEnrichData(o, r, opts.cvText ?? "");
     });
   }
   counts.tried = results.size;
@@ -1604,6 +1650,7 @@ export function classifyImportBatch(offers: ImportOfferLike[]): ImportClass[] {
 /* ── Orchestration sync ────────────────────────────────────────── */
 
 export type RunSyncOptions = {
+  completedEmailIds?: string[];
   accessToken: string;
   label: { id: string; name: string };
   /** Traite aussi les emails marqués done (re-sync complète). */
@@ -1647,6 +1694,8 @@ export async function runSync(opts: RunSyncOptions): Promise<SyncOutcome> {
 }
 
 async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
+  // Le budget inclut la lecture Gmail et des checkpoints, pas seulement l’IA.
+  const deadlineAt = opts.deadlineMs && opts.deadlineMs > 0 ? Date.now() + opts.deadlineMs : null;
   const metaFor = async (id: string) => {
     const cp = await loadCheckpoint(id);
     if (!cp?.subject) return null;
@@ -1660,6 +1709,9 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
      en cas d'interruption (les skip/meta ne comptent pas). */
   let plannedFull = 0;
   const fetched = await fetchLabelEmails(opts.accessToken, opts.label, {
+    maxFullMessages: opts.maxProcess,
+    excludeIds: opts.completedEmailIds,
+    deadlineAt: deadlineAt ? Math.min(deadlineAt - 20_000, Date.now() + 30_000) : undefined,
     resolveMode: async (id) => {
       /* P1-4 enrichOnly : aucun e-mail à (re)détecter — lecture seule. */
       if (opts.enrichOnly) {
@@ -1701,7 +1753,7 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
      « N nouveaux reçus pendant la synchro » (P1-1). */
   const runKey = opts.userKey ? `gmail:run:${opts.userKey}` : null;
   const runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  const snapshotIds = emails.map((e) => e.id);
+  const snapshotIds = [...new Set([...(opts.completedEmailIds ?? []), ...(fetched.listedIds ?? emails.map((e) => e.id))])];
   const truncated = fetched.truncated === true;
   if (runKey) {
     await storeSet(
@@ -1729,8 +1781,6 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
 
   /* Deadline murale (P0-5) : on s'arrête PROPREMENT avant la coupure
      plateforme — la réserve laisse la main à l'enrichissement final. */
-  const deadlineAt =
-    opts.deadlineMs && opts.deadlineMs > 0 ? Date.now() + opts.deadlineMs : null;
   const ENRICH_RESERVE_MS = 20_000;
 
   /* Garde-fou : des messages listés mais AUCUN lisible = bug de fetch (400…).
@@ -1777,12 +1827,13 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
   }
 
   const emailsOut: ProcessedEmail[] = [];
+  const changedIds = new Set<string>();
   let processedThisRun = 0;
   let skippedDone = 0;
   let errors = 0;
   let pendingRetry = 0;
   let doneCount = 0;
-  let interrupted = false;
+  let interrupted = (fetched.deferred ?? 0) > 0;
 
   const maxProcess = opts.maxProcess ?? emails.length;
   const only = opts.onlyEmailIds && opts.onlyEmailIds.length > 0 ? new Set(opts.onlyEmailIds) : null;
@@ -1890,8 +1941,10 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
         fetchImpl: opts.fetchImpl,
         sleepImpl: opts.sleepImpl,
         models: opts.models,
+        deadlineAt: deadlineAt ? Math.min(deadlineAt - 15_000, Date.now() + 25_000) : undefined,
       });
       emailsOut.push(processed);
+      changedIds.add(email.id);
       processedThisRun++;
       if (processed.finalStatus === "analyze_error") errors++;
     } catch (e) {
@@ -1936,6 +1989,7 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
   let enrichDeferred = false;
   let enrichRetry: EnrichCounts | undefined;
   if (!opts.skipEnrich) {
+    const beforeEnrich = new Map(emailsOut.map(item => [item.id, JSON.stringify(item.offers)]));
     /* Budget restant sous la deadline → l'enrichissement ne dépasse jamais
        la coupure ; sinon il est signalé comme reporté (pas perdu en silence). */
     const enrichBudget = deadlineAt ? deadlineAt - Date.now() : undefined;
@@ -1950,11 +2004,9 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
         retryOnly: opts.enrichOnly === true,
       }).catch(() => null);
       if (counts && opts.enrichOnly) enrichRetry = counts;
-/* Persister enrichStatus dans les checkpoints (processEmail écrit avant enrich). */
+      // Seules les fiches modifiées ont besoin d’une nouvelle écriture.
       for (const a of emailsOut) {
-        if (!a.isOffer || a.offers.length === 0) continue;
-        const cp = await loadCheckpoint(a.id);
-        if (cp) await saveCheckpoint(a.id, { ...cp, offers: a.offers });
+        if (JSON.stringify(a.offers) !== beforeEnrich.get(a.id)) changedIds.add(a.id);
       }
     }
   }
@@ -1977,7 +2029,7 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
   for (const e of emailsOut) {
     for (const o of e.offers) {
       const c = classes[classIdx++];
-      if (c) {
+      if (c && changedIds.has(e.id)) {
         o.importStatus = c.status;
         if (c.reason) o.importReason = c.reason;
       }
@@ -1988,6 +2040,7 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
   /* Persister importStatus/classification dans les checkpoints — sans cela le
      dashboard affiche toujours « 0 importées / 0 doublons » (champs en mémoire). */
   for (const e of emailsOut) {
+    if (!changedIds.has(e.id)) continue;
     if (!e.offers.some((o) => o.importStatus)) continue;
     const cp = await loadCheckpoint(e.id);
     if (cp) await saveCheckpoint(e.id, { ...cp, offers: e.offers });
@@ -2014,7 +2067,7 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
     }
   }
 
-  const remaining = Math.max(0, plannedFull - processedThisRun);
+  const remaining = Math.max(0, plannedFull - processedThisRun, fetched.deferred ?? 0);
 
   const summary: SyncSummaryGlobal = {
     emailsRead: emailsOut.length,

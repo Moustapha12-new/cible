@@ -125,17 +125,25 @@ export function offerToOfferText(offer: OfferLike): string {
 export function offerToDetectedOffer(offer: OfferLike, match = 0): DetectedOffer {
   const text = offerToOfferText(offer);
   return {
-    id: `gmail-${offerBridgeKey(offer).slice(0, 48).replace(/[^\w:-]+/g, "_")}`,
+    id: `gmail-${encodeURIComponent(offerBridgeKey(offer))}`,
     title: offer.title || "Offre Gmail",
     company: offer.company || "Entreprise non précisée",
     location: offer.location || "",
     salary: offer.salary || "",
     match: Math.max(0, Math.min(100, Math.round(match))),
-    keywords: (offer.keywords?.length ? offer.keywords : offer.skills || []).slice(0, 8),
+    keywords: [...new Set([...(offer.skills || []), ...(offer.keywords || [])])].slice(0, 40),
     text,
     summary: offer.summary || undefined,
     url: offer.applicationUrl || undefined,
     source: offer.source || "Alertes Gmail",
+    contract: offer.contract,
+    duration: offer.duration,
+    description: offer.description,
+    missions: offer.missions,
+    skills: offer.skills,
+    prerequisites: offer.prerequisites,
+    profile: offer.profile,
+    enrichStatus: offer.enrichStatus,
   };
 }
 
@@ -160,6 +168,7 @@ export function saveCandidature(email: string, state: CandidatureState): Candida
   all[next.key] = next;
   try {
     window.localStorage.setItem(candKeyFor(email), JSON.stringify(all));
+    window.dispatchEvent?.(new CustomEvent("cible:data-changed", { detail: { email } }));
   } catch {
     /* quota — non bloquant */
   }

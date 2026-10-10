@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { securedRoute } from "@/lib/auth-server";
+import { NextResponse } from "next/server";
 import { storeGet } from "@/lib/gmail-server";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +16,8 @@ type ProgressSnap = {
 
 /** Progression légère du run en cours (P0-9) : 1 lecture de stockage —
     pensé pour un poll toutes les ~3 s pendant la synchronisation. */
-export async function GET(req: NextRequest) {
-  const email = (new URL(req.url).searchParams.get("email") || "").trim().toLowerCase();
+export const GET = securedRoute(async (req, auth) => {
+  const email = auth.user.email;
   if (!email) {
     return NextResponse.json({ ok: false, error: "Compte utilisateur manquant" }, { status: 400 });
   }
@@ -42,4 +43,4 @@ export async function GET(req: NextRequest) {
     /* best-effort : jamais bloquant pour l'UI */
     return NextResponse.json({ ok: true, running: false });
   }
-}
+});

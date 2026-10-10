@@ -1,0 +1,5 @@
+.gmail-tokens export-ignore
+.env* export-ignore
+_backup_secrets_* export-ignore
+*.zip export-ignore
+scripts/_set-supabase-env.mjs export-ignore

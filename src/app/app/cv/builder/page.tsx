@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { getOrCreateData, saveData, type UserData } from "@/lib/data";
 import { AppPageHead, NAV_LABEL } from "@/components/app/AppShell";
+import CvPreview from "@/components/cv/CvPreview";
 import LoadingState from "@/components/alertes-gmail/LoadingState";
 import { AI_LABEL } from "@/lib/ai-labels";
 import { removeAiPhrases, type AiPhraseReport } from "@/lib/facts";
 import {
-  cvBodyHtml,
+  DEFAULT_CV_DESIGN,
   cvDocumentHtml,
-  cvStyles,
+
   numbersSafe,
   parseCvText,
   type CvData,
@@ -52,6 +53,8 @@ const emptyCv = (): CvData => ({
 const cvToText = (cv: CvData): string =>
   [
     cv.basics.name,
+    cv.basics.headline,
+    cv.basics.target,
     cv.basics.contact,
     cv.summary,
     ...cv.sections.map((s) =>
@@ -67,7 +70,8 @@ export default function CvBuilderPage() {
   const { user } = useAuth();
   const [data, setData] = useState<UserData | null>(null);
   const [cv, setCv] = useState<CvData | null>(null);
-  const [design, setDesign] = useState<CvDesign>({ template: "design", accent: "#0b6b4f", fontSize: 11 });
+  const [version, setVersion] = useState<"original" | "corrected">("corrected");
+  const [design, setDesign] = useState<CvDesign>(DEFAULT_CV_DESIGN);
   const [toast, setToast] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
@@ -123,7 +127,12 @@ export default function CvBuilderPage() {
     if (!user) return;
     const id = window.setTimeout(() => {
       const d = getOrCreateData(user.name, user.email);
+      if (!d.cvPreservedData && (d.cvData || d.originalCv?.text)) {
+        d.cvPreservedData = d.cvData ?? parseCvText(d.originalCv!.text);
+        saveData(user.email, d);
+      }
       setData(d);
+      setDesign(d.cvDesign ?? DEFAULT_CV_DESIGN);
       setCv(d.cvData ?? (d.originalCv?.text ? parseCvText(d.originalCv.text) : emptyCv()));
     }, 0);
     return () => window.clearTimeout(id);
@@ -144,6 +153,14 @@ export default function CvBuilderPage() {
     const nd: UserData = { ...data, cvData: next };
     setData(nd);
     saveData(user!.email, nd);
+  };
+
+  const changeDesign = (next: CvDesign) => {
+    setDesign(next);
+    const latest = getOrCreateData(user!.name, user!.email);
+    const updated = { ...latest, cvDesign: next };
+    saveData(user!.email, updated);
+    setData(updated);
   };
 
   const mutateSection = (key: string, fn: (s: CvSection) => CvSection) =>
@@ -632,8 +649,7 @@ export default function CvBuilderPage() {
       return;
     }
     w.document.write(
-      cvDocumentHtml(cv, design, `${cv.basics.name || "cv"} — ${offer?.company ?? "cible."}`) +
-        "<script>window.onload=()=>setTimeout(()=>window.print(),250)</script>"
+      cvDocumentHtml(cv, design, `${cv.basics.name || "cv"} — ${offer?.company ?? "cible."}`, true)
     );
     w.document.close();
   };
@@ -663,13 +679,23 @@ export default function CvBuilderPage() {
     reader.readAsText(file);
   };
 
+  const versionButtons = <div className="flex flex-wrap gap-3 mb-6" aria-label="Versions du CV">
+    <button className={version === "corrected" ? "btn-primary" : "btn-line"} onClick={() => setVersion("corrected")} aria-pressed={version === "corrected"}>Nouvelle version · vert professionnel</button>
+    <button className={version === "original" ? "btn-primary" : "btn-line"} onClick={() => setVersion("original")} aria-pressed={version === "original"}>Version originale · conservée</button>
+  </div>;
+  if (version === "original") {
+    const original = data.cvPreservedData ?? (data.originalCv?.text ? parseCvText(data.originalCv.text) : cv);
+    const classic: CvDesign = { template: "design", accent: "#0b6b4f", fontSize: 11 };
+    return <><AppPageHead eyebrow="Mes deux versions" title="Mon CV original" sub="Ton contenu original est conservé. Les corrections se font dans la nouvelle version." />{versionButtons}<div className="glass-card p-6 max-w-4xl"><CvPreview cv={original} design={classic} /><button className="btn-line mt-5" onClick={() => { const w = window.open("", "_blank"); if (w) { w.document.write(cvDocumentHtml(original, classic, "CV original", true)); w.document.close(); } }}>PDF de la version originale</button></div></>;
+  }
+
   const input = "w-full rounded-lg border border-line bg-surface px-3 py-2 text-[0.85rem] focus:border-mint/60 outline-none";
 
   return (
     <>
       <AppPageHead
         eyebrow={`${NAV_LABEL["/app/cv"]} · Builder`}
-        title="Builder CV"
+        title="Mon CV · nouvelle version"
         sub="Données à gauche, aperçu live au centre, design à droite. L'IA propose, tu appliques — le PDF sort exactement de l'aperçu."
       />
       <p className="text-[0.8rem] text-muted mb-4">
@@ -678,8 +704,9 @@ export default function CvBuilderPage() {
         {data.originalCv?.text ? "chargé depuis ton CV original — corrige ce que le parseur a mal lu" : "espace vide — colle ton CV dans CV intelligent puis reviens"}
       </p>
 
+      {versionButtons}
       <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_260px] gap-5 items-start">
-        {/* ─── PANNEAU GAUCHE : IA + données ─── */}
+      {/* ─── PANNEAU GAUCHE : IA + données ─── */}
         <div className="space-y-5 min-w-0">
           {/* IA */}
           <section className="glass-card p-5">
@@ -719,10 +746,10 @@ export default function CvBuilderPage() {
               </>
             )}
 
-            {/* Score ATS pondéré */}
+            {/* Correspondance interne pondéré */}
             {atsScore && (
               <div className="mt-4 border-t border-line pt-4">
-                <p className="mono-label mb-2">Score ATS pondéré</p>
+                <p className="mono-label mb-2">Correspondance interne pondéré</p>
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl font-bold text-mint">{atsScore.score}</span>
                   <span className="text-[0.78rem] text-muted">/ 100</span>
@@ -980,6 +1007,7 @@ export default function CvBuilderPage() {
             <h2 className="font-display text-base font-semibold">En-tête</h2>
             <input className={input} value={cv.basics.name} onChange={(e) => persist({ ...cv, basics: { ...cv.basics, name: e.target.value } })} placeholder="Nom complet" />
             <input className={input} value={cv.basics.headline} onChange={(e) => persist({ ...cv, basics: { ...cv.basics, headline: e.target.value } })} placeholder="Titre professionnel" />
+            <input className={input} aria-label="Objectif de candidature" value={cv.basics.target || ""} onChange={e => persist({ ...cv, basics: { ...cv.basics, target: e.target.value } })} placeholder="Candidature — stage de 6 mois · poste visé" />
             <input className={input} value={cv.basics.contact} onChange={(e) => persist({ ...cv, basics: { ...cv.basics, contact: e.target.value } })} placeholder="Ville · e-mail · téléphone" />
             <textarea className={input} rows={3} value={cv.summary} onChange={(e) => persist({ ...cv, summary: e.target.value })} placeholder="Profil / résumé" />
           </section>
@@ -1016,8 +1044,7 @@ export default function CvBuilderPage() {
         <div className="xl:sticky xl:top-6">
           <div className="glass-card p-4">
             <p className="mono-label mb-3">Aperçu live — identique au PDF</p>
-            <style dangerouslySetInnerHTML={{ __html: cvStyles(design) }} />
-            <div className="cvdoc bg-white rounded-lg shadow-lg p-8 min-h-[600px]" dangerouslySetInnerHTML={{ __html: cvBodyHtml(cv) }} />
+            <CvPreview cv={cv} design={design} />
           </div>
         </div>
 
@@ -1026,20 +1053,20 @@ export default function CvBuilderPage() {
           <section className="glass-card p-5 space-y-4">
             <h2 className="font-display text-base font-semibold">Design</h2>
             <div className="space-y-2">
-              {(["design", "ats", "compact"] as const).map((t) => (
+              {(["professional", "grey", "design", "ats", "compact"] as const).map((t) => (
                 <label key={t} className="flex items-center gap-2 text-[0.82rem]">
-                  <input type="radio" name="tpl" checked={design.template === t} onChange={() => setDesign({ ...design, template: t })} className="accent-[#0b6b4f]" />
-                  {t === "design" ? "Design (serif, accent)" : t === "ats" ? "ATS (sobre, robots)" : "Compact (dense)"}
+                  <input type="radio" name="tpl" checked={design.template === t} onChange={() => changeDesign({ ...design, template: t })} className="accent-[#0b6b4f]" />
+                  {t === "professional" ? "Vert professionnel · ton nouveau modèle" : t === "grey" ? "Gris professionnel · ton modèle Canva" : t === "design" ? "Design (serif, accent)" : t === "ats" ? "ATS (sobre, robots)" : "Compact (dense)"}
                 </label>
               ))}
             </div>
             <label className="flex items-center justify-between gap-3 text-[0.82rem]">
               Couleur
-              <input type="color" value={design.accent} onChange={(e) => setDesign({ ...design, accent: e.target.value })} className="w-10 h-8 rounded cursor-pointer" />
+              <input type="color" value={design.accent} onChange={(e) => changeDesign({ ...design, accent: e.target.value })} className="w-10 h-8 rounded cursor-pointer" />
             </label>
             <label className="flex items-center justify-between gap-3 text-[0.82rem]">
               Taille : {design.fontSize}pt
-              <input type="range" min={9} max={13} step={0.5} value={design.fontSize} onChange={(e) => setDesign({ ...design, fontSize: Number(e.target.value) })} className="accent-[#0b6b4f] w-28" />
+              <input type="range" min={9} max={13} step={0.5} value={design.fontSize} onChange={(e) => changeDesign({ ...design, fontSize: Number(e.target.value) })} className="accent-[#0b6b4f] w-28" />
             </label>
           </section>
 

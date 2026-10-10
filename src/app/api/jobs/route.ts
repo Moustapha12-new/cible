@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { PFE_TARGET, pfeEligibility } from "@/lib/pfe-target";
+import { securedRoute } from "@/lib/auth-server";
+import { NextResponse } from "next/server";
 import {
   dedupeOffers,
   mapJobicy,
@@ -46,12 +48,15 @@ async function fetchJobicy(q: string): Promise<JobOffer[]> {
   return mapJobicy((data.jobs ?? []) as never);
 }
 
-export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams.get("q")?.trim() || "alternance";
+export const GET = securedRoute(async (req) => {
+  const q = req.nextUrl.searchParams.get("q")?.trim() || PFE_TARGET.query;
   const l = req.nextUrl.searchParams.get("l")?.trim() || "France";
 
   const [li, re, jb] = await Promise.allSettled([
-    fetchLinkedin(q, l),
+    Promise.allSettled((q === PFE_TARGET.query ? [q, "stage ingénieur nucléaire électricité", "stage ingénieur énergies renouvelables", "stage ingénieur réseaux électriques automatisme"] : [q]).map(query => fetchLinkedin(query, l))).then(results => {
+      if (results.every(r => r.status === "rejected")) throw new Error("LinkedIn indisponible");
+      return results.flatMap(r => r.status === "fulfilled" ? r.value : []);
+    }),
     fetchRemotive(q),
     fetchJobicy(q),
   ]);
@@ -66,10 +71,10 @@ export async function GET(req: NextRequest) {
     ...(li.status === "fulfilled" ? li.value : []),
     ...(re.status === "fulfilled" ? re.value : []),
     ...(jb.status === "fulfilled" ? jb.value : []),
-  ]).slice(0, 24);
+  ]).map(o => ({ ...o, eligibility: pfeEligibility(o) })).filter(o => o.eligibility.status !== "excluded");
 
   return NextResponse.json(
-    { q, l, count: offers.length, offers, errors },
+    { q, l, target: PFE_TARGET, count: offers.length, offers, errors },
     { headers: { "Cache-Control": "no-store" } }
   );
-}
+});

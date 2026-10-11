@@ -2876,8 +2876,7 @@ textarea.input { height: auto; padding: 14px 16px; line-height: 1.65; resize: ve
 .dossier-layout > aside > * + * { margin-top: 0; }
 .readiness-section { container-type: inline-size; }
 .readiness-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; align-items: stretch; }
-@container (min-width: 560px) { .readiness-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
-@container (min-width: 1000px) { .readiness-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@container (min-width: 700px) { .readiness-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 .dossier-score { font-size: 48px; font-weight: 600; letter-spacing: -.05em; color: #205c3c; margin: 15px 0 8px; }
 .mentor-note { background: #edf1df; border: 1px solid #dee5cf; color: #374730; border-radius: 18px; padding: 25px; }
 .application-board { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; align-items: start; }

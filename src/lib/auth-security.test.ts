@@ -29,6 +29,7 @@ const calls: string[] = [];
 let quotaAvailable = true;
 let quotaAllowed = true;
 let authAvailable = true;
+let geminiRateLimited = false;
 process.env.SUPABASE_URL = "https://auth-fixture.invalid";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_secret_testfixture";
 process.env.SUPABASE_SECRET_KEY = "sb_secret_testfixture";
@@ -39,6 +40,7 @@ const request = (path: string, method = "GET", token = "", body?: object, custom
 });
 globalThis.fetch = async (input, init) => {
   const url = String(input instanceof Request ? input.url : input);
+  if (geminiRateLimited && url.startsWith("https://generativelanguage.googleapis.com/")) return Response.json({ error: { message: "Fixture rate limit" } }, { status: 429 });
   if (!url.startsWith("https://auth-fixture.invalid/")) throw new Error("Unexpected external request blocked by security test");
   calls.push(url);
   if (url.includes("/auth/v1/token?") || url.endsWith("/auth/v1/verify")) return Response.json({ access_token: "alice", refresh_token: "refresh-fixture", expires_in: 3600, token_type: "bearer", user: { id: "alice-id", email: "alice@example.test", email_confirmed_at: "2026-01-01", user_metadata: {} } });
@@ -95,6 +97,13 @@ async function main() {
   assert.equal((await ai(request("/api/ai", "POST", "alice", { task: "letter" }))).status, 429);
   assert.match(humanizeGmailError(new Error("HTTP 429")).human, /Limite de requêtes atteinte/);
   quotaAllowed = true;
+  geminiRateLimited = true;
+  process.env.GEMINI_API_KEY = "fixture-key";
+  const aiLimited = await ai(request("/api/ai", "POST", "alice", { task: "letter", cvOriginal: "Synthetic CV", offerText: "Synthetic internship offer with enough details to prepare a letter." }));
+  assert.equal(aiLimited.status, 429, "provider limit is distinct from application quota");
+  assert.equal((await aiLimited.json()).code, "AI_QUOTA");
+  geminiRateLimited = false;
+  delete process.env.GEMINI_API_KEY;
   const own = await authorizeApi(request("/api/gmail/progress", "GET", "alice"));
   assert.equal(own.user?.email, "alice@example.test");
   const result = await disconnect(request("/api/gmail/disconnect", "DELETE", "alice"));

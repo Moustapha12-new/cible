@@ -28,6 +28,8 @@ export default function AdaptationPage() {
   const [view, setView] = useState<"compare" | "preview">("compare");
   const [design, setDesign] = useState<CvDesign>(DEFAULT_CV_DESIGN);
   const [orientation, setOrientation] = useState<"electrical" | "energy">("electrical");
+  const [manualOriginal, setManualOriginal] = useState("");
+  const [manualProposed, setManualProposed] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -104,6 +106,21 @@ export default function AdaptationPage() {
     setDraft({ ...draft, sectionOrder: order, hiddenSections: hidden });
     setDirty(true); setNotice("");
   }
+  function startManualDraft(message = "Brouillon manuel prêt. Choisis un extrait exact de ton CV, puis écris ta proposition.") {
+    if (!data || !offer || !matching || !master || stale) return;
+    const next: CvAdaptation = { id: id(), offerId, createdAt: now(), updatedAt: now(), status: "draft", orientation, masterFingerprint: matching.fingerprint, matchingFingerprint: matching.fingerprint, matchingAnalyzedAt: matching.analyzedAt, selectedEvidenceIds: [...matching.selectedEvidenceIds], unverifiedTerms: matching.requirements.filter(row => row.match !== "prouvée" && row.match !== "citée dans le CV").map(row => row.term), proofText, masterText: master, headline: "", suggestions: [] };
+    persist(next); setView("compare"); setNotice(message);
+  }
+  function addManualChange() {
+    if (!draft || draft.status !== "draft") return;
+    const change: CvChange = { id: `manual-${id()}`, section: "CV · modification personnelle", original: manualOriginal.trim(), proposed: manualProposed.trim(), reason: "Modification rédigée par toi pour cette offre.", source: "CV maître", decision: "pending" };
+    const issues = validateCvChange(change, draft.masterText, draftProofText, draft.unverifiedTerms);
+    if (change.original === change.proposed) issues.push("La proposition doit modifier l'extrait de départ.");
+    if (issues.length) { setError(issues.join(" ")); return; }
+    setDraft({ ...draft, suggestions: [...draft.suggestions, change] });
+    setManualOriginal(""); setManualProposed(""); setDirty(true); setError(""); setNotice("Modification ajoutée. Relis-la, accepte-la ou refuse-la, puis enregistre le brouillon.");
+    setView("compare");
+  }
   async function generate() {
     if (!data || !offer || !matching || !master || busy || stale) return;
     if (draft?.status === "draft" && !window.confirm("Créer une nouvelle proposition ? Le brouillon actuel sera conservé dans l'historique.")) return;
@@ -118,6 +135,12 @@ export default function AdaptationPage() {
         forceKeywords: matching.requirements.filter(row => row.evidenceIds.some(evidenceId => matching.selectedEvidenceIds.includes(evidenceId))).map(row => row.term),
       }) });
       const body = await response.json();
+      if (response.status === 429 || body.code === "AI_QUOTA") {
+        startManualDraft(body.code === "AI_QUOTA"
+          ? "Gemini a atteint sa limite de requêtes. Ton brouillon manuel est prêt ; l'IA pourra être réessayée plus tard."
+          : "La limite de requêtes de l'application est atteinte. Ton brouillon manuel est prêt ; réessaie l'IA plus tard.");
+        return;
+      }
       if (!response.ok || !body.ok) throw new Error(body.error || "Gemini est indisponible. Ton travail enregistré est conservé.");
       const rawChanges = Array.isArray(body.result?.changes) ? body.result.changes : [];
       const headline = typeof body.result?.headline === "string" ? body.result.headline.trim() : "";
@@ -184,11 +207,13 @@ export default function AdaptationPage() {
       </label>
       {draft && <p className="text-xs text-text-dim">Version du {new Date(draft.createdAt).toLocaleString("fr-FR")} · {draft.status === "approved" ? "validée" : "brouillon"} · orientation {draft.orientation === "energy" ? "énergie / ENR" : "génie électrique / études"} · matching du {new Date(draft.matchingAnalyzedAt).toLocaleDateString("fr-FR")}</p>}
       {draftStale && <p className="text-amber-700">Cette proposition utilise une ancienne version de l'offre, du CV ou des preuves. Tu peux la consulter, mais crée une nouvelle proposition après actualisation du matching.</p>}
+      <button className="btn-line" type="button" disabled={!offer || !matching || !master || stale || busy} onClick={() => { if (draft?.status === "draft" && !window.confirm("Créer un nouveau brouillon manuel ? Le brouillon actuel sera conservé dans l'historique.")) return; startManualDraft(); }}>Préparer sans IA</button>
       {notice && <p role="status" className="text-mint text-sm">{notice}</p>}{error && <p role="alert" className="text-amber-700 text-sm">{error}</p>}
       {versions.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Historique des versions">{versions.map(version => <button type="button" key={version.id} className={`btn-line text-xs ${draft?.id === version.id ? "border-mint" : ""}`} onClick={() => { if (dirty && !window.confirm("Quitter sans enregistrer ?")) return; setDraft(version); setDirty(false); setError(""); }}>{new Date(version.createdAt).toLocaleDateString("fr-FR")} · {version.status === "approved" ? "CV validé" : "brouillon"}</button>)}</div>}
     </section>
 
     {draft && <>
+      {draft.status === "draft" && <section className="glass-card p-5 space-y-4" aria-labelledby="manual-change-heading"><div><h2 id="manual-change-heading" className="font-display text-xl">Ajouter une modification personnelle</h2><p className="text-sm text-text-dim">Copie une phrase exacte du CV maître, puis reformule-la. Les faits, dates et compétences sont contrôlés avant l'ajout.</p></div><label className="block text-sm font-semibold" htmlFor="manual-original">Extrait exact du CV maître</label><textarea id="manual-original" className="input w-full min-h-24" value={manualOriginal} onChange={event => setManualOriginal(event.target.value)} /><label className="block text-sm font-semibold" htmlFor="manual-proposed">Ma proposition pour cette offre</label><textarea id="manual-proposed" className="input w-full min-h-24" value={manualProposed} onChange={event => setManualProposed(event.target.value)} /><button type="button" className="btn-primary" onClick={addManualChange} disabled={!manualOriginal.trim() || !manualProposed.trim()}>Ajouter et contrôler</button></section>}
       <div className="flex gap-2"><button type="button" className="btn-line" aria-pressed={view === "compare"} onClick={() => setView("compare")}>Comparer les changements</button><button type="button" className="btn-line" aria-pressed={view === "preview"} onClick={() => setView("preview")}>Voir le CV A4</button></div>
       {view === "compare" ? <section className="space-y-4">
         <div className="grid md:grid-cols-2 gap-4"><div className="glass-card p-5"><h2 className="font-display text-lg mb-3">CV maître · référence</h2><pre className="whitespace-pre-wrap text-sm text-text-dim font-sans max-h-96 overflow-auto">{draft.masterText}</pre></div><div className="glass-card p-5"><h2 className="font-display text-lg mb-3">CV ciblé · aperçu texte</h2><pre className="whitespace-pre-wrap text-sm text-text-dim font-sans max-h-96 overflow-auto">{assembled.text}</pre></div></div>

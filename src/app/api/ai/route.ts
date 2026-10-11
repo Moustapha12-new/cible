@@ -73,6 +73,9 @@ export const POST = securedRoute(async (req) => {
     return NextResponse.json({ ok: true, result }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
+    if (/Gemini .* HTTP 429/.test(msg)) {
+      return NextResponse.json({ ok: false, code: "AI_QUOTA", error: "Le service IA a atteint sa limite de requêtes. Tu peux préparer ton CV manuellement dans l'atelier et réessayer l'IA plus tard." }, { status: 429, headers: { "Cache-Control": "no-store" } });
+    }
     return NextResponse.json({ ok: false, error: msg }, { status: 502 });
   }
 });

@@ -31,15 +31,6 @@ import { loadSnapshot, saveSnapshot } from "@/lib/gmail-snapshot";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/gmail/dashboard?email=<email>[&fresh=1]
- * Lecture seule (pas de processEmail / IA) : liste les e-mails du libellé
- * et reconstruit l'état depuis les checkpoints Module 1.
- * P0-4 : sans `fresh=1`, sert le snapshot persisté (~2 lectures stockage) ;
- * `?fresh=1` (post-sync) reconstruit puis réécrit le snapshot.
- * P0-5 : le payload est allégé (snippet/sourceUrl → GET /api/gmail/offer-detail).
- * Cache checkpoints borné à la requête (P1-3) : try/finally → endCheckpointCache
- * garanti sur tous les chemins de sortie.
- */
 export const GET = securedRoute(async (req, auth) => {
   beginCheckpointCache();
   try {
@@ -50,19 +41,28 @@ export const GET = securedRoute(async (req, auth) => {
 });
 
 async function handleDashboard(req: NextRequest, owner: string) {
+  beginCheckpointCache();
+  try {
+    return await handleDashboardInner(req, owner);
+  } finally {
+    endCheckpointCache();
+  }
+}
+
+async function handleDashboardInner(req: NextRequest, owner: string) {
   const url = new URL(req.url);
-  const query = new URLSearchParams(url.search);
+  const query = new URLSearchParams(req.url);
   query.set("email", owner);
   const q = parseDashboardQuery(query.toString());
   if (!q.ok) {
     return NextResponse.json({ ok: false, error: q.error }, { status: 400 });
   }
   const email = owner;
-  const fresh = url.searchParams.get("fresh") === "1";
+  const fresh = req.nextUrl.searchParams.get("fresh") === "1";
 
   const configured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   if (!configured) {
-    const payload: DashboardPayload = {
+    const payload = {
       ok: true,
       labelFound: false,
       label: GMAIL_LABEL,
@@ -76,61 +76,90 @@ async function handleDashboard(req: NextRequest, owner: string) {
     return NextResponse.json(payload);
   }
 
-  // Snapshot et informations OAuth lus ensemble : pas de round-trip série.
   const [snapR, tokR, connR] = await Promise.allSettled([
     loadSnapshot(email),
     getAccessToken(email),
     getOauthConnection(email),
   ]);
   if (snapR.status === "rejected") throw snapR.reason;
+
+  let accessToken: string | null = null;
+  let connected = true;
+  let reason: string | undefined;
+  let detail: string | undefined;
+
   if (tokR.status === "rejected") {
     const h = humanizeGmailError(tokR.reason);
+    const basePayload = {
+      ok: true,
+      labelFound: false,
+      label: GMAIL_LABEL,
+      totalInLabel: 0,
+      connected: false,
+      configured: true,
+      reason: h.human,
+      detail: h.detail,
+      emails: [],
+      summary: emptySummary(),
+    };
+
     if (snapR.status === "fulfilled" && snapR.value) {
-      return NextResponse.json({ ...snapR.value, connected: false, configured: true, reason: h.human, detail: h.detail });
+      return NextResponse.json({
+        ...snapR.value,
+        connected: false,
+        configured: true,
+        reason: `Session Gmail expirée : ${h.human}. Vos offres existantes restent accessibles.`,
+        detail: h.detail,
+      });
     }
-    return NextResponse.json({ ok: true, labelFound: false, label: GMAIL_LABEL, totalInLabel: 0,
-      connected: false, configured: true, reason: h.human, detail: h.detail,
-      emails: [], summary: emptySummary() });
+    return NextResponse.json({
+      ...{ ok: true, labelFound: false, label: GMAIL_LABEL, totalInLabel: 0, connected: false, configured: true, reason: h.human, detail: h.detail, emails: [], summary: emptySummary() },
+      reason: `Session Gmail expirée : ${h.human}. Connectez votre compte pour synchroniser.`,
+      detail: h.detail,
+    });
   }
-  const accessToken = tokR.value;
+
   const conn = connR.status === "fulfilled" ? connR.value : null;
   const lastSync = conn?.lastSync ?? null;
   const gmailAccount = pickGmailDisplayAddress(conn?.gmailEmail, email) ?? email;
   const snap = snapR.status === "fulfilled" ? snapR.value : null;
   if (snap && !fresh) {
     return NextResponse.json({ ...snap, connected: true, configured: true,
-      gmailAccount, lastSync: lastSync ?? snap.lastSync ?? null, fromSnapshot: true });
+      gmailAccount: pickGmailDisplayAddress(snapR.value?.gmailAccount ?? "", email) ?? email, lastSync: lastSync ?? snap.lastSync ?? null, fromSnapshot: true });
   }
 
   let label: { id: string; name: string } | null = null;
   try {
-    label = await findLabel(accessToken, GMAIL_LABEL);
+    label = await findLabel(accessToken!, GMAIL_LABEL);
   } catch {
     label = null;
   }
 
   if (!label) {
-    const payload: DashboardPayload = {
+    const snap = snapR.status === "fulfilled" ? snapR.value : null;
+    const payload = {
       ok: true,
       labelFound: false,
       label: GMAIL_LABEL,
       totalInLabel: 0,
       connected: true,
       configured: true,
-      gmailAccount,
+      gmailAccount: pickGmailDisplayAddress(accessToken ? "" : "", email) ?? email,
       lastSync,
-      emails: [],
+      emails: snap?.emails ?? [],
       summary: emptySummary(lastSync ?? ""),
       hint: `Crée un libellé Gmail nommé exactement « ${GMAIL_LABEL} », puis synchronise.`,
     };
-    if (snap) return NextResponse.json({ ...snap, connected: true, configured: true, gmailAccount, lastSync, hint: payload.hint });
+    if (snap) return NextResponse.json({ ...snap, connected: true, configured: true, gmailAccount, lastSync, hint: "Crée un libellé Gmail nommé exactement « " + GMAIL_LABEL + " », puis synchronise." });
     return NextResponse.json(payload);
   }
 
-  let fetched: FetchLabelEmailsResult;
+  let labelFound = true;
+  const labelInfo = { id: label!.id, name: label!.name };
+
+  let fetched: any;
   try {
-    /* Quota : jamais de messages.get full ici — checkpoint meta ou headers seuls. */
-    fetched = await fetchLabelEmails(accessToken, label, {
+    const fetched = await fetchLabelEmails(accessToken!, label!, {
       resolveMode: async (id) => {
         const cp = await loadCheckpoint(id);
         return cp?.subject ? "skip" : "meta";
@@ -145,6 +174,7 @@ async function handleDashboard(req: NextRequest, owner: string) {
         };
       },
     });
+
     for (const em of fetched.emails) {
       const cp = await loadCheckpoint(em.id);
       if (cp && !cp.subject && em.subject) {
@@ -156,98 +186,74 @@ async function handleDashboard(req: NextRequest, owner: string) {
         });
       }
     }
-  } catch (e) {
-    const h = humanizeGmailError(e);
-    return NextResponse.json(
-      {
-        ok: false,
-        error: h.human,
-        ...(h.detail ? { detail: h.detail } : {}),
-      },
-      { status: 502 }
-    );
-  }
 
-  const emails: ProcessedEmail[] = [];
-  for (const em of fetched.emails) {
-    const cp = await loadCheckpoint(em.id);
-    if (cp?.status === "done" || cp?.status === "error" || cp?.status === "pending_retry") {
-      /* P0-5 : offres allégées (snippet/sourceUrl → offer-detail à la demande). */
-      const co = slimOffers(canonicalizeOffers(cp.offers ?? []));
-      emails.push(
-        stampAnalysis({
-        id: em.id,
-        subject: em.subject,
-        from: em.from,
-        receivedAt: em.receivedAt,
-        isOffer: cp.isOffer === true,
-        reason: cp.reason ?? (cp.isOffer ? "Traité (checkpoint)" : "Aucune offre de stage identifiée"),
-        finalStatus: cp.isOffer ? "detected" : cp.error ? "analyze_error" : "no_offer",
-        recoveryUsed: cp.recoveryUsed,
-        detectedByCode: cp.detectedByCode,
-        detSummary: cp.summary,
-        offers: co,
-        fromCheckpoint: true,
-        anchorsCount: cp.summary?.anchorsTotal,
-        detectedOffers: co.map((o) => ({
-          title: o.title,
-          company: o.company,
-          applicationUrl: o.applicationUrl,
-        })),
-        detectionMethod: (cp.detectedByCode ?? 0) > 0 ? "code" : cp.offers?.length ? "ia" : "none",
-        error: cp.error,
-        checkpoint: {
-          status: cp.status,
-          retries: cp.retries ?? 0,
-          at: cp.at,
-          recoveryUsed: cp.recoveryUsed,
-        },
-        })
-      );
-    } else {
-      /* Pas encore traité : on affiche l'e-mail sans inventer de résultat.
-         cp absent + reçu après le dernier sync = normal (pas une anomalie). */
-      const afterLastSync =
-        !cp && !!em.receivedAt && !!lastSync && em.receivedAt > lastSync;
-      emails.push(
-        stampAnalysis({
+    const emails: any[] = [];
+    for (const em of fetched.emails) {
+      const cp = await loadCheckpoint(em.id);
+      if (cp?.status === "done" || cp?.status === "error" || cp?.status === "pending_retry") {
+        const co = slimOffers(canonicalizeOffers(cp.offers ?? []));
+        const finalStatus = cp.isOffer ? "detected" : (cp.error ? "analyze_error" : "no_offer");
+        const detectionMethod = ((cp.detectedByCode ?? 0) > 0) ? "code" : (((cp.offers?.length ?? 0) > 0) ? "ia" : "none");
+        const analysisResult = stampAnalysis({
           id: em.id,
           subject: em.subject,
           from: em.from,
           receivedAt: em.receivedAt,
-          isOffer: false,
-          reason: cp?.reason ??
-            (afterLastSync
-              ? "Reçu après le dernier sync — lance la synchronisation"
-              : "Non traité — lance la synchronisation"),
-          finalStatus: "no_offer",
-          offers: [],
-          detectionMethod: "none",
-          checkpoint: cp
-            ? { status: cp.status, retries: cp.retries ?? 0, at: cp.at }
-            : { status: "pending", retries: 0, at: "" },
-        })
-      );
+          isOffer: cp.isOffer === true,
+          reason: cp.reason ?? (cp.isOffer ? "Traité (checkpoint)" : "Aucune offre de stage identifiée"),
+          finalStatus: cp.isOffer ? "detected" : (cp.error ? "analyze_error" : "no_offer"),
+          recoveryUsed: cp.recoveryUsed,
+          detectedByCode: cp.detectedByCode,
+          detSummary: cp.summary,
+          offers: co,
+          fromCheckpoint: true,
+          anchorsCount: cp.summary?.anchorsTotal,
+          detectedOffers: co.map((o) => ({
+            title: o.title,
+            company: o.company,
+            applicationUrl: o.applicationUrl,
+          })),
+          detectionMethod: ((cp.detectedByCode ?? 0) > 0) ? "code" : (((cp.offers?.length ?? 0) > 0) ? "ia" : "none"),
+          error: cp.error,
+          checkpoint: {
+            status: cp.status,
+            retries: cp.retries ?? 0,
+            at: cp.at,
+            recoveryUsed: cp.recoveryUsed,
+          },
+        });
+        emails.push(stampAnalysis(analysisResult));
+      }
     }
-  }
 
-  const catalogue = mergeCatalogue(snap?.emails ?? [], emails);
-  const summary = buildSummary(catalogue, lastSync, fetched.total);
-  const payload: DashboardPayload = {
-    ok: true,
-    labelFound: true,
-    label: GMAIL_LABEL,
-    totalInLabel: fetched.total,
-    connected: true,
-    configured: true,
-    gmailAccount,
-    lastSync,
-    emails: catalogue,
-    summary,
-    truncated: fetched.truncated === true,
-  };
-  /* P0-4 : la construction (post-sync ou premier passage) alimente le
-     snapshot — les prochains GET le servent sans reconstruire. */
-  await saveSnapshot(email, payload);
-  return NextResponse.json(payload);
+    const catalogue = mergeCatalogue(snapR.status === "fulfilled" ? snapR.value?.emails ?? [] : [], emails);
+    const summary = buildSummary(catalogue, null, fetched.total);
+    const payload = {
+      ok: true,
+      labelFound: true,
+      label: GMAIL_LABEL,
+      totalInLabel: fetched.total,
+      connected: true,
+      configured: true,
+      gmailAccount: pickGmailDisplayAddress(accessToken!, email),
+      lastSync: null,
+      emails: catalogue,
+      summary,
+      truncated: fetched.truncated === true,
+    };
+    await saveSnapshot(email, payload);
+    return NextResponse.json(payload);
+  } catch (e) {
+    const h = humanizeGmailError(e);
+    return NextResponse.json({
+      ok: false,
+      error: h.human,
+      emails: [],
+      labelFound: true,
+      label: GMAIL_LABEL,
+      totalInLabel: 0,
+      connected: true,
+      configured: true,
+    }, { status: 502 });
+  }
 }

@@ -2,12 +2,18 @@
 
 export const GMAIL_OAUTH_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
+/** Source unique de vérité pour l'URI de callback OAuth Gmail. */
+export function getGmailCallbackUri(origin: string): string {
+  return `${origin}/api/gmail/auth/callback`;
+}
+
 export function buildAuthUrl(origin: string, email: string, state: string): string {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) throw new Error("GOOGLE_CLIENT_ID manquant");
+  const redirectUri = getGmailCallbackUri(origin);
   const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: `${origin}/api/gmail/auth/callback`,
+    client_id: process.env.GOOGLE_CLIENT_ID!,
+    redirect_uri: getGmailCallbackUri(origin),
     response_type: "code",
     scope: GMAIL_OAUTH_SCOPE,
     access_type: "offline",
@@ -30,7 +36,7 @@ export async function exchangeCode(origin: string, code: string): Promise<TokenR
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) throw new Error("GOOGLE_CLIENT_ID/SECRET manquants");
-  const redirectUri = `${origin}/api/gmail/auth/callback`;
+  const redirectUri = getGmailCallbackUri(origin);
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

@@ -195,11 +195,12 @@ export const POST = securedRoute(async (req, auth) => {
   const [previous, connection] = await Promise.all([loadSnapshot(email), getOauthConnection(email).catch(() => null)]);
   const catalogue = mergeCatalogue(previous?.emails ?? [], emails);
   const lastSync = connection?.lastSync ?? outcome.summary.lastSync;
+  const totalInLabel = Math.max(outcome.totalInLabel, previous?.totalInLabel ?? 0);
   await saveSnapshot(email, {
     ok: true, connected: true, configured: true, labelFound: true,
-    label: outcome.label, totalInLabel: outcome.totalInLabel,
+    label: outcome.label, totalInLabel,
     gmailAccount: connection?.gmailEmail || email, lastSync,
-    emails: catalogue, summary: buildSummary(catalogue, lastSync, outcome.totalInLabel),
+    emails: catalogue, summary: buildSummary(catalogue, lastSync, totalInLabel),
     truncated: outcome.truncated === true,
   });
 
@@ -243,7 +244,7 @@ export const POST = securedRoute(async (req, auth) => {
     action,
     label: outcome.label,
     emailsRead: outcome.emailsRead,
-    totalInLabel: outcome.totalInLabel,
+    totalInLabel,
     detected: outcome.detected,
     emails,
     checkpointStats: outcome.checkpointStats,

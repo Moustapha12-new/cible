@@ -27,6 +27,7 @@ import {
   type FetchLike,
   type ProcessedEmail,
 } from "./gmail-core";
+import { listLabelIds } from "./gmail-server";
 import { normalizeUrl } from "./gmail-client";
 import { gzipSync } from "node:zlib";
 import {
@@ -424,7 +425,7 @@ async function main() {
     );
   }
 
-  /* Étape 3 — flag truncated : plafond MAX_MESSAGES (500) remonté. */
+  /* Étape 3 — fenêtres de pagination au-delà de 2 000 messages. */
   {
     const origFetch = globalThis.fetch;
     let idsSet: string[] = Array.from({ length: 2050 }, (_, i) => `m${i}`);
@@ -459,21 +460,24 @@ async function main() {
         metaFor: () => meta,
         getDelayMs: 0,
       });
-      assert(big.truncated === true, "2050 ids > plafond 2000 → truncated=true");
+      assert(big.truncated === true, "2050 ids nécessitent plusieurs fenêtres");
       assert(
-        big.emails.length === 2000,
-        `plafond appliqué (2000 max), obtenu ${big.emails.length}`
+        big.emails.length === 100,
+        `première fenêtre de 100 ids, obtenu ${big.emails.length}`
       );
       assert(big.total >= 2050, `total (~2050) conservé, obtenu ${big.total}`);
+      const beyondTwoThousand = await listLabelIds("tok", { id: "Label_1" }, "2000");
+      assert(beyondTwoThousand.ids.length === 50, "les 50 messages après le 2000e restent accessibles");
+      assert(beyondTwoThousand.truncated === false, "dernière fenêtre atteinte");
 
-      idsSet = Array.from({ length: 150 }, (_, i) => `s${i}`);
+      idsSet = Array.from({ length: 80 }, (_, i) => `s${i}`);
       const small = await fetchLabelEmails("tok", { id: "Label_1" }, {
         resolveMode: () => "skip",
         metaFor: () => meta,
         getDelayMs: 0,
       });
-      assert(small.truncated === false, "150 ids → truncated=false");
-      assert(small.emails.length === 150, "150/150 lus sans troncature");
+      assert(small.truncated === false, "80 ids → truncated=false");
+      assert(small.emails.length === 80, "80/80 lus sans troncature");
     } finally {
       globalThis.fetch = origFetch;
     }

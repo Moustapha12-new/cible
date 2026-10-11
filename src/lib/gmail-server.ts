@@ -93,8 +93,9 @@ export const GMAIL_LABEL = "Stages – Alertes offres";
 
 const ENC_PREFIX = "enc:v1:";
 const STATE_TTL_MS = 15 * 60 * 1000;
-/* 2 000 messages par défaut ; plusieurs offres peuvent provenir d'un message. */
-const MAX_MESSAGES = Math.max(50, Number(process.env.GMAIL_MAX_MESSAGES || 2000) || 2000);
+/* Fenêtre de pagination, pas limite globale : le curseur persistant avance
+   seulement après traitement durable de toute la fenêtre. */
+const MAX_MESSAGES = Math.max(100, Math.min(500, Number(process.env.GMAIL_MAX_MESSAGES || 100) || 100));
 const GMAIL_API_BASE = process.env.GMAIL_API_BASE || "https://gmail.googleapis.com/gmail/v1";
 
 // ── Chiffrement des fiches OAuth ────────────────────────────────
@@ -867,7 +868,7 @@ function emptyParsed(id: string, meta: ParsedEmailMeta): ParsedEmail {
   };
 }
 
-/** Liste brute des ids du libellé (pagination seule, plafond MAX_MESSAGES).
+/** Liste brute des ids d'une fenêtre du libellé (pagination, sans plafond global).
     Sert à fetchLabelEmails et au watermark de fin de run (nouveaux reçus
     pendant la synchro) sans re-télécharger les corps. */
 export async function listLabelIds(

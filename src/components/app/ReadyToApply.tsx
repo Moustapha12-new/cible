@@ -70,37 +70,35 @@ function ReadinessItemCard({ item, onAction }: { item: ReadinessItem; onAction?:
   };
 
   return (
-    <article className={`group p-4 rounded-xl border transition-colors ${style.bg} ${style.border}`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <span className="text-xl flex-shrink-0" aria-hidden="true">{categoryIcon}</span>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <strong className="text-text-main truncate">{item.label}</strong>
-              <ReadinessBadge item={item} />
-              <span className="chip chip--muted text-[0.55rem]">{categoryLabel}</span>
-            </div>
-            <p className="text-sm text-text-dim mt-1">{item.message}</p>
-            {item.details && item.details.length > 0 && (
-              <details className="mt-2">
-                <summary className="text-xs text-muted cursor-pointer">Détails</summary>
-                <ul className="list-disc pl-5 text-xs text-text-dim mt-1 space-y-0.5">
-                  {item.details.map((d, i) => <li key={i}>{d}</li>)}
-                </ul>
-              </details>
-            )}
+    <article className={`group flex min-w-0 flex-col gap-4 rounded-xl border p-5 transition-colors ${style.bg} ${style.border}`}>
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="text-xl shrink-0" aria-hidden="true">{categoryIcon}</span>
+        <div className="min-w-0 flex-1">
+          <strong className="block text-sm leading-5 text-text-main break-words">{item.label}</strong>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <ReadinessBadge item={item} />
+            <span className="chip chip--muted text-[0.55rem]">{categoryLabel}</span>
           </div>
+          <p className="mt-3 text-sm leading-6 text-text-dim break-words">{item.message}</p>
+          {item.details && item.details.length > 0 && (
+            <details className="mt-3">
+              <summary className="text-xs text-muted cursor-pointer">Détails</summary>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-5 text-text-dim">
+                {item.details.map((d, i) => <li key={i}>{d}</li>)}
+              </ul>
+            </details>
+          )}
         </div>
-        {item.action && item.actionHref && (
-          <button
-            type="button"
-            onClick={() => handleClick(item.actionHref!)}
-            className="btn-line btn-sm flex-shrink-0 whitespace-nowrap"
-          >
-            {item.action}
-          </button>
-        )}
       </div>
+      {item.action && item.actionHref && (
+        <button
+          type="button"
+          onClick={() => handleClick(item.actionHref!)}
+          className="btn-line btn-sm mt-auto w-full justify-center whitespace-normal text-center leading-5"
+        >
+          {item.action}
+        </button>
+      )}
     </article>
   );
 }
@@ -463,7 +461,7 @@ export default function ReadyToApply({ offerId, user, data, onDataChange, mode =
 
   return (
     <>
-      <section className="space-y-6" aria-labelledby="readiness-heading">
+      <section className="readiness-section space-y-6" aria-labelledby="readiness-heading">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
           <h2 id="readiness-heading" className="font-display text-xl font-semibold">Prêt à postuler</h2>
           <ReadinessBadge item={{ id: "", category: "cv", label: "", status: readiness.overall === "ready" ? "ready" : readiness.overall === "incomplete" ? "to_verify" : "missing", message: "" }} />
@@ -473,7 +471,7 @@ export default function ReadyToApply({ offerId, user, data, onDataChange, mode =
           {readiness.missingCount} élément(s) manquant(s), {readiness.toVerifyCount} à vérifier, {readiness.readyCount} prêt(s)
         </p>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="readiness-grid">
           {readiness.items.map(item => (
             <ReadinessItemCard key={item.id} item={item} onAction={handleNavigate} />
           ))}

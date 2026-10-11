@@ -61,6 +61,7 @@ export default function AlertesGmailDashboard() {
   const email = user?.email ?? "";
   const bootRef = useRef(false);
   const syncStartRef = useRef(0);
+  const stopSyncRef = useRef(false);
 
   /* Messages OAuth via URL — différé (timeout) pour satisfaire react-hooks/purity. */
   useEffect(() => {
@@ -204,10 +205,17 @@ export default function AlertesGmailDashboard() {
     async (action: SyncAction, emailId?: string) => {
       if (syncing || !email) return;
       setSyncing(true);
+      stopSyncRef.current = false;
       setError(null);
       setRunEta(null);
+      if (action === "sync") setBanner("Analyse complète du libellé en cours. Garde cette page ouverte ; chaque lot est enregistré automatiquement.");
       syncStartRef.current = Date.now();
       try {
+        let workingStore = store;
+        let stalledBatches = 0;
+        let batchNumber = 0;
+        while (true) {
+        batchNumber++;
         const body: Record<string, unknown> = { email, action };
         if (emailId) body.emailId = emailId;
         const sendBatch = () => fetch("/api/gmail/sync", {
@@ -241,10 +249,11 @@ export default function AlertesGmailDashboard() {
           return;
         }
         /* Import des offres dans le store local (inchangé Modules 1-3) */
-        if (store && Array.isArray(json.emails)) {
-          const ingested = ingestSyncResults(store, json.emails as SyncEmailResult[]);
+        if (workingStore && Array.isArray(json.emails)) {
+          const ingested = ingestSyncResults(workingStore, json.emails as SyncEmailResult[]);
           const next = { ...ingested.store };
           if (user?.email) saveGmailStore(user.email, next);
+          workingStore = next;
           setStore(next);
         }
         const s = json.summary as SyncSummaryGlobal | undefined;
@@ -324,6 +333,22 @@ export default function AlertesGmailDashboard() {
                 : syncNote) +
             skipNote
         );
+        if (action !== "sync" || ((lr.remaining ?? 0) <= 0 && !lr.truncated)) break;
+        if (stopSyncRef.current) {
+          setBanner("Synchronisation interrompue après ce lot. Les résultats enregistrés sont conservés ; relance pour continuer.");
+          break;
+        }
+        stalledBatches = analyzed === 0 ? stalledBatches + 1 : 0;
+        if (stalledBatches >= 3) {
+          setBanner("La progression est bloquée après trois lots. Les résultats enregistrés sont conservés ; vérifie les erreurs avant de relancer.");
+          break;
+        }
+        setBanner(`Parcours du libellé en cours : lot ${batchNumber}, ${lr.totalInLabel} e-mails estimés. Garde cette page ouverte ; les résultats sont enregistrés après chaque lot.`);
+        // 12 requêtes par minute maximum côté serveur ; la pause évite de
+        // transformer une longue importation en rafale de 429.
+        await new Promise(resolve => window.setTimeout(resolve, 6000));
+        if (stopSyncRef.current) break;
+        }
       } catch (e) {
         setError(toShownError(e));
       } finally {
@@ -465,6 +490,7 @@ export default function AlertesGmailDashboard() {
         errorCount={relaunchable.length}
         onConnect={connect}
         onSync={() => runAction("sync")}
+        onStopSync={() => { stopSyncRef.current = true; setBanner("Arrêt demandé : le lot en cours se termine et reste enregistré."); }}
         onRelaunchErrors={() => runAction("relaunch_errors")}
         onDisconnect={disconnect}
       />
@@ -548,7 +574,7 @@ export default function AlertesGmailDashboard() {
           <div className="flex items-baseline justify-between gap-4 mb-4">
             <h2 className="font-display text-xl font-semibold">
               E-mails du libellé{" "}
-              <span className="mono-label text-muted!">({emails.length})</span>
+              <span className="mono-label text-muted!">({emails.length} enregistrés{totalInLabel > 0 ? ` sur environ ${totalInLabel} dans Gmail` : ""})</span>
             </h2>
             <span className="mono-label">transparence totale</span>
           </div>

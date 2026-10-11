@@ -24,6 +24,7 @@ export default function GmailConnectionStatus({
   errorCount = 0,
   onConnect,
   onSync,
+  onStopSync,
   onRelaunchErrors,
   onDisconnect,
 }: {
@@ -34,6 +35,7 @@ export default function GmailConnectionStatus({
   errorCount?: number;
   onConnect: () => void;
   onSync: () => void;
+  onStopSync?: () => void;
   onRelaunchErrors: () => void;
   onDisconnect?: () => void;
 }) {
@@ -110,6 +112,11 @@ export default function GmailConnectionStatus({
                   "Synchroniser maintenant"
                 )}
               </button>
+              {syncing && onStopSync && (
+                <button type="button" className="btn-line btn-sm" onClick={onStopSync}>
+                  Arrêter après ce lot
+                </button>
+              )}
               <button
                 type="button"
                 className={hasErrors ? "btn-primary btn-sm" : "btn-line btn-sm"}

@@ -2871,6 +2871,13 @@ textarea.input { height: auto; padding: 14px 16px; line-height: 1.65; resize: ve
 .journey button.active { border-color: #205c3c; background: #edf4e9; color: #205c3c; font-weight: 600; }
 .journey button.active span { background: #205c3c; color: #fff; }
 .dossier-layout { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 24px; align-items: start; }
+.dossier-layout > section, .dossier-layout > aside { min-width: 0; }
+.dossier-layout > aside { display: grid; gap: 16px; }
+.dossier-layout > aside > * + * { margin-top: 0; }
+.readiness-section { container-type: inline-size; }
+.readiness-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; align-items: stretch; }
+@container (min-width: 560px) { .readiness-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@container (min-width: 1000px) { .readiness-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 .dossier-score { font-size: 48px; font-weight: 600; letter-spacing: -.05em; color: #205c3c; margin: 15px 0 8px; }
 .mentor-note { background: #edf1df; border: 1px solid #dee5cf; color: #374730; border-radius: 18px; padding: 25px; }
 .application-board { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; align-items: start; }
@@ -2878,9 +2885,15 @@ textarea.input { height: auto; padding: 14px 16px; line-height: 1.65; resize: ve
 .board-column > h2 { font-size: 12px; font-weight: 600; display: flex; justify-content: space-between; padding: 6px 3px 16px; }
 .board-column > h2 span { background: #fff; padding: 2px 7px; border-radius: 6px; }
 @media(min-width:1400px) { .offer-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
-@media(max-width:1100px) { .application-board { grid-template-columns: repeat(2,minmax(0,1fr)); } .dossier-layout { grid-template-columns: minmax(0,1fr) 260px; } }
+@media(max-width:1499px) {
+  .dossier-layout { grid-template-columns: minmax(0,1fr); }
+  .dossier-layout > aside { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .dossier-layout > aside > .mentor-note { grid-column: 1 / -1; }
+}
+@media(max-width:1100px) { .application-board { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width:767px) { .app-root .app-content { padding: 24px 18px 50px; } .dashboard-heading { align-items: flex-start; flex-direction: column; } .dashboard-hero { grid-template-columns: 1fr; gap: 24px; padding: 26px; } .hero-path { border-left: 0; border-top: 1px solid #ffffff20; padding-left: 0; padding-top: 15px; } .dashboard-stats { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; } .dashboard-columns,.dossier-layout,.offer-grid { grid-template-columns: 1fr; } .offer-toolbar { grid-template-columns: 1fr; } .journey { grid-template-columns: repeat(2,minmax(0,1fr)); } .section-heading { align-items: flex-start; flex-wrap: wrap; } }
 @media(max-width:420px) { .application-board { grid-template-columns: 1fr; } }
+@media(max-width:767px) { .dossier-layout > aside { grid-template-columns: minmax(0,1fr); } .dossier-layout > aside > .mentor-note { grid-column: auto; } }
 @media(prefers-reduced-motion:reduce) { .opportunity-card { transition:none; } }
 @media(min-width:1024px) { .app-root .app-topbar .burger { display:none; } }
 

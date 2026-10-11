@@ -87,7 +87,7 @@ function computeOpportunityScore(offer: DetectedOffer, data: UserData): Opportun
   const infoToVerify: string[] = [];
   
   if (analysis.eligibility.status === "eligible") {
-    reasons.push("Compatible PFE (stage ingénieur, 6 mois, février 2027, domaine ciblé)");
+    reasons.push("Compatible PFE (stage ingénieur, 6 mois, début en 2027, domaine ciblé)");
   } else if (analysis.eligibility.status === "verify") {
     reasons.push("Éligibilité à vérifier");
     analysis.eligibility.reasons.forEach(r => infoToVerify.push(r));

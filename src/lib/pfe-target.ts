@@ -1,4 +1,4 @@
-export const PFE_TARGET = { contract: "stage", level: "ingénieur Bac+5", months: 6, start: "2027-02", location: "France", query: "stage PFE ingénieur énergie électricité", label: "Stage PFE ingénieur · 6 mois · février 2027 · énergie et électricité" } as const;
+export const PFE_TARGET = { contract: "stage", level: "ingénieur Bac+5", months: 6, start: "2027-01", location: "France", query: "stage PFE ingénieur énergie électricité", label: "Stage PFE ingénieur · 6 mois · à partir de début 2027 · énergie et électricité" } as const;
 import { offerLocation } from "./offer-location";
 type Candidate = { title?: string; contract?: string; description?: string; text?: string; duration?: string; profile?: string; startDate?: string; location?: string; prerequisites?: string[]; skills?: string[] };
 const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -19,14 +19,12 @@ export function pfeEligibility(offer: Candidate): { status: "eligible" | "verify
   if (/\bsix\s*(?:mois|months?)\b/.test(all)) months.push(6);
   if (months.length && !months.includes(6)) excluded.push("Durée annoncée différente de six mois");
   else if (!months.length) unknown.push("Durée de six mois à confirmer");
-  const date = offer.startDate?.slice(0, 7) || /(?:fevrier|february|feb)\s*2027/.test(all) && "2027-02";
-  if (date && ["2027-01", "2027-03"].includes(date)) unknown.push("Début proche de février 2027 : flexibilité à confirmer");
-  else if (date && date !== PFE_TARGET.start) excluded.push("Début incompatible avec février 2027");
-  else if (!date) {
-    const nearby = /(?:janvier|mars)\s*2027/.test(all);
-    const explicit = /(?:avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\s*2027|(?:demarrage|debut|start)[^.!\n]{0,30}\b2026\b/.test(all);
-    if (explicit || /asap|demarrage immediat|des que possible/.test(all)) excluded.push("Date annoncée incompatible avec février 2027");
-    else unknown.push(nearby ? "Début proche de février 2027 : flexibilité à confirmer" : "Début en février 2027 à confirmer");
-  }
-  return { status: excluded.length ? "excluded" : unknown.length ? "verify" : "eligible", reasons: excluded.length ? excluded : unknown.length ? unknown : ["Stage ingénieur, six mois, février 2027 et domaine ciblé identifiés"] };
+  const monthNames = "janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre|january|february|march|april|may|june|july|august|september|october|november|december";
+  const writtenDate = all.match(new RegExp(`\\b(${monthNames})\\s+(202[6-9])\\b`));
+  const monthIndex = writtenDate ? monthNames.split("|").indexOf(writtenDate[1]) % 12 + 1 : 0;
+  const date = offer.startDate?.match(/^20\d{2}-(?:0[1-9]|1[0-2])/)?.[0] || (writtenDate ? `${writtenDate[2]}-${String(monthIndex).padStart(2, "0")}` : "");
+  if (date && date < PFE_TARGET.start) excluded.push("Début annoncé avant 2027");
+  else if (date && date >= "2028-01") unknown.push("Début prévu après 2027 : à confirmer selon ta disponibilité");
+  else if (!date) unknown.push("Date de début à confirmer (disponible à partir de début 2027)");
+  return { status: excluded.length ? "excluded" : unknown.length ? "verify" : "eligible", reasons: excluded.length ? excluded : unknown.length ? unknown : ["Stage ingénieur, six mois, début en 2027 et domaine ciblé identifiés"] };
 }

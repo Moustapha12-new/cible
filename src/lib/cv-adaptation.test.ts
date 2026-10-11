@@ -36,6 +36,10 @@ assert.equal(normalizeAiChanges([{ section: "Projet", original: source, rewritte
 assert.deepEqual(normalizeAiChanges(undefined, master, proofText, analysis), [], "unavailable or malformed Gemini output cannot become an approved change");
 const draft: CvAdaptation = { id: "v1", offerId: offer.id, createdAt: "2026-10-10T10:00:00Z", updatedAt: "2026-10-10T10:00:00Z", status: "draft", orientation: "electrical", masterFingerprint: analysis.fingerprint, matchingFingerprint: analysis.fingerprint, matchingAnalyzedAt: analysis.analyzedAt, selectedEvidenceIds: analysis.selectedEvidenceIds, masterText: master, headline: "", suggestions: [{ ...safe, proposed: "simulation du réseau électrique avec MATLAB en 2025", decision: "rejected" }] };
 assert.equal(assembleCv(draft, proofText).text, master, "rejecting retains original");
+const selectedTermDraft = { ...draft, selectedCvTerms: ["Python", "MATLAB"] };
+assert.ok(assembleCv(selectedTermDraft, proofText).text.includes("Compétences déclarées pour cette candidature\n- Python"), "un choix personnel apparaît dans le CV sans preuve obligatoire");
+assert.equal(assembleCv(selectedTermDraft, proofText).text.match(/- MATLAB/g)?.length || 0, 0, "une compétence déjà présente n'est pas dupliquée");
+assert.equal(adaptationStale(selectedTermDraft, offer, data), true, "le choix de compétences appartient à chaque version du CV");
 const accepted = { ...draft, suggestions: [{ ...draft.suggestions[0], decision: "accepted" as const }] };
 assert.ok(assembleCv(accepted, proofText).text.includes("simulation du réseau électrique"));
 const sectionsMaster = "Nadia Martin\nÉlève ingénieure en génie électrique\nEXPÉRIENCE\nProjet réseau électrique (2025) : simulation MATLAB\nCENTRES D'INTÉRÊT\nLecture et randonnée\nFORMATION\nIngénieur énergie (2023-2027)";

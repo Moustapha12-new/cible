@@ -24,6 +24,7 @@ export type PfeAnalysis = {
   gaps: string[];
   unknowns: string[];
   selectedEvidenceIds: string[];
+  selectedCvTerms?: string[];
   aiSuggestion?: string;
 };
 
@@ -97,7 +98,7 @@ export function pfeFingerprint(offer: DetectedOffer, data: UserData): string {
   });
   let a = 2166136261, b = 5381;
   for (let i = 0; i < facts.length; i++) { a = Math.imul(a ^ facts.charCodeAt(i), 16777619); b = Math.imul(b, 33) ^ facts.charCodeAt(i); }
-  return `pfe2:${(a >>> 0).toString(16)}:${(b >>> 0).toString(16)}`;
+  return `pfe4:${(a >>> 0).toString(16)}:${(b >>> 0).toString(16)}`;
 }
 
 export function analyzePfeOffer(offer: DetectedOffer, data: UserData): PfeAnalysis {
@@ -122,7 +123,7 @@ export function analyzePfeOffer(offer: DetectedOffer, data: UserData): PfeAnalys
   const validated = requirements.filter(row => row.match === "prouvée" || row.match === "citée dans le CV");
   const relevance = {
     level: (domains.length && formationFits && validated.length ? "forte" : domains.length ? "à examiner" : "faible") as "forte" | "à examiner" | "faible",
-    reasons: [domains.length ? `Domaine identifié : ${domains.join(", ")}` : "Domaine technique à confirmer", formationFits ? "Formation en lien avec le domaine" : "Lien entre formation et domaine à documenter", `${validated.length} compétence(s) retrouvée(s) dans le CV ou appuyée(s) par une preuve`],
+    reasons: [domains.length ? `Domaine identifié : ${domains.join(", ")}` : "Domaine technique à confirmer", formationFits ? "Formation en lien avec le domaine" : "Lien entre formation et domaine à examiner", validated.length ? `${validated.length} compétence(s) déjà présentes dans le CV` : "Choisis les compétences que tu veux déclarer dans ton CV"],
     domains,
   };
   const strengths = requirements.filter(row => row.match === "prouvée" || row.match === "citée dans le CV").map(row => row.term);
@@ -132,7 +133,7 @@ export function analyzePfeOffer(offer: DetectedOffer, data: UserData): PfeAnalys
     ...(!offer.missions?.length ? ["Missions détaillées absentes de la fiche"] : []),
     ...(!requirements.length ? ["Compétences techniques non détaillées dans la fiche"] : [])];
   return { offerId: offer.id, fingerprint: pfeFingerprint(offer, data), analyzedAt: new Date().toISOString(), eligibility,
-    relevance, requirements, strengths, gaps, unknowns, selectedEvidenceIds: [] };
+    relevance, requirements, strengths, gaps, unknowns, selectedEvidenceIds: [], selectedCvTerms: [] };
 }
 
 export function savePfeAnalysis(data: UserData, analysis: PfeAnalysis): UserData {

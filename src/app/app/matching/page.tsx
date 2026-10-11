@@ -34,8 +34,17 @@ export default function MatchingPage() {
       try {
         const loaded = getOrCreateData(user.name, user.email);
         const requested = new URLSearchParams(window.location.search).get("offer") || "";
-        setData(loaded);
         const selected = loaded.offers.some(item => item.id === requested) ? requested : loaded.offers[0]?.id || "";
+        const chosenOffer = loaded.offers.find(item => item.id === selected);
+        const previous = loaded.pfeAnalyses?.[selected];
+        const current = chosenOffer && previous?.fingerprint !== pfeFingerprint(chosenOffer, loaded) ? analyzePfeOffer(chosenOffer, loaded) : null;
+        if (current) {
+          current.selectedCvTerms = (previous?.selectedCvTerms || []).filter(term => current.requirements.some(row => row.term === term));
+          current.selectedEvidenceIds = (previous?.selectedEvidenceIds || []).filter(id => (loaded.profile.skillEvidence || []).some((item, index) => proofRecordId(item, index) === id && canSelectProof(item)));
+        }
+        const ready = current ? savePfeAnalysis(loaded, current) : loaded;
+        if (current) saveData(user.email, ready);
+        setData(ready);
         setOfferId(selected);
         if (selected && selected !== requested) window.history.replaceState(null, "", `/app/matching?offer=${encodeURIComponent(selected)}`);
       } catch (error) { setMessage(error instanceof Error ? error.message : "Dossier indisponible"); }
@@ -64,8 +73,32 @@ export default function MatchingPage() {
   function analyze() {
     if (!offer || !data) return;
     const next = analyzePfeOffer(offer, data);
-    if (saved) next.selectedEvidenceIds = saved.selectedEvidenceIds.filter(id => (data.profile.skillEvidence || []).some((item, index) => proofRecordId(item, index) === id && canSelectProof(item)));
+    if (saved) {
+      next.selectedEvidenceIds = saved.selectedEvidenceIds.filter(id => (data.profile.skillEvidence || []).some((item, index) => proofRecordId(item, index) === id && canSelectProof(item)));
+      next.selectedCvTerms = (saved.selectedCvTerms || []).filter(term => next.requirements.some(row => row.term === term));
+    }
     persist(savePfeAnalysis(data, next));
+  }
+  function toggleCvTerm(term: string) {
+    if (!data || !active) return;
+    const selected = active.selectedCvTerms || [];
+    persist(savePfeAnalysis(data, { ...active, selectedCvTerms: selected.includes(term) ? selected.filter(item => item !== term) : [...selected, term] }));
+  }
+  function selectOffer(nextId: string) {
+    if (data && user) {
+      const chosen = data.offers.find(item => item.id === nextId);
+      const previous = data.pfeAnalyses?.[nextId];
+      if (chosen && previous?.fingerprint !== pfeFingerprint(chosen, data)) {
+        const refreshed = analyzePfeOffer(chosen, data);
+        refreshed.selectedCvTerms = (previous?.selectedCvTerms || []).filter(term => refreshed.requirements.some(row => row.term === term));
+        refreshed.selectedEvidenceIds = (previous?.selectedEvidenceIds || []).filter(id => (data.profile.skillEvidence || []).some((item, index) => proofRecordId(item, index) === id && canSelectProof(item)));
+        const updated = savePfeAnalysis(data, refreshed);
+        saveData(user.email, updated);
+        setData(updated);
+      }
+    }
+    setOfferId(nextId); setMessage("");
+    window.history.pushState(null, "", `/app/matching?offer=${encodeURIComponent(nextId)}`);
   }
   function toggleProof(id: string) {
     if (!data || !active || stale) return;
@@ -125,10 +158,10 @@ export default function MatchingPage() {
     finally { setBusy(false); }
   }
   return <>
-    <AppPageHead eyebrow="Mission PFE · février 2027" title="Comprendre chaque opportunité" sub="Éligibilité, pertinence et preuves sont analysées séparément. Aucune note ne prédit ton recrutement." />
+    <AppPageHead eyebrow="Mission PFE · dès 2027" title="Comprendre chaque opportunité" sub="Repère les critères de l'offre, puis choisis ceux que tu veux déclarer dans ton CV." />
     <div className="glass-card p-5 mb-5">
       <label className="mono-label block mb-2" htmlFor="matching-offer">Offre enregistrée</label>
-      <select id="matching-offer" className="input max-w-2xl" value={offerId} onChange={event => { const nextId = event.target.value; setOfferId(nextId); setMessage(""); window.history.pushState(null, "", `/app/matching?offer=${encodeURIComponent(nextId)}`); }}>
+      <select id="matching-offer" className="input max-w-2xl" value={offerId} onChange={event => selectOffer(event.target.value)}>
         {!offerId && <option value="">Choisir une offre</option>}
         {data?.offers.map(item => <option key={item.id} value={item.id}>{item.title} · {item.company}</option>)}
       </select>
@@ -150,20 +183,18 @@ export default function MatchingPage() {
           <section className="glass-card p-6"><p className="mono-label">Éligibilité PFE</p><h3 className="font-display text-xl mt-2">{active.eligibility.status === "eligible" ? "Compatible selon la fiche" : active.eligibility.status === "excluded" ? "Incompatible selon la fiche" : "À vérifier"}</h3><ul className="list-disc pl-5 text-sm mt-3 space-y-2">{active.eligibility.reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul></section>
           <section className="glass-card p-6"><p className="mono-label">Pertinence technique</p><h3 className="font-display text-xl mt-2">{active.relevance.level === "forte" ? "Forte correspondance à explorer" : active.relevance.level === "faible" ? "Lien technique limité" : "À examiner"}</h3><ul className="list-disc pl-5 text-sm mt-3 space-y-2">{active.relevance.reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul></section>
         </div>
-        <section className="glass-card p-6 mb-5"><h3 className="font-display text-lg font-semibold">Exigences et preuves</h3><p className="text-sm text-muted mt-2">« Citée dans le CV » indique une mention textuelle, pas une compétence vérifiée. « Prouvée » désigne une preuve que tu as décrite et sourcée.</p>
+        <section className="glass-card p-6 mb-5"><h3 className="font-display text-lg font-semibold">Compétences de l’offre</h3><p className="text-sm text-muted mt-2">Coche uniquement les compétences que tu possèdes et veux ajouter à ce CV. Une preuve détaillée est facultative.</p>
           {!active.requirements.length && <p className="text-sm text-amber mt-4">Aucune compétence technique exploitable dans cette fiche. Consulte l’annonce source et complète-la si nécessaire.</p>}
-          <div className="space-y-4 mt-5">{active.requirements.map(req => <article key={req.term} className="border-t border-line pt-4"><div className="flex flex-wrap gap-2 items-center"><strong>{req.term}</strong><span className="pill">{req.priority}</span><span className="pill">{req.match}</span></div><p className="text-xs text-muted mt-2">Annonce : « {req.source} »</p>{req.cvExcerpt && <p className="text-xs text-text-dim mt-1">CV : « {req.cvExcerpt} »</p>}
-            {matchingEvidence(data.profile, req).map((item, index) => { const id = proofRecordId(item, (data.profile.skillEvidence || []).indexOf(item)); return <label key={`${id}-${index}`} className="flex gap-2 text-sm mt-2 items-start"><input type="checkbox" checked={active.selectedEvidenceIds.includes(id)} disabled={stale || !canSelectProof(item)} onChange={() => toggleProof(id)} /><span>{item.title || item.term} · {statusLabels[item.status]} · {canSelectProof(item) ? item.source : "Description et source à compléter avant sélection"}</span></label>; })}
-            {!req.evidenceIds.length && <button className="text-sm text-mint underline mt-2" onClick={() => setProof({ ...emptyProof(), term: req.term, title: `Preuve de ${req.term}` })}>Ajouter une preuve</button>}</article>)}</div>
+          <div className="grid gap-3 mt-5 sm:grid-cols-2">{active.requirements.map(req => <label key={req.term} className="flex items-start gap-3 rounded-xl border border-line p-4 cursor-pointer"><input type="checkbox" className="mt-1" checked={(active.selectedCvTerms || []).includes(req.term)} onChange={() => toggleCvTerm(req.term)} /><span><strong className="block">{req.term}</strong><span className="text-xs text-muted">{req.match === "non documentée" ? "Pas encore dans ton CV" : "Déjà mentionnée ou documentée"} · {req.priority} dans l’offre</span></span></label>)}</div>
+          <details className="mt-5 text-sm"><summary className="cursor-pointer text-mint">Voir les détails et ajouter une preuve (facultatif)</summary><div className="space-y-4 mt-4">{active.requirements.map(req => <article key={req.term} className="border-t border-line pt-4"><strong>{req.term}</strong><p className="text-xs text-muted mt-2">Annonce : « {req.source} »</p>{req.cvExcerpt && <p className="text-xs text-text-dim mt-1">CV : « {req.cvExcerpt} »</p>}{matchingEvidence(data.profile, req).map((item, index) => { const id = proofRecordId(item, (data.profile.skillEvidence || []).indexOf(item)); return <label key={`${id}-${index}`} className="flex gap-2 text-sm mt-2 items-start"><input type="checkbox" checked={active.selectedEvidenceIds.includes(id)} disabled={stale || !canSelectProof(item)} onChange={() => toggleProof(id)} /><span>{item.title || item.term} · {statusLabels[item.status]} · {canSelectProof(item) ? item.source : "Description et source à compléter avant sélection"}</span></label>; })}{!req.evidenceIds.length && <button className="text-sm text-mint underline mt-2" onClick={() => setProof({ ...emptyProof(), term: req.term, title: `Preuve de ${req.term}` })}>Ajouter une preuve</button>}</article>)}</div></details>
         </section>
-        <div className="grid md:grid-cols-3 gap-4 mb-5">{([["Points forts", active.strengths], ["Écarts obligatoires", active.gaps], ["À vérifier", active.unknowns]] as const).map(([title, rows]) => <section key={title} className="glass-card p-5"><h3 className="font-semibold">{title}</h3>{rows.length ? <ul className="list-disc pl-5 text-sm mt-3 space-y-1">{rows.map((row, i) => <li key={i}>{row}</li>)}</ul> : <p className="text-sm text-muted mt-3">Aucun élément identifié dans la fiche disponible.</p>}</section>)}</div>
-        <div className="glass-card p-5 mb-5 flex flex-wrap gap-3 items-center"><button className="btn-line" disabled={busy || stale} onClick={askGemini}>{busy ? "Gemini analyse…" : "Demander une piste à Gemini"}</button><Link className="btn-primary" href={`/app/adaptation?offer=${encodeURIComponent(offer.id)}`}>Adapter mon CV avec ces preuves →</Link><Link className="btn-line" href={`/app/dossier?offer=${encodeURIComponent(offer.id)}`}>Ouvrir le dossier</Link><span className="text-xs text-muted">Analyse locale enregistrée · {active.selectedEvidenceIds.length} preuve(s) choisie(s)</span></div>
+        <div className="glass-card p-5 mb-5 flex flex-wrap gap-3 items-center"><Link className="btn-primary" href={`/app/adaptation?offer=${encodeURIComponent(offer.id)}`}>Adapter mon CV →</Link><Link className="btn-line" href={`/app/dossier?offer=${encodeURIComponent(offer.id)}`}>Ouvrir le dossier</Link><button className="btn-line" disabled={busy || stale} onClick={askGemini}>{busy ? "Gemini analyse…" : "Conseil IA facultatif"}</button><span className="text-xs text-muted">{(active.selectedCvTerms || []).length} compétence(s) choisie(s) pour le CV</span></div>
         {active.aiSuggestion && <section className="glass-card p-5 mb-5"><h3 className="font-semibold">Piste Gemini · hypothèse à vérifier</h3><p className="text-sm mt-2">{active.aiSuggestion}</p></section>}
       </>}
-      <section className="glass-card p-6 mb-5"><div className="flex justify-between items-start gap-3"><div><h3 className="font-display text-lg font-semibold">Mon registre de preuves</h3><p className="text-sm text-muted mt-2">Une preuve peut appuyer plusieurs compétences. Tu décides de son statut et de son usage dans chaque candidature.</p></div><button className="btn-line" onClick={() => setProof(emptyProof())}>Ajouter</button></div>
+      <details className="glass-card p-6 mb-5"><summary className="cursor-pointer font-display text-lg font-semibold">Mes preuves détaillées (facultatif)</summary><div className="flex justify-between items-start gap-3 mt-4"><p className="text-sm text-muted">Une preuve peut appuyer plusieurs compétences ; tu peux en ajouter si tu le souhaites.</p><button className="btn-line" onClick={() => setProof(emptyProof())}>Ajouter</button></div>
         {(data.profile.skillEvidence || []).map((item, index) => <article key={proofRecordId(item, index)} className="border-t border-line py-3 mt-3"><div className="flex flex-wrap justify-between gap-2"><div><strong>{item.title || item.term}</strong><p className="text-xs text-muted">{[item.term, ...(item.skills || []).filter(skill => skill !== item.term)].join(" · ")} · {statusLabels[item.status]} · {item.autonomy === "independent" ? "Autonome" : item.autonomy === "assisted" ? "Accompagné" : "Autonomie à préciser"}</p><p className="text-sm mt-1">{item.description || item.evidence || "Description à ajouter"}</p><p className="text-xs text-muted">{item.source || "Source non renseignée"}</p></div><div className="flex gap-2"><button className="btn-line btn-sm" onClick={() => setProof({ ...item, id: proofRecordId(item, index) })}>Modifier</button><button className="btn-line btn-sm" onClick={() => removeProof(proofRecordId(item, index))}>Retirer</button></div></div></article>)}
         {!data.profile.skillEvidence?.length && <p className="text-sm text-muted mt-4">Aucune preuve enregistrée. Les compétences simplement listées dans ton profil restent des déclarations.</p>}
-      </section>
+      </details>
     </>}
     {proof && <section className="glass-card p-6 mb-5" aria-label="Éditeur de preuve"><h3 className="font-display text-lg font-semibold">{(data?.profile.skillEvidence || []).some(item => item.id === proof.id) ? "Modifier la preuve" : "Ajouter une preuve"}</h3><div className="grid md:grid-cols-2 gap-3 mt-4"><label className="text-sm">Compétence principale<input className="input mt-1" value={proof.term} onChange={e => setProof({ ...proof, term: e.target.value })} /></label><label className="text-sm">Intitulé<input className="input mt-1" value={proof.title || ""} onChange={e => setProof({ ...proof, title: e.target.value })} /></label><label className="text-sm">Type<select className="input mt-1" value={proof.kind || "project"} onChange={e => setProof({ ...proof, kind: e.target.value as SkillEvidence["kind"] })}>{Object.entries(kindLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label className="text-sm">Source réelle (projet, cours, employeur, document…)<input className="input mt-1" value={proof.source || ""} onChange={e => setProof({ ...proof, source: e.target.value })} /></label><label className="text-sm md:col-span-2">Description factuelle<textarea className="input mt-1" rows={3} value={proof.description ?? proof.evidence} onChange={e => setProof({ ...proof, description: e.target.value })} /></label><label className="text-sm">Autres compétences liées (séparées par une virgule)<input className="input mt-1" value={(proof.skills || []).filter(skill => skill !== proof.term).join(", ")} onChange={e => setProof({ ...proof, skills: e.target.value.split(",").map(clean) })} /></label><label className="text-sm">Autonomie<select className="input mt-1" value={proof.autonomy} onChange={e => setProof({ ...proof, autonomy: e.target.value as SkillEvidence["autonomy"] })}><option value="unknown">À préciser</option><option value="assisted">Avec accompagnement</option><option value="independent">En autonomie</option></select></label><label className="text-sm">Statut<select className="input mt-1" value={proof.status} onChange={e => setProof({ ...proof, status: e.target.value as SkillEvidence["status"] })}>{Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div><div className="flex gap-3 mt-4"><button className="btn-primary" onClick={saveProof}>Enregistrer la preuve</button><button className="btn-line" onClick={() => setProof(null)}>Annuler</button></div></section>}
     {message && <p role="status" className="text-sm mb-5">{message}</p>}

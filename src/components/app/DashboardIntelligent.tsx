@@ -355,7 +355,7 @@ export default function DashboardIntelligent() {
   return (
     <>
       <AppPageHead
-        eyebrow="Mission PFE · février 2027"
+        eyebrow="Mission PFE · dès 2027"
         title="Ton centre de pilotage"
         sub="Priorités, pipeline, échéances et meilleures opportunités — tout ce qu'il faut pour avancer."
       />

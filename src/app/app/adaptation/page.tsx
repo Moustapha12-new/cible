@@ -9,7 +9,7 @@ import ApplicationJourney from "@/components/app/ApplicationJourney";
 import CvPreview from "@/components/cv/CvPreview";
 import { cvDocumentHtml, parseCvText, DEFAULT_CV_DESIGN, type CvDesign } from "@/lib/cv";
 import { getOrCreateData, saveData, type UserData } from "@/lib/data";
-import { pfeFingerprint, proofRecordId } from "@/lib/pfe-matching";
+import { analyzePfeOffer, pfeFingerprint, proofRecordId, savePfeAnalysis } from "@/lib/pfe-matching";
 import { adaptationStale, approvedProofText, assembleCv, cvMasterText, cvQualityChecklist, normalizeAiChanges, saveAdaptation, sectionCanBeOmitted, validateCvChange, type CvAdaptation, type CvChange } from "@/lib/cv-adaptation";
 
 const now = () => new Date().toISOString();
@@ -61,6 +61,22 @@ export default function AdaptationPage() {
     return () => window.removeEventListener("popstate", sync);
   }, [data, offerId, dirty]);
   useEffect(() => {
+    if (!data || !user || !offerId) return;
+    const selected = data.offers.find(item => item.id === offerId);
+    if (!selected) return;
+    const previous = data.pfeAnalyses?.[offerId];
+    if (previous?.fingerprint === pfeFingerprint(selected, data)) return;
+    const timer = window.setTimeout(() => {
+      const refreshed = analyzePfeOffer(selected, data);
+      refreshed.selectedCvTerms = (previous?.selectedCvTerms || []).filter(term => refreshed.requirements.some(row => row.term === term));
+      refreshed.selectedEvidenceIds = (previous?.selectedEvidenceIds || []).filter(id => (data.profile.skillEvidence || []).some((item, index) => proofRecordId(item, index) === id));
+      const updated = savePfeAnalysis(data, refreshed);
+      saveData(user.email, updated);
+      setData(updated);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [data, offerId, user]);
+  useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
     window.addEventListener("beforeunload", warn);
@@ -74,7 +90,7 @@ export default function AdaptationPage() {
   const stale = !!(data && offer && matching && matching.fingerprint !== pfeFingerprint(offer, data));
   const draftStale = !!(data && offer && draft && adaptationStale(draft, offer, data));
   const proofText = data && matching ? approvedProofText(data, matching) : "";
-  const draftProofText = draft?.proofText ?? proofText;
+  const draftProofText = `${draft?.proofText ?? proofText}\n${(draft?.selectedCvTerms || []).join("\n")}`;
   const assembled = useMemo(() => draft ? assembleCv(draft, draftProofText) : { text: master, issues: [] }, [draft, draftProofText, master]);
   const previewCv = useMemo(() => parseCvText(draft?.status === "approved" && draft.approvedText ? draft.approvedText : assembled.text), [draft, assembled.text]);
   const confirmed = draft?.suggestions.filter(change => change.decision === "accepted").length || 0;
@@ -108,7 +124,7 @@ export default function AdaptationPage() {
   }
   function startManualDraft(message = "Brouillon manuel prêt. Choisis un extrait exact de ton CV, puis écris ta proposition.") {
     if (!data || !offer || !matching || !master || stale) return;
-    const next: CvAdaptation = { id: id(), offerId, createdAt: now(), updatedAt: now(), status: "draft", orientation, masterFingerprint: matching.fingerprint, matchingFingerprint: matching.fingerprint, matchingAnalyzedAt: matching.analyzedAt, selectedEvidenceIds: [...matching.selectedEvidenceIds], unverifiedTerms: matching.requirements.filter(row => row.match !== "prouvée" && row.match !== "citée dans le CV").map(row => row.term), proofText, masterText: master, headline: "", suggestions: [] };
+    const next: CvAdaptation = { id: id(), offerId, createdAt: now(), updatedAt: now(), status: "draft", orientation, masterFingerprint: matching.fingerprint, matchingFingerprint: matching.fingerprint, matchingAnalyzedAt: matching.analyzedAt, selectedEvidenceIds: [...matching.selectedEvidenceIds], selectedCvTerms: [...(matching.selectedCvTerms || [])], unverifiedTerms: matching.requirements.filter(row => row.match !== "prouvée" && row.match !== "citée dans le CV" && !matching.selectedCvTerms?.includes(row.term)).map(row => row.term), proofText, masterText: master, headline: "", suggestions: [] };
     persist(next); setView("compare"); setNotice(message);
   }
   function addManualChange() {
@@ -147,7 +163,7 @@ export default function AdaptationPage() {
       const titleSource = data.profile.title && master.includes(data.profile.title) ? data.profile.title : "";
       const suggestions = normalizeAiChanges([...rawChanges, ...(headline && titleSource ? [{ section: "Titre", original: titleSource, rewritten: headline }] : [])], master, proofText, matching);
       if (!suggestions.length) throw new Error("Gemini n'a proposé aucune reformulation vérifiable. Le CV maître reste intact.");
-      const next: CvAdaptation = { id: id(), offerId, createdAt: now(), updatedAt: now(), status: "draft", orientation, masterFingerprint: matching.fingerprint, matchingFingerprint: matching.fingerprint, matchingAnalyzedAt: matching.analyzedAt, selectedEvidenceIds: [...matching.selectedEvidenceIds], unverifiedTerms: matching.requirements.filter(row => row.match !== "prouvée" && row.match !== "citée dans le CV").map(row => row.term), proofText, masterText: master, headline, suggestions };
+      const next: CvAdaptation = { id: id(), offerId, createdAt: now(), updatedAt: now(), status: "draft", orientation, masterFingerprint: matching.fingerprint, matchingFingerprint: matching.fingerprint, matchingAnalyzedAt: matching.analyzedAt, selectedEvidenceIds: [...matching.selectedEvidenceIds], selectedCvTerms: [...(matching.selectedCvTerms || [])], unverifiedTerms: matching.requirements.filter(row => row.match !== "prouvée" && row.match !== "citée dans le CV" && !matching.selectedCvTerms?.includes(row.term)).map(row => row.term), proofText, masterText: master, headline, suggestions };
       persist(next); setView("compare");
       setNotice(`${suggestions.length} proposition(s) vérifiable(s). Rien n'est appliqué sans ton accord.`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Génération impossible. Le brouillon précédent est conservé."); }
@@ -178,12 +194,9 @@ export default function AdaptationPage() {
 
   if (!data) return <div className="p-8 text-text-dim">Chargement de ton atelier CV…</div>;
   return <div className="space-y-7 pb-20">
-    <AppPageHead eyebrow="P1 · Candidature ciblée" title="Atelier CV" sub="Une offre, tes preuves, puis des changements que tu approuves un par un." />
+    <AppPageHead eyebrow="Candidature ciblée" title="Adapter mon CV" sub="Choisis l'offre, prépare ton CV et valide la version qui te convient." />
     {offer && <ApplicationJourney data={data} offerId={offer.id} current="adaptation" />}
     {offer && draft?.status === "approved" && <Link className="btn-primary inline-flex mb-2" href={`/app/dossier?offer=${encodeURIComponent(offerId)}&step=2`}>Continuer vers Mission PFE →</Link>}
-    <nav aria-label="Étapes de l'atelier" className="glass-card p-4 flex flex-wrap gap-2 text-xs text-text-dim">
-      {["Offre", "Matching", "Preuves", "Propositions", "Comparaison", "Validation", "CV final"].map((label, index) => <span key={label} className="rounded-full border border-line px-3 py-1">{index + 1}. {label}</span>)}
-    </nav>
     <section className="glass-card p-6 space-y-4">
       <div className="flex flex-wrap items-end gap-4 justify-between"><div><h2 className="font-display text-xl">L'offre visée</h2><p className="text-sm text-text-dim">Choisis une offre déjà enregistrée et analysée.</p></div><Link className="btn-line" href="/app/alertes-gmail">Voir mes offres</Link></div>
       <select aria-label="Offre à adapter" className="input w-full" value={offerId} onChange={event => selectOffer(event.target.value)}>
@@ -191,20 +204,16 @@ export default function AdaptationPage() {
         {data.offers.map(item => <option key={item.id} value={item.id}>{item.title} · {item.company}</option>)}
       </select>
       {offer && <p className="text-sm text-text-dim">{offer.company} · {offer.location || "Lieu à vérifier"} · {offer.title}</p>}
-      {!master && <p className="text-amber-700">Ajoute ton CV maître dans l'espace CV avant de générer une adaptation.</p>}
-      {offer && !matching && <p className="text-amber-700">Cette offre n'a pas encore d'analyse PFE. <Link className="underline" href={`/app/matching?offer=${encodeURIComponent(offerId)}`}>Analyser l'offre et choisir mes preuves</Link>.</p>}
-      {stale && <p className="text-amber-700">L'analyse PFE est périmée. <Link className="underline" href={`/app/matching?offer=${encodeURIComponent(offerId)}`}>L'actualiser</Link> avant de générer.</p>}
-      {matching && !stale && <div className="grid gap-3 md:grid-cols-3 text-sm"><p><b>Éligibilité :</b> {matching.eligibility.status}</p><p><b>Pertinence :</b> {matching.relevance.level}</p><p><b>Preuves choisies :</b> {matching.selectedEvidenceIds.length}</p></div>}
-      {matching && <div className="flex flex-wrap gap-2">{matching.requirements.slice(0, 12).map(row => <span key={row.term} className="chip">{row.term} · {row.priority} · {row.match}</span>)}</div>}
-      {matching?.gaps?.length ? <p className="text-sm text-amber-700">À documenter : {matching.gaps.join(", ")}. Aucune de ces compétences n'est ajoutée automatiquement.</p> : null}
-      {matching && <Link className="text-sm underline" href={`/app/matching?offer=${encodeURIComponent(offerId)}`}>Modifier les preuves sélectionnées</Link>}
+      {!master && <p className="text-amber-700">Ton CV n’est pas encore disponible ici. <Link className="underline" href="/app/cv">Ajouter mon CV</Link> pour pouvoir créer une version adaptée.</p>}
+      {offer && !matching && <p role="status" className="text-sm text-text-dim">Analyse locale de l'offre en cours…</p>}
+      {matching && <p className="text-sm text-text-dim">{(matching.selectedCvTerms || []).length} compétence(s) choisie(s) pour cette version du CV. <Link className="text-mint underline" href={`/app/matching?offer=${encodeURIComponent(offerId)}`}>Modifier mon choix</Link></p>}
     </section>
 
     <section className="glass-card p-6 space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-display text-xl">Proposition ciblée</h2><p className="text-sm text-text-dim">Gemini intervient uniquement quand tu cliques. Les passages non vérifiables sont écartés.</p></div><button className="btn-primary" type="button" onClick={generate} disabled={!offer || !matching || !master || stale || busy}>{busy ? "Préparation en cours…" : draft ? "Créer une nouvelle proposition" : "Préparer mon CV"}</button></div>
-      <label className="block text-sm text-text-dim">Orientation de départ
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-display text-xl">Préparer mon CV pour cette offre</h2><p className="text-sm text-text-dim">L’IA propose des modifications ; tu décides lesquelles conserver. Tu peux aussi préparer le CV sans IA.</p></div><button className="btn-primary" type="button" onClick={generate} disabled={!offer || !matching || !master || stale || busy}>{busy ? "Préparation en cours…" : draft ? "Créer une nouvelle proposition" : "Préparer mon CV"}</button></div>
+      <details className="text-sm text-text-dim"><summary className="cursor-pointer">Option : orientation de la rédaction</summary><label className="block mt-3">Orientation de départ
         <select className="input block mt-2 w-full md:w-auto" value={orientation} onChange={event => setOrientation(event.target.value as "electrical" | "energy")}><option value="electrical">Génie électrique · électrotechnique · bureau d'études</option><option value="energy">Énergie · performance énergétique · ENR</option></select>
-      </label>
+      </label></details>
       {draft && <p className="text-xs text-text-dim">Version du {new Date(draft.createdAt).toLocaleString("fr-FR")} · {draft.status === "approved" ? "validée" : "brouillon"} · orientation {draft.orientation === "energy" ? "énergie / ENR" : "génie électrique / études"} · matching du {new Date(draft.matchingAnalyzedAt).toLocaleDateString("fr-FR")}</p>}
       {draftStale && <p className="text-amber-700">Cette proposition utilise une ancienne version de l'offre, du CV ou des preuves. Tu peux la consulter, mais crée une nouvelle proposition après actualisation du matching.</p>}
       <button className="btn-line" type="button" disabled={!offer || !matching || !master || stale || busy} onClick={() => { if (draft?.status === "draft" && !window.confirm("Créer un nouveau brouillon manuel ? Le brouillon actuel sera conservé dans l'historique.")) return; startManualDraft(); }}>Préparer sans IA</button>

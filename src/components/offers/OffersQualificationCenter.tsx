@@ -294,7 +294,7 @@ export default function OffersQualificationCenter() {
   return (
     <>
       <AppPageHead
-        eyebrow="Mission PFE · février 2027"
+        eyebrow="Mission PFE · dès 2027"
         title="Centre intelligent de qualification"
         sub={`Examinez, comparez et sélectionnez vos offres de stage. ${allOffersCount} offres au total, ${toProcessCount} à traiter.`}
       />

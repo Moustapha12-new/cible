@@ -24,6 +24,9 @@ async function main() {
   const analysis = analyzePfeOffer(offer, data);
   globalThis.fetch = beforeFetch;
   assert.equal(analysis.eligibility.status, "eligible");
+  assert.equal(analyzePfeOffer({ ...offer, startDate: "2027-01" }, data).eligibility.status, "eligible", "janvier 2027 convient aussi");
+  assert.equal(analyzePfeOffer({ ...offer, startDate: "2027-09" }, data).eligibility.status, "eligible", "le début n'est pas limité à février");
+  assert.equal(analyzePfeOffer({ ...offer, startDate: "2026-12" }, data).eligibility.status, "excluded", "un début avant 2027 reste incompatible");
   assert.equal(analysis.relevance.level, "forte");
   const matlab = analysis.requirements.find(row => row.term === "MATLAB")!;
   const caneco = analysis.requirements.find(row => row.term === "CANECO BT")!;
@@ -50,10 +53,11 @@ async function main() {
   assert.notEqual(pfeFingerprint(offer, data), pfeFingerprint(offer, { ...data, profile: { ...data.profile, skillEvidence: [draft] } }));
   const storage = new Map<string, string>();
   Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) }, dispatchEvent: () => {} } });
-  const saved = savePfeAnalysis(data, { ...analysis, selectedEvidenceIds: [confirmed.id!] });
+  const saved = savePfeAnalysis(data, { ...analysis, selectedEvidenceIds: [confirmed.id!], selectedCvTerms: ["CANECO BT"] });
   saveData(email, saved);
   const reopened = loadData(email)!;
   assert.deepEqual(reopened.pfeAnalyses?.[offer.id]?.selectedEvidenceIds, [confirmed.id]);
+  assert.deepEqual(reopened.pfeAnalyses?.[offer.id]?.selectedCvTerms, ["CANECO BT"]);
   assert.deepEqual(reopened.originalCv, data.originalCv);
   assert.equal(reopened.pfeAnalyses?.[offer.id]?.fingerprint, pfeFingerprint(offer, reopened));
   assert.equal(reopened.pfeAnalyses?.[offer.id]?.aiSuggestion, undefined);

@@ -27,6 +27,7 @@ export type CvAdaptation = {
   matchingFingerprint: string;
   matchingAnalyzedAt: string;
   selectedEvidenceIds: string[];
+  selectedCvTerms?: string[];
   unverifiedTerms?: string[];
   proofText?: string;
   masterText: string;
@@ -67,7 +68,8 @@ export function adaptationStale(adaptation: CvAdaptation, offer: DetectedOffer, 
   const matching = data.pfeAnalyses?.[offer.id];
   return !matching || matching.fingerprint !== pfeFingerprint(offer, data) ||
     adaptation.matchingFingerprint !== matching.fingerprint || adaptation.masterText !== cvMasterText(data) ||
-    adaptation.selectedEvidenceIds.join("|") !== matching.selectedEvidenceIds.join("|");
+    adaptation.selectedEvidenceIds.join("|") !== matching.selectedEvidenceIds.join("|") ||
+    (adaptation.selectedCvTerms || []).join("|") !== (matching.selectedCvTerms || []).join("|");
 }
 
 export function approvedProofText(data: UserData, analysis: PfeAnalysis): string {
@@ -125,7 +127,7 @@ export function sectionCanBeOmitted(section: CvSection): boolean {
 export function assembleCv(adaptation: CvAdaptation, proofText = ""): { text: string; issues: string[] } {
   let text = adaptation.masterText;
   const issues: string[] = [];
-  const sourceProofs = adaptation.proofText ?? proofText;
+  const sourceProofs = `${adaptation.proofText ?? proofText}\n${(adaptation.selectedCvTerms || []).join("\n")}`;
   for (const change of adaptation.suggestions) {
     if (change.decision !== "accepted") continue;
     const errors = validateCvChange(change, adaptation.masterText, sourceProofs, adaptation.unverifiedTerms);
@@ -142,6 +144,8 @@ export function assembleCv(adaptation: CvAdaptation, proofText = ""): { text: st
     structured.sections = order.filter(index => Number.isInteger(index) && index >= 0 && index < sections.length && !adaptation.hiddenSections?.includes(index)).map(index => sections[index]);
     text = cvToText(structured);
   }
+  const chosen = [...new Set((adaptation.selectedCvTerms || []).filter(term => term.trim() && !hasCvTerm(text, term)))];
+  if (chosen.length) text = `${text.trimEnd()}\n\nCompétences déclarées pour cette candidature\n${chosen.map(term => `- ${term}`).join("\n")}`;
   const report = checkFacts(adaptation.masterText, text);
   if (report.invented.length) issues.push("Chiffres ou résultats inconnus détectés dans le CV final.");
   if (report.lost.length) issues.push("Des coordonnées, dates ou autres faits du CV maître ont disparu.");

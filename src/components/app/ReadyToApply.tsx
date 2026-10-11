@@ -577,7 +577,7 @@ export default function ReadyToApply({ offerId, user, data, onDataChange, mode =
           <InfoCard label="Téléphone" value={data.profile.phone} copyable icon="📞" />
           <InfoCard label="Ville" value={data.profile.city} copyable icon="📍" />
           <InfoCard label="Titre" value={data.profile.title} copyable icon="🎓" />
-          <InfoCard label="Stage recherché" value="PFE 6 mois — Février 2027" copyable icon="📅" />
+          <InfoCard label="Stage recherché" value="PFE 6 mois — à partir de début 2027" copyable icon="📅" />
           <InfoCard label="Mobilité" value={data.profile.city ? "France entière" : "À préciser"} icon="🌍" />
         </div>
       </section>

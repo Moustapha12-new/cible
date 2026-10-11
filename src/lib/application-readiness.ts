@@ -419,7 +419,7 @@ export function evaluateApplicationReadiness(
         category: "eligibility",
         label: "Éligibilité PFE confirmée",
         status: "ready",
-        message: "Stage ingénieur, 6 mois, février 2027, domaine ciblé identifiés",
+        message: "Stage ingénieur, 6 mois, début en 2027 et domaine ciblé identifiés",
         action: "Voir les détails",
         actionHref: `/app/matching?offer=${encodeURIComponent(offerId)}`
       });

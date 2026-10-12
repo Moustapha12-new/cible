@@ -3,204 +3,280 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  BriefcaseBusiness, FileUser, Send, Mail, Link2, Zap, LogOut, Menu, X,
+  ChevronLeft, Settings, Bell, Search, CalendarClock, Sparkles,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { resetData } from "@/lib/data";
-import { BrandMark } from "@/components/Navbar";
 
-const NAV = [
-  {
-    section: "Ma recherche de stage",
-    items: [
-      { href: "/app", label: "Tableau de bord", icon: "M3.5 3.5h7v7h-7zM13.5 3.5h7v4h-7zM13.5 11.5h7v9h-7zM3.5 14.5h7v6h-7z" },
-      { href: "/app/alertes-gmail", label: "Mes offres Gmail", icon: "M3.5 5.5h17v13h-17zM4 7l8 6 8-6" },
-      { href: "/app/offers", label: "Offres & qualification", icon: "M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13Zm10.5 4-5.8-5.8" },
-      { href: "/app/candidatures", label: "Candidatures", icon: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-13v5l3 2" },
-    ],
-  },
-  {
-    section: "Préparer ma candidature",
-    items: [
-      { href: "/app/matching", label: "Matching PFE", icon: "M4 12l5 5L20 6M4 5h7M4 20h7" },
-      { href: "/app/adaptation", label: "Adapter mon CV", icon: "M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6" },
-      { href: "/app/dossier", label: "Mission PFE", icon: "M4 7h16v14H4zM8 7V4h8v3M8 12h8M8 16h6" },
-      { href: "/app/cv", label: "Mon profil & CV", icon: "M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6" },
-      { href: "/app/lettres", label: "Mes lettres", icon: "M4 5h16v14H4zM7 9h10M7 13h10M7 17h6" },
-    ],
-  },
-  {
-    section: "Réseau",
-    items: [
-      { href: "/app/recruteurs", label: "Contacts recruteurs", icon: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-6 9c0-3 2.7-5 6-5s6 2 6 5M16.5 4.6a3.2 3.2 0 0 1 0 5.8M18 15c2 .8 3.5 2.4 3.5 5" },
-    ],
-  },
+export const NAV_LABEL: Record<string, string> = {
+  "/app/offres": "Mes offres",
+  "/app/cv": "Mon CV",
+  "/app/candidatures": "Mes candidatures",
+  "/app": "Mes offres",
+};
+
+const NAV_ITEMS = [
+  { href: "/app/offres", label: "Mes offres", icon: BriefcaseBusiness },
+  { href: "/app/cv", label: "Mon CV", icon: FileUser },
+  { href: "/app/candidatures", label: "Mes candidatures", icon: Send },
 ];
-
-/** P2-11 : libellés du menu — source unique pour eyebrows/titres de pages
-    (les pages importent NAV_LABEL au lieu du jargon « Module 0X »). */
-export const NAV_LABEL: Record<string, string> = { ...Object.fromEntries(
-  NAV.flatMap((g) => g.items.map((i) => [i.href, i.label] as const))
-) };
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [stats, setStats] = useState<{ offers: number; applications: number; cvs: number }>({ offers: 0, applications: 0, cvs: 0 });
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!mobileMenuOpen) return;
     const oldOverflow = document.body.style.overflow;
-    const menuButton = menuButtonRef.current;
     document.body.style.overflow = "hidden";
-    const container = mobileMenuRef.current;
-    container?.querySelector<HTMLElement>("button, a")?.focus();
+    mobileMenuRef.current?.querySelector<HTMLElement>("a, button")?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { setMenuOpen(false); return; }
-      if (event.key !== "Tab" || !container) return;
-      const focusable = [...container.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')];
+      if (event.key === "Escape") { setMobileMenuOpen(false); return; }
+      if (event.key !== "Tab" || !mobileMenuRef.current) return;
+      const focusable = [...mobileMenuRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')];
       if (!focusable.length) return;
       const first = focusable[0], last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => { document.body.style.overflow = oldOverflow; document.removeEventListener("keydown", onKeyDown); menuButton?.focus(); };
-  }, [menuOpen]);
+    return () => { document.body.style.overflow = oldOverflow; document.removeEventListener("keydown", onKeyDown); };
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/connexion?next=" + encodeURIComponent(pathname));
   }, [loading, user, router, pathname]);
 
+  useEffect(() => {
+    if (!user) return;
+    const read = () => {
+      const local = getLocalData(user.email);
+      if (local) {
+        setStats({
+          offers: local.offers?.length || 0,
+          applications: local.applications?.length || 0,
+          cvs: local.cvs?.length || 0,
+        });
+      }
+    };
+    read();
+    window.addEventListener("cible:data-changed", read);
+    return () => window.removeEventListener("cible:data-changed", read);
+  }, [user]);
+
   if (loading || !user) {
     return (
-      <div className="app-boot">
-        <div className="flex flex-col items-center gap-5">
-          <span className="app-boot-mark"><BrandMark size={40} /></span>
-          <p className="mono-label">chargement de votre espace…</p>
+      <div className="app-loading">
+        <div className="app-loading-content">
+          <div className="app-loading-logo">cible<span className="text-primary">.</span></div>
+          <p className="text-muted text-sm">Chargement de ton espace…</p>
         </div>
       </div>
     );
   }
 
-  const firstName = user.name.split(" ")[0];
-  const currentPageLabel = NAV_LABEL[pathname] || NAV.flatMap(group => group.items)
-    .find(item => item.href !== "/app" && pathname.startsWith(item.href + "/"))?.label || "Dossier de candidature";
+  const firstName = user.name?.split(" ")[0] || "Utilisateur";
 
   const sidebar = (
-    <aside className="app-side">
-      <Link href="/" className="app-logo">
-        <BrandMark />
-        cible<span className="text-mint">.</span>
-      </Link>
+    <aside className={`app-sidebar ${sidebarCollapsed ? "collapsed" : ""}`} aria-label="Navigation principale">
+      <div className="sidebar-header">
+        <Link href="/app/offres" className="sidebar-logo" aria-label="cible. — Accueil">
+          cible<span style={{ color: "var(--primary)" }}>.</span>
+        </Link>
+        {!sidebarCollapsed && (
+          <button className="sidebar-toggle" onClick={() => setSidebarCollapsed(true)} aria-label="Réduire la barre latérale" aria-expanded={false}>
+            <ChevronLeft size={17} />
+          </button>
+        )}
+      </div>
 
-      <nav className="app-nav" aria-label="Navigation de l'application">
-        {NAV.map((group) => (
-          <div key={group.section} className="mb-6">
-            <p className="mono-label text-[0.58rem]! mb-2.5 px-3">{group.section}</p>
-            {group.items.map((item) => {
-              const active =
-                item.href === "/app"
-                  ? pathname === "/app"
-                  : pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  prefetch={false}
-                  onClick={() => setMenuOpen(false)}
-                  aria-current={active ? "page" : undefined}
-                  className={`app-nav-link ${active ? "is-active" : ""}`}
-                >
-                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d={item.icon} />
-                  </svg>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+      <nav className="sidebar-nav" aria-label="Menu principal">
+        {NAV_ITEMS.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`sidebar-nav-item ${active ? "active" : ""}`}
+              onClick={() => setMobileMenuOpen(false)}
+              aria-current={active ? "page" : undefined}
+              title={sidebarCollapsed ? item.label : undefined}
+            >
+              <item.icon size={19} strokeWidth={2} aria-hidden="true" className="nav-icon" />
+              {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="mt-auto px-3 pb-2">
-        <div className="glass-card p-4 rounded-xl!">
-          <p className="text-[0.78rem] leading-relaxed text-text-dim">
-            <strong className="text-text-main font-semibold">{firstName},</strong> ton
-            espace <strong className="text-mint font-semibold">s&apos;adapte à toi</strong> :
-            chaque CV, offre ou candidature l&apos;enrichit.
-          </p>
-        </div>
-        <button type="button" onClick={() => { logout(); router.push("/"); }} className="app-logout">
-          Se déconnecter
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (window.confirm("Tout effacer et repartir d'un espace vide ?")) {
-              resetData(user.name, user.email);
-              window.location.reload();
-            }
-          }}
-          className="app-logout opacity-60 hover:opacity-100"
-        >
-          Réinitialiser l&apos;espace
-        </button>
+      {!sidebarCollapsed && (
+        <>
+          <div className="sidebar-divider" />
+          <div className="sidebar-section">
+            <p className="sidebar-section-title">Actions rapides</p>
+            <Link href="/app/offres" className="sidebar-action" onClick={() => setMobileMenuOpen(false)}>
+              <Mail size={17} strokeWidth={2} aria-hidden="true" />
+              <span>Synchroniser Gmail</span>
+            </Link>
+            <Link href="/app/offres?ajouter=1" className="sidebar-action" onClick={() => setMobileMenuOpen(false)}>
+              <Link2 size={17} strokeWidth={2} aria-hidden="true" />
+              <span>Ajouter une offre</span>
+            </Link>
+            <Link href="/app/offres?rafale=1" className="sidebar-action" onClick={() => setMobileMenuOpen(false)}>
+              <Zap size={17} strokeWidth={2} aria-hidden="true" />
+              <span>Mode Rafale</span>
+              <span className="rafale-badge">Nouveau</span>
+            </Link>
+          </div>
+          <div className="sidebar-divider" />
+          <div className="sidebar-stats" role="region" aria-label="Statistiques rapides">
+            <div className="sidebar-stat"><b>{stats.offers}</b><span>offres totales</span></div>
+            <div className="sidebar-stat"><b>{stats.applications}</b><span>candidatures</span></div>
+            <div className="sidebar-stat"><b>{stats.cvs}</b><span>CV préparés</span></div>
+          </div>
+          <div className="sidebar-next">
+            <p className="sidebar-next-title"><Sparkles size={14} /> Prochaine action</p>
+            <p>Prépare tes CV pour les offres prioritaires du jour, puis envoie tes candidatures.</p>
+            <Link href="/app/offres" onClick={() => setMobileMenuOpen(false)}>
+              Commencer ma session →
+            </Link>
+          </div>
+        </>
+      )}
+
+      <div className="sidebar-footer">
+        {sidebarCollapsed ? (
+          <button className="sidebar-expand" onClick={() => setSidebarCollapsed(false)} aria-label="Étendre la barre latérale">
+            <ChevronLeft size={18} style={{ transform: "rotate(180deg)" }} />
+          </button>
+        ) : (
+          <>
+            <div className="sidebar-profile">
+              <div className="user-avatar">{firstName.slice(0, 1).toUpperCase()}</div>
+              <div className="user-details">
+                <strong title={user.name}>{user.name}</strong>
+                <small>Stage de 6 mois</small>
+              </div>
+              <Link href="/app/cv" aria-label="Paramètres" style={{ color: "var(--sidebar-text-dim)", display: "grid", placeItems: "center" }}>
+                <Settings size={16} />
+              </Link>
+            </div>
+            <button type="button" onClick={() => { logout(); router.push("/"); }} className="sidebar-logout">
+              <LogOut size={15} strokeWidth={2} />
+              <span>Déconnexion</span>
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );
 
   return (
     <div className="app-root">
-      <a className="app-skip-link" href="#app-main-content">Aller au contenu principal</a>
-      <div className="hidden lg:block">{sidebar}</div>
+      <a className="skip-link" href="#app-main-content">Aller au contenu principal</a>
 
-      {/* Menu mobile */}
-      {menuOpen && <div ref={mobileMenuRef} id="app-mobile-navigation" className="app-mobile-menu lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation principale"><button className="app-mobile-backdrop" tabIndex={-1} onClick={() => setMenuOpen(false)} aria-label="Fermer la navigation" /><div className="app-mobile-panel"><button className="app-mobile-close" onClick={() => setMenuOpen(false)} aria-label="Fermer le menu">✕</button>{sidebar}</div></div>}
+      <div className={`app-sidebar-wrapper ${sidebarCollapsed ? "collapsed" : ""} ${mobileMenuOpen ? "open" : ""}`}>
+        {sidebar}
+      </div>
+
+      {mobileMenuOpen && (
+        <div
+          ref={mobileMenuRef}
+          className="mobile-menu-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation principale"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <div className="mobile-menu-panel" onClick={(e) => e.stopPropagation()}>
+            <button className="mobile-menu-close" onClick={() => setMobileMenuOpen(false)} aria-label="Fermer le menu">
+              <X size={20} />
+            </button>
+            {sidebar}
+          </div>
+        </div>
+      )}
 
       <div className="app-main">
         <header className="app-topbar">
           <button
-            ref={menuButtonRef}
             type="button"
-            className="burger lg:hidden"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-            aria-expanded={menuOpen}
-            aria-controls="app-mobile-navigation"
+            className="mobile-menu-toggle"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Ouvrir le menu"
+            aria-expanded={mobileMenuOpen}
           >
-            <span /><span />
+            <Menu size={20} />
           </button>
-          <nav className="app-breadcrumb" aria-label="Fil d'Ariane"><Link href="/app">Mon espace</Link><span aria-hidden="true">/</span><span aria-current="page">{currentPageLabel}</span></nav>
-          <span className="pill pill--ok ml-auto hidden sm:inline-flex">
-            <span className="w-1.5 h-1.5 rounded-full bg-mint mr-1.5 inline-block" />
-            objectif : mon prochain stage
+
+          <label className="topbar-search">
+            <Search size={16} aria-hidden="true" />
+            <input type="search" placeholder="Rechercher une offre, une entreprise, une compétence…" aria-label="Recherche globale" />
+            <kbd className="topbar-kbd">Ctrl K</kbd>
+          </label>
+
+          <div className="topbar-spacer" />
+
+          <span className="topbar-goal">
+            <span className="goal-badge"><CalendarClock size={13} /> Stage de 6 mois</span>
           </span>
+          <button type="button" className="topbar-icon-btn" aria-label="Notifications">
+            <Bell size={17} />
+            <span className="dot" />
+          </button>
+          <div className="user-avatar" style={{ width: 34, height: 34, fontSize: 13, background: "var(--primary)", color: "#fff", display: "grid", placeItems: "center", borderRadius: "50%", fontWeight: 600 }}>
+            {firstName.slice(0, 1).toUpperCase()}
+          </div>
         </header>
-        <main id="app-main-content" className="app-content" tabIndex={-1}>{children}</main>
+
+        <main id="app-main-content" className="app-content" tabIndex={-1}>
+          {children}
+        </main>
       </div>
     </div>
   );
 }
 
-/* Titre de page réutilisable */
+function getLocalData(email: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(`cible:data:v2:${email.toLowerCase()}`);
+    if (raw) return JSON.parse(raw) as { offers?: unknown[]; applications?: unknown[]; cvs?: unknown[] };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function AppPageHead({
+  kicker,
   eyebrow,
   title,
+  subtitle,
   sub,
+  actions,
 }: {
-  eyebrow: string;
+  kicker?: string;
+  eyebrow?: string;
   title: string;
+  subtitle?: string;
   sub?: string;
+  actions?: ReactNode;
 }) {
   return (
-    <div className="mb-9 max-w-3xl">
-      <p className="eyebrow">{eyebrow}</p>
-      <h1 className="mt-3 font-display text-[clamp(1.7rem,3.5vw,2.4rem)] font-semibold tracking-tight leading-tight">
-        {title}
-      </h1>
-      {sub && <p className="mt-3 text-muted text-[0.95rem] leading-relaxed">{sub}</p>}
-    </div>
+    <header className="page-head">
+      <div>
+        {(kicker || eyebrow) && <p className="kicker">{kicker || eyebrow}</p>}
+        <h1>{title}</h1>
+        {(subtitle || sub) && <p className="page-sub">{subtitle || sub}</p>}
+      </div>
+      {actions && <div className="page-head-actions">{actions}</div>}
+    </header>
   );
 }

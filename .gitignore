@@ -50,3 +50,9 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# artefacts de vérification visuelle locale (jamais à committer)
+/captures/
+/tmp/
+session-cookie.txt
+tsc-baseline.txt

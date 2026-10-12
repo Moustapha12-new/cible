@@ -6,6 +6,7 @@ import "@fontsource-variable/inter";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "./globals.css";
+import "./workspace.css";
 import "./hero-paper.css";
 
 export const metadata: Metadata = {

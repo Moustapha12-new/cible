@@ -1,0 +1,156 @@
+{
+  "description": "Référence d’acceptation des exemples `.eml` fournis. Les identifiants source existent dans les emails originaux. Les liens dans les fixtures partagées sont nettoyés et restent utilisés comme marqueurs de test.",
+  "expectedDistinctTotal": 26,
+  "expected": {
+    "indeed": [
+      {
+        "sourceId": "8bbcbc3ae0364f0c",
+        "title": "Stage - Ingénieur Etudes Hydraulique urbaine - H/F",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "1a2cb258a85268e1",
+        "title": "Stage Assistant ingénieur études H/F",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "957cb1c840564553",
+        "title": "Stage - 6 mois - Ingénieur Sécurité Projet Métro Automatique H/F",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "10c2ad4db6e4294f",
+        "title": "Stage TFE - Ingénieur Etude de Prix - VRD (78) H/F",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "860247151759b0c0",
+        "title": "Stage : Ingénieur(e) projet junior Openmedia F/H",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "8116e0a55838fefc",
+        "title": "Stage - Distribution électrique - Génie électrique - Nanterre - F/H",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "aa83271aaa8d4ece",
+        "title": "Stage Ingénieur.e Travaux _ mobilité électrique",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "2249ee7426889fff",
+        "title": "Stage Ingénieur(e) Projet Stratégie, Définition et Cadrage des Systèmes de Relation Usagers H/F",
+        "match": "provider_id"
+      }
+    ],
+    "linkedin": [
+      {
+        "sourceId": "4461408736",
+        "title": "Stagiaire - Stage Optimisation d’Infrastructures Électriques & Data H/F",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4471865345",
+        "title": "Stage – Ingénieur en électricité (H/F)",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4471635606",
+        "title": "Stage Ingénieur Electrotechnique - H/F",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4476292348",
+        "title": "Stage – Etudes techniques sur les systèmes électriques en courant continu H/F",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4446854590",
+        "title": "Stagiaire Ingénieur(e) de Projets junior Solaire // photovoltaïque et batteries de stockage F/H",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4447004092",
+        "title": "Stagiaire Ingénieur(e) de Projets junior Solaire // photovoltaïque et batteries de stockage F/H",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4475762644",
+        "title": "Stage - Ingénieur Génie Électrique F/H",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4473761126",
+        "title": "Stage de fin d'études- Ingénieur.e Électrification Rurale et Mini-réseaux Solaires",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4476772806",
+        "title": "STAGE - Études pour l’Intégration d’un BESS dans un Parc Eolien - H/F",
+        "match": "provider_id"
+      },
+      {
+        "sourceId": "4463720494",
+        "title": "Stage Ingénieur Système F/H",
+        "match": "provider_id"
+      }
+    ],
+    "hellowork": [
+      {
+        "title": "Ingénieur Electricité - Electronique H/F",
+        "company": "FAYAT ENERGIES SERVICES",
+        "location": "Aulnay-sous-Bois",
+        "match": "title_company_location"
+      },
+      {
+        "title": "Ingénieur Études H/F",
+        "company": "FAYAT ENERGIES SERVICES",
+        "location": "Viry-Châtillon",
+        "match": "title_company_location"
+      },
+      {
+        "title": "Stagiaire Ingenieur·e Ara Electricite H/F",
+        "company": "Eiffage Energie Systèmes",
+        "location": "Joué-lès-Tours",
+        "match": "title_company_location"
+      },
+      {
+        "title": "Stage Ingenieur·e Ara Electricite H/F",
+        "company": "Eiffage Energie Systèmes",
+        "location": "La Chapelle-Saint-Ursin",
+        "match": "title_company_location"
+      },
+      {
+        "title": "Stage - Ingénieur Distribution Électrique H/F",
+        "company": "Edvance",
+        "location": "Montrouge",
+        "match": "title_company_location"
+      },
+      {
+        "title": "Stage - Vers des Composants de Puissance de Prochaine Génération en Aln H/F",
+        "company": "CEA",
+        "location": "Grenoble",
+        "match": "title_company_location"
+      },
+      {
+        "title": "Stagiaire Ingenieur·e Ara Electricite H/F",
+        "company": "Eiffage Energie Systèmes",
+        "location": "Orléans",
+        "match": "title_company_location"
+      },
+      {
+        "title": "Stagaire Ingénieur Electrique H/F",
+        "company": "RATP Cap Ateliers Championnet",
+        "location": "Paris 18e",
+        "match": "title_company_location"
+      }
+    ]
+  },
+  "negativeCases": [
+    "Ne pas créer WSP comme 11e offre LinkedIn à partir de l’objet du mail.",
+    "Ne pas fusionner deux annonces VINCI avec des identifiants source différents.",
+    "Ne pas dupliquer les deux cartes FAYAT réaffichées ni la carte Edvance réaffichée dans HelloWork.",
+    "Ne pas fusionner des annonces Eiffage implantées dans des villes différentes."
+  ]
+}

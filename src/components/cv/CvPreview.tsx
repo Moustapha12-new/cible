@@ -25,7 +25,7 @@ export default function CvPreview({ cv, design }: { cv: CvData; design: CvDesign
   }, [cv, design]);
   return <figure><div ref={holder} className="overflow-hidden bg-white shadow-md" style={{ height: dimensions.height * dimensions.scale }}>
     <style dangerouslySetInnerHTML={{ __html: cvStyles(design) }} />
-    <div ref={paper} style={{ width: 794, minHeight: 1123, transform: `scale(${dimensions.scale})`, transformOrigin: "top left", padding: ["grey", "professional"].includes(design.template) ? 0 : "14mm", boxSizing: "border-box" }}>
+    <div ref={paper} style={{ width: 794, minHeight: 1123, transform: `scale(${dimensions.scale})`, transformOrigin: "top left", padding: 0, boxSizing: "border-box" }}>
       <div className="cvdoc" dangerouslySetInnerHTML={{ __html: cvBodyHtml(cv, design) }} />
     </div>
   </div><figcaption className={`text-xs mt-3 ${fit?.fits ? "text-mint" : "text-amber-700"}`} role="status">{!fit ? "Vérification du format A4…" : fit.fits ? `✓ Une page A4 vérifiée · ${fit.fontSize} pt · texte conservé` : "Ce contenu dépasse une page lisible : raccourcis-le avant l’export PDF."}</figcaption></figure>;

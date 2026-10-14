@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  if (!await verifiedUser()) redirect("/connexion?next=/app");
+  const user = await verifiedUser().catch(() => null);
+  if (!user && process.env.NODE_ENV === "production") {
+    redirect("/connexion?next=/app");
+  }
   return (
     <AuthProvider>
       <AppShell>{children}</AppShell>

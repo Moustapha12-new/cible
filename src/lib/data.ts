@@ -1,5 +1,3 @@
-"use client";
-
 /* ══════════════════ Imports Supabase ══════════════════ */
 import { DEFAULT_CV_DESIGN } from "./cv";
 
@@ -18,6 +16,7 @@ export type AppStatus = "sent" | "interview" | "offer" | "rejected";
 
 export type Application = {
   offerId?: string;
+  offerUrl?: string;
   id: string;
   company: string;
   role: string;
@@ -35,7 +34,7 @@ export type Application = {
   /** Notes libres (relance, date d'entretien, contact…). */
   notes?: string;
   sentCvAdaptationId?: string;
-  sentDocumentVersions?: { documentId: string; versionId: string }[];
+  sentDocumentVersions?: { documentId: string; versionId: string; sha256?: string }[];
   statusHistory?: { status: AppStatus; at: string }[];
 };
 
@@ -64,6 +63,9 @@ export type DetectedOffer = {
   contract?: string;
   duration?: string;
   startDate?: string;
+  deadline?: string;
+  receivedAt?: string;
+  gmailStatus?: string;
   description?: string;
   missions?: string[];
   skills?: string[];
@@ -124,6 +126,20 @@ export type Profile = {
 };
 
 export type UserData = {
+  bulkCvQueue?: {
+    offerId: string;
+    status: "pending" | "running" | "ready" | "failed";
+    key: string;
+    updatedAt: string;
+    error?: string;
+    documentId?: string;
+    versionId?: string;
+    sha256?: string;
+    fileName?: string;
+    cv?: import("./cv").CvData;
+    changes?: string[];
+    method?: "ai" | "grounded";
+  }[];
   documents?: import("./pfe-documents").DocumentRecord[];
   gmailAssociations?: import("./pfe-documents").GmailAssociation[];
   pfeAnalyses?: Record<string, import("./pfe-matching").PfeAnalysis>;
@@ -405,6 +421,6 @@ export const isEmptyData = (d: UserData) =>
 export const STATUS_META: Record<AppStatus, { label: string; cls: string }> = {
   sent: { label: "Postulé", cls: "pill--info" },
   interview: { label: "Entretien", cls: "pill--ok" },
-  offer: { label: "Accepté · offre", cls: "pill--ok" },
+  offer: { label: "Accepté", cls: "pill--ok" },
   rejected: { label: "Refusé", cls: "" },
 };

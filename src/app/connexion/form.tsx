@@ -71,7 +71,7 @@ export default function ConnexionForm() {
         <div className="glass-card p-8">
           <h1 className="font-display text-2xl font-semibold tracking-tight">Content de te revoir.</h1>
           <p className="mt-2 text-[0.88rem] text-muted">
-            Connecte-toi pour retrouver ton pilotage et tes candidatures.
+            Identifie-toi une fois pour retrouver ton espace personnel.
           </p>
 
           <form onSubmit={submit} className="mt-7 space-y-4" noValidate>
@@ -109,14 +109,6 @@ export default function ConnexionForm() {
             </button>
           </form>
 
-          <p className="mt-5 text-[0.8rem] text-muted">Ancien compte local ? Crée un compte sécurisé avec la même adresse. Tes CV et candidatures conservés sur cet appareil resteront disponibles. Confirme ensuite ton adresse par e-mail.</p>
-
-          <p className="mt-6 text-center text-[0.85rem] text-muted">
-            Pas encore de compte ?{" "}
-            <Link href="/inscription" className="text-mint hover:text-mint-strong transition-colors font-medium">
-              Créer un compte gratuit →
-            </Link>
-          </p>
         </div>
 
         <p className="mt-6 text-center">

@@ -26,7 +26,7 @@ function storageConfig() {
 export async function putDocument(ownerId: string, documentId: string, versionId: string, bytes: Uint8Array, mime: string): Promise<void> {
   const config = storageConfig();
   const path = documentObjectPath(ownerId, documentId, versionId);
-  const response = await fetch(`${config.url}/storage/v1/object/${encodeURIComponent(config.bucket)}/${path}`, {
+  const response = await fetch(`${config.url}/storage/v1/object/${encodeURIComponent(config.documentBucket)}/${path}`, {
     method: "POST", headers: { ...supabaseAuthHeaders(config.key), "Content-Type": mime || "application/octet-stream", "x-upsert": "false" },
     body: Buffer.from(bytes), cache: "no-store", signal: AbortSignal.timeout(15_000),
   });
@@ -36,7 +36,7 @@ export async function putDocument(ownerId: string, documentId: string, versionId
 export async function getDocument(ownerId: string, documentId: string, versionId: string): Promise<Response> {
   const config = storageConfig();
   const path = documentObjectPath(ownerId, documentId, versionId);
-  const response = await fetch(`${config.url}/storage/v1/object/${encodeURIComponent(config.bucket)}/${path}`, {
+  const response = await fetch(`${config.url}/storage/v1/object/${encodeURIComponent(config.documentBucket)}/${path}`, {
     headers: supabaseAuthHeaders(config.key), cache: "no-store", signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw supabaseStorageError(response.status, await response.text().catch(() => ""));

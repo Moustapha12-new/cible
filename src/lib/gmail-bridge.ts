@@ -44,6 +44,8 @@ export type OfferLike = {
   prerequisites?: string[];
   applicationInfo?: string;
   enrichStatus?: string;
+  status?: string;
+  receivedAt?: string;
 };
 
 /* ── Clé d'identité (match dashboard ↔ page détail) ────────────── */
@@ -138,6 +140,9 @@ export function offerToDetectedOffer(offer: OfferLike, match = 0): DetectedOffer
     source: offer.source || "Alertes Gmail",
     contract: offer.contract,
     duration: offer.duration,
+    deadline: offer.deadline,
+    receivedAt: offer.receivedAt,
+    gmailStatus: offer.status,
     description: offer.description,
     missions: offer.missions,
     skills: offer.skills,

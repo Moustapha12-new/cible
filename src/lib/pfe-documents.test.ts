@@ -51,14 +51,15 @@ assert.equal(loadData(email)?.documents?.[0].versions.length, 2);
 assert.equal(loadData(email)?.gmailAssociations?.[0].gmailId, candidate.id);
 
 const oldFetch = globalThis.fetch;
-const oldUrl = process.env.SUPABASE_URL, oldKey = process.env.SUPABASE_SECRET_KEY, oldRole = process.env.SUPABASE_SERVICE_ROLE_KEY, oldBucket = process.env.SUPABASE_BUCKET;
+const oldUrl = process.env.SUPABASE_URL, oldKey = process.env.SUPABASE_SECRET_KEY, oldRole = process.env.SUPABASE_SERVICE_ROLE_KEY, oldBucket = process.env.SUPABASE_BUCKET, oldDocumentBucket = process.env.SUPABASE_DOCUMENT_BUCKET;
 async function storageTest() {
-  process.env.SUPABASE_URL = "https://example.supabase.test"; process.env.SUPABASE_SECRET_KEY = "sb_secret_test"; delete process.env.SUPABASE_SERVICE_ROLE_KEY; process.env.SUPABASE_BUCKET = "private-test";
+  process.env.SUPABASE_URL = "https://example.supabase.test"; process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_secret_test"; process.env.SUPABASE_BUCKET = "cible-gmail-storage"; process.env.SUPABASE_DOCUMENT_BUCKET = "cible-documents";
   const seen: string[] = [];
   globalThis.fetch = async (input, init) => { seen.push(`${init?.method || "GET"} ${input}`); return init?.method === "POST" ? Response.json({ Key: "saved" }) : new Response("%PDF-test", { headers: { "Content-Type": "application/pdf" } }); };
   await putDocument("user-123456789", doc.id, v1.id, new Uint8Array([0x25, 0x50, 0x44, 0x46]), "application/pdf");
   assert.equal((await getDocument("user-123456789", doc.id, v1.id)).status, 200);
   assert.ok(seen.every(value => value.includes("documents/user-123456789/document-123456/version-123456")));
+  assert.ok(seen.every(value => value.includes("/object/cible-documents/")), "PDF uses the document bucket, not Gmail storage");
   globalThis.fetch = async () => new Response("storage offline", { status: 503 });
   await assert.rejects(putDocument("user-123456789", doc.id, v2.id, new Uint8Array([0x25, 0x50, 0x44, 0x46]), "application/pdf"));
   assert.equal(first.documents?.[0].versions.length, 1, "failed upload does not mutate metadata");
@@ -69,4 +70,5 @@ storageTest().then(() => console.log("P2-B : fichiers, versions, CV envoyé, rec
   if (oldKey === undefined) delete process.env.SUPABASE_SECRET_KEY; else process.env.SUPABASE_SECRET_KEY = oldKey;
   if (oldRole === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = oldRole;
   if (oldBucket === undefined) delete process.env.SUPABASE_BUCKET; else process.env.SUPABASE_BUCKET = oldBucket;
+  if (oldDocumentBucket === undefined) delete process.env.SUPABASE_DOCUMENT_BUCKET; else process.env.SUPABASE_DOCUMENT_BUCKET = oldDocumentBucket;
 });

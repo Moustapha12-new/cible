@@ -13,8 +13,12 @@ import Testimonials from "@/components/Testimonials";
 import Faq from "@/components/Faq";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { REFRESH_COOKIE } from "@/lib/auth-server";
 
-export default function Home() {
+export default async function Home() {
+  if ((await cookies()).get(REFRESH_COOKIE)?.value) redirect("/connexion?next=/app/offres");
   return (
     <LanguageProvider>
       <SmoothScroll />

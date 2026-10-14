@@ -40,6 +40,7 @@ _backup_secrets_*
 /supabase/.temp/
 /validation-sql.json
 /test_rpc.ps1
+/tmp/
 
 # vercel
 .vercel
@@ -50,3 +51,13 @@ next-env.d.ts
 
 .vercel
 .env*
+node_modules/
+.next/
+.vercel/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.pem
+*.key

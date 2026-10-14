@@ -1,7 +1,5 @@
-"use client";
-
-import DashboardIntelligent from "@/components/app/DashboardIntelligent";
+import { redirect } from "next/navigation";
 
 export default function DashboardPage() {
-  return <DashboardIntelligent />;
+  redirect("/app/offres");
 }

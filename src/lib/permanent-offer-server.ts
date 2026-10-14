@@ -3,7 +3,7 @@
    Utilise le même pattern que gmail-server.ts (storeGet/storeSet/storeDel).
    ═══════════════════════════════════════════════════════════════════════ */
 
-import { supabaseServerConfig, supabaseAuthHeaders, supabaseStorageError } from "@/lib/supabase-server";
+import { supabaseServerConfig, supabaseStorageError } from "@/lib/supabase-server";
 import { createHash, randomUUID } from "node:crypto";
 import { gmailAccountContext } from "@/lib/gmail-account";
 
@@ -82,8 +82,10 @@ async function supabaseGet(key: string): Promise<string | null> {
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) {
-    if (res.status === 404) return null;
-    throw supabaseStorageError(res.status, await res.text().catch(() => ""));
+    const error = await res.json().catch(() => ({})) as { message?: string; error?: string };
+    const message = error.message || error.error || "";
+    if (/object.*not found/i.test(message) || (res.status === 404 && !/bucket/i.test(message))) return null;
+    throw supabaseStorageError(res.status, message);
   }
   const text = await res.text();
   return text.length ? text : null;

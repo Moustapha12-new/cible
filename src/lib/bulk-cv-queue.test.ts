@@ -1,0 +1,25 @@
+import assert from "node:assert/strict";
+import { bulkFingerprint, planBulkQueue, resumableItems } from "./bulk-cv-queue";
+import { emptyData, type DetectedOffer } from "./data";
+import { parseCvText } from "./cv";
+
+const makeOffer = (id: string): DetectedOffer => ({ id, title: `Stage ${id}`, company: `Entreprise ${id}`, location: "Paris", salary: "", match: 0, keywords: [], text: `Description réelle synthétique de l'offre ${id}.`, source: "test" });
+const data = emptyData("Candidat Exemple", "candidate@example.invalid");
+data.originalCv = { name: "CV original", text: "Candidat Exemple\nÉlève ingénieur\nEXPÉRIENCE\nProjet électrique réel." };
+data.cvData = parseCvText(data.originalCv.text);
+const first = planBulkQueue(data, ["1", "2", "1"], [makeOffer("1"), makeOffer("2")]);
+assert.equal(first.bulkCvQueue?.length, 2);
+assert.equal(first.bulkCvQueue?.every(item => item.status === "pending"), true);
+const key = first.bulkCvQueue![0].key;
+first.bulkCvQueue![0] = { ...first.bulkCvQueue![0], status: "ready", documentId: "pdf-1", versionId: "v-1", sha256: "abc" };
+const cached = planBulkQueue(first, ["1"], []);
+assert.equal(cached.bulkCvQueue![0].status, "ready");
+assert.equal(cached.bulkCvQueue![0].documentId, "pdf-1");
+assert.equal(bulkFingerprint(makeOffer("1"), data), key);
+const changed = { ...cached, originalCv: { ...cached.originalCv!, text: cached.originalCv!.text + "\nNouvelle preuve." } };
+const refreshed = planBulkQueue(changed, ["1"], []);
+assert.equal(refreshed.bulkCvQueue![0].status, "pending");
+const old = new Date(Date.now() - 6 * 60_000).toISOString();
+const recent = new Date().toISOString();
+assert.deepEqual(resumableItems([{ ...refreshed.bulkCvQueue![0], status: "running", updatedAt: old }, { ...refreshed.bulkCvQueue![1], status: "running", updatedAt: recent }], Date.now()).map(item => item.offerId), ["1"]);
+process.stdout.write("bulk-cv-queue: cache, uniqueness, invalidation, resume passed\n");

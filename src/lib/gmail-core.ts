@@ -27,6 +27,8 @@ import { repairCheckpoint } from "@/lib/text-repair";
 import { stampAnalysis } from "@/lib/gmail-dashboard";
 import type { DetectSummary, AnchorEntry } from "@/lib/offer-links";
 import { groundedOfferData } from "./grounded-offer";
+import { extractOffersFromEmail } from "@/lib/offer-extract";
+import type { Platform } from "@/lib/offer-links";
 
 export { stampAnalysis };
 
@@ -822,7 +824,7 @@ function codeOffersFrom(
   email: ParsedEmail,
   det: ReturnType<typeof extractOfferLinks>
 ): RawOffer[] {
-  return det.offers.map((a) => {
+  const base = det.offers.map((a) => {
     const block = isolateBlock(email.html ?? "", a.href);
     return {
       title: (block?.title || a.rawTitle || "").trim(),
@@ -840,6 +842,58 @@ function codeOffersFrom(
       snippet: block?.snippet || undefined,
     };
   });
+  /* Chantier 2 : les parseurs par carte (offer-extract) apportent le titre,
+     l'entreprise et la localisation les plus fiables pour LinkedIn/HelloWork
+     et couvrent les offres qu'une simple regex d'URL peut manquer. On FUSIONNE
+     par URL canonique : la carte prime si elle renseigne mieux un champ, et une
+     carte sans équivalent URL est ajoutée. Jamais d'offre fabriquée : seules des
+     ancres réelles du HTML entrent. */
+  const card = extractOffersFromEmail({
+    id: email.id,
+    from: email.from,
+    subject: email.subject,
+    html: email.html,
+  });
+  if (card.offers.length === 0) return base;
+  const byUrl = new Map<string, number>();
+  base.forEach((o) => {
+    const k = o.applicationUrl || "";
+    if (k) byUrl.set(k, byUrl.size);
+  });
+  const merged = [...base];
+  for (const c of card.offers) {
+    const url = c.canonicalUrl || c.rawHrefs[0] || "";
+    const hit = url ? byUrl.get(url) : undefined;
+    if (hit !== undefined) {
+      const cur = merged[hit];
+      merged[hit] = {
+        ...cur,
+        title: c.title || cur.title,
+        company: c.company || cur.company,
+        location: c.location || cur.location,
+        contract: c.contract || cur.contract,
+        ...(c.sourceJobId ? { anchorText: cur.anchorText || c.title } : {}),
+      };
+    } else {
+      merged.push({
+        title: c.title.trim(),
+        company: c.company.trim(),
+        location: c.location.trim(),
+        contract: c.contract || "",
+        duration: "",
+        deadline: "",
+        skills: [],
+        description: "",
+        applicationUrl: url,
+        source: c.provider as Platform,
+        sourceUrl: c.rawHrefs[0],
+        anchorText: c.title.trim(),
+        snippet: undefined,
+      });
+      if (url) byUrl.set(url, merged.length - 1);
+    }
+  }
+  return merged;
 }
 
 function realUrlSet(email: ParsedEmail, anchors: AnchorEntry[], code: RawOffer[]): string[] {

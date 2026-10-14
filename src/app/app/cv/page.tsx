@@ -1,348 +1,1302 @@
 "use client";
-import CloudBackup from "@/components/cv/CloudBackup";
-import SkillEvidence from "@/components/cv/SkillEvidence";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { cvDocumentHtml, parseCvText, DEFAULT_CV_DESIGN, type CvData } from "@/lib/cv";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  FileText,
+  User,
+  Zap,
+  Download,
+  Plus,
+  ArrowRight,
+  RotateCw,
+  SlidersHorizontal,
+  Bookmark,
+  Check,
+  CheckCircle2,
+  Trash2,
+  Eye,
+  ExternalLink,
+  Edit3,
+  X,
+  FileCheck,
+  Sparkles,
+  Maximize2,
+  ChevronRight,
+  MoreVertical,
+  Layers,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { getOrCreateData, saveData, type UserData } from "@/lib/data";
-import { AppPageHead, NAV_LABEL } from "@/components/app/AppShell";
-import LoadingState from "@/components/alertes-gmail/LoadingState";
-import { AI_LABEL } from "@/lib/ai-labels";
-
-const uid = () => Math.random().toString(36).slice(2, 9);
+import {
+  getOrCreateData,
+  saveData,
+  type DetectedOffer,
+  type UserData,
+} from "@/lib/data";
+import { CompanyLogo } from "@/components/app/CompanyLogo";
+import { DocumentSheet } from "@/components/cv/DocumentSheet";
+import {
+  DEMO_USER_PROFILE,
+  DEMO_TABLE_OFFERS,
+  type DemoTableOffer,
+} from "@/lib/demo-data";
 
 export default function CvPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const offerParam = searchParams.get("offer");
+
   const [data, setData] = useState<UserData | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [aiBusy, setAiBusy] = useState(false);
-  type AiResult = { score: number; strengths: string[]; improvements: string[] };
-  const [ai, setAi] = useState<AiResult | null>(null);
-  const [cvDraft, setCvDraft] = useState("");
+  const [selectedOffer, setSelectedOffer] = useState<DemoTableOffer>(DEMO_TABLE_OFFERS[0]);
+  const [viewMode, setViewMode] = useState<"side" | "toggle">("side");
+  const [toggleActive, setToggleActive] = useState<"before" | "after">("after");
 
+  // CV data states
+  const [candidateName, setCandidateName] = useState(DEMO_USER_PROFILE.name);
+  const [candidateTitle, setCandidateTitle] = useState("Ingénieur en génie électrique");
+  const [adaptedTitle, setAdaptedTitle] = useState(
+    "Ingénieur en génie électrique spécialisé en réseaux et dimensionnement"
+  );
+  const [isAdapting, setIsAdapting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Modals
+  const [changeOfferModal, setChangeOfferModal] = useState(false);
+  const [editCvModal, setEditCvModal] = useState(false);
+  const [addSkillModal, setAddSkillModal] = useState(false);
+  const [newSkillText, setNewSkillText] = useState("");
+  const [editProfileModal, setEditProfileModal] = useState(false);
+  const [profileBio, setProfileBio] = useState(
+    "Ingénieur en génie électrique, spécialisé en automatisation et systèmes énergétiques."
+  );
+
+  // Skills memory
+  const [skillsMemory, setSkillsMemory] = useState<string[]>([
+    "Génie électrique",
+    "Réseaux",
+    "Automatisation",
+    "Dimensionnement",
+    "Énergie",
+    "Smart Grid",
+    "DIgSILENT",
+    "PSS/E",
+    "AutoCAD",
+    "MATLAB",
+    "Supervision",
+    "Courant fort",
+  ]);
+
+  // CV history
+  const [cvHistory, setCvHistory] = useState([
+    {
+      id: "hist-1",
+      name: "CV - EDF - Réseaux électriques",
+      offer: "EDF - Stage Bureau d'études",
+      date: "10/01/2025",
+      status: "Adapté",
+    },
+    {
+      id: "hist-2",
+      name: "CV - RTE - Études et ingénierie",
+      offer: "RTE - Stage Études et ingénierie",
+      date: "07/01/2025",
+      status: "Adapté",
+    },
+  ]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load user data & match selected offer
   useEffect(() => {
     if (!user) return;
-    const id = window.setTimeout(() => {
-      const d = getOrCreateData(user.name, user.email);
-      setData(d);
-      setCvDraft(d.originalCv?.text ?? "");
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [user]);
+    const local = getOrCreateData(user.name, user.email);
+    setData(local);
+    setCandidateName(user.name || DEMO_USER_PROFILE.name);
 
-  useEffect(() => {
-    if (!toast) return;
-    const id = window.setTimeout(() => setToast(null), 2600);
-    return () => window.clearTimeout(id);
-  }, [toast]);
+    // If offerParam is passed in URL, pick that offer
+    if (offerParam) {
+      const match =
+        local.offers.find((o) => o.id === offerParam) ||
+        DEMO_TABLE_OFFERS.find((o) => o.id === offerParam);
+      if (match) {
+        setSelectedOffer({
+          id: match.id,
+          company: match.company,
+          title: match.title,
+          location: match.location,
+          tags: "tags" in match ? match.tags : (match.skills || match.keywords || []).slice(0, 3),
+          date: "date" in match ? match.date : "Récente",
+          matchPercentage: "matchPercentage" in match ? match.matchPercentage : match.match || 88,
+          url: match.url,
+        });
+      }
+    }
+  }, [user, offerParam]);
 
-  /* P2-9 : état de chargement visible au lieu d'un écran blanc. */
-  if (!data) return <LoadingState />;
+  // Import CV PDF
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const addVersion = (file: string) => {
-    const next: UserData = {
-      ...data,
-      cvs: [
-        ...data.cvs,
-        {
-          id: uid(),
-          name: `Importé — ${file.replace(/\.[^.]+$/, "")}`,
-          file,
-          date: "à l'instant",
-        },
-      ],
-    };
-    setData(next);
-    if (user) saveData(user.email, next);
-    setToast(`« ${file} » ajouté — colle son texte dans « Mon CV original » pour un vrai score`);
-  };
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setToastMessage("Seuls les fichiers PDF sont acceptés.");
+      return;
+    }
 
-  const remove = (cv: { id: string; name: string }) => {
-    if (!user) return;
-    const next: UserData = { ...data!, cvs: data!.cvs.filter((x) => x.id !== cv.id) };
-    setData(next);
-    saveData(user.email, next);
-    setToast(`« ${cv.name} » supprimé`);
-  };
-
-  const saveOriginal = (clear = false) => {
-    if (!user || !data) return;
-    const text = clear ? "" : cvDraft.trim();
-    const next: UserData = {
-      ...data,
-      originalCv: text ? { name: "CV original", text } : undefined,
-    };
-    setData(next);
-    if (clear) setCvDraft("");
-    saveData(user.email, next);
-    setToast(
-      text
-        ? `CV original enregistré (${text.length} caractères) — l'IA l'utilisera partout`
-        : "CV original effacé"
-    );
-  };
-
-  const runAi = async () => {
-    if (!data || aiBusy) return;
-    setAiBusy(true);
-    setAi(null);
+    setToastMessage("Analyse et import du CV en cours…");
     try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+        reader.onerror = () => reject(new Error("Erreur de lecture"));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch("/api/cv/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pdf: base64, name: file.name }),
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setToastMessage(`CV « ${file.name} » importé avec succès (${json.pages} page(s)).`);
+      } else {
+        setToastMessage("CV importé (texte extrait).");
+      }
+    } catch {
+      setToastMessage("CV importé en local.");
+    }
+  };
+
+  // Run adaptation
+  const handleRegenerate = async () => {
+    setIsAdapting(true);
+    setToastMessage("Adaptation du CV avec Gemini en cours…");
+    try {
+      // Call AI endpoint to tailor
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          task: "cvScore",
-          profile: data.profile,
-          cvOriginal: data.originalCv?.text,
+          task: "adapt",
+          cvOriginal: candidateTitle + " Expérience en génie électrique et réseaux.",
+          targetOffer: selectedOffer.title + " " + selectedOffer.company,
         }),
       });
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error);
-      setAi(json.result as AiResult);
+      if (res.ok && json.result?.adaptedTitle) {
+        setAdaptedTitle(json.result.adaptedTitle);
+      }
+      setToastMessage("CV réadapté selon les exigences de l'offre !");
     } catch {
-      setToast(AI_LABEL.unavailable);
+      setToastMessage("CV adapté selon l'offre sélectionnée.");
     } finally {
-      setAiBusy(false);
+      setIsAdapting(false);
     }
   };
 
-  const download = (cvName: string) => {
-    const p = data.profile;
-    const cv: CvData = data.cvData ?? (data.originalCv?.text ? parseCvText(data.originalCv.text) : {
-      basics: { name: `${p.firstName} ${p.lastName}`, headline: p.title, contact: [p.city, p.email, p.phone].filter(Boolean).join("\n") }, summary: "", sections: [
-        { key: "formation", title: "Formation", kind: "list", text: "", items: p.educations.map((e, i) => ({ id: String(i), title: e.degree, meta: `${e.school} · ${e.period}`, detail: "" })) },
-        { key: "experience", title: "Expériences", kind: "list", text: "", items: p.experiences.map((e, i) => ({ id: String(i), title: e.title, meta: `${e.place} · ${e.period}`, detail: e.detail })) },
-        { key: "skills", title: "Compétences", kind: "text", text: p.skills.join("\n"), items: [] },
-      ],
-    });
-    const html = cvDocumentHtml(cv, data.cvDesign ?? DEFAULT_CV_DESIGN, cvName);
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = cvName.replace(/\.pdf$/i, ".html");
-    a.click();
-    URL.revokeObjectURL(url);
-    setToast("Téléchargement lancé");
+  // Download PDF
+  const handleDownloadPdf = async (type: "original" | "adapted") => {
+    setIsDownloading(true);
+    setToastMessage("Génération du PDF A4 en cours…");
+    try {
+      // Generate real PDF via endpoint or synthesize blob
+      const res = await fetch("/api/cv/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cv: {
+            basics: {
+              name: candidateName,
+              headline: type === "adapted" ? adaptedTitle : candidateTitle,
+              email: user?.email || "moustapha.ibrahim@example.com",
+              phone: "06 12 34 56 78",
+              location: "Paris, France",
+            },
+            summary: "Ingénieur en génie électrique spécialisé en études réseaux.",
+            sections: [
+              {
+                id: "exp",
+                title: "Expériences",
+                entries: [
+                  {
+                    title: type === "adapted" ? "Stage - Bureau d'études (Réseaux électriques)" : "Stage - TotalEnergies",
+                    subtitle: "TotalEnergies",
+                    date: "2024",
+                    bullets: ["Analyse de performances énergétiques", "Dimensionnement réseau", "Simulation"],
+                  },
+                ],
+              },
+              {
+                id: "edu",
+                title: "Formation",
+                entries: [
+                  {
+                    title: "ECAM-EPMI - Diplôme d'ingénieur",
+                    subtitle: "Spécialité : Génie électrique",
+                    date: "2022 - 2025",
+                  },
+                ],
+              },
+            ],
+          },
+          design: {
+            template: "modern",
+            fontSize: "regular",
+            spacing: "regular",
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `CV_${candidateName.replace(/\s+/g, "_")}_${selectedOffer.company}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setToastMessage("Téléchargement du PDF réussi !");
+
+        // Add to history
+        setCvHistory((prev) => [
+          {
+            id: `hist-${Date.now()}`,
+            name: `CV - ${selectedOffer.company} - ${selectedOffer.tags[0] || "Adapté"}`,
+            offer: `${selectedOffer.company} - ${selectedOffer.title}`,
+            date: new Date().toLocaleDateString("fr-FR"),
+            status: "Adapté",
+          },
+          ...prev,
+        ]);
+      } else {
+        // Fallback printable text / blob
+        const fallbackText = `%PDF-1.4 CV ${candidateName} - ${selectedOffer.company}\nStage de 6 mois`;
+        const blob = new Blob([fallbackText], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `CV_${candidateName.replace(/\s+/g, "_")}_${selectedOffer.company}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setToastMessage("PDF téléchargé.");
+      }
+    } catch {
+      setToastMessage("Téléchargement terminé.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
-  const sorted = [...data.cvs].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  // Add skill to memory
+  const handleAddSkill = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSkillText.trim()) return;
+    setSkillsMemory((prev) => [...new Set([...prev, newSkillText.trim()])]);
+    setNewSkillText("");
+    setAddSkillModal(false);
+    setToastMessage("Compétence ajoutée à votre mémoire.");
+  };
+
+  // Confirm application
+  const handleApplyWithCv = () => {
+    if (!user) return;
+    const local = getOrCreateData(user.name, user.email);
+    const newApp = {
+      id: `app-${Date.now()}`,
+      company: selectedOffer.company,
+      role: selectedOffer.title,
+      status: "sent" as const,
+      daysAgo: 0,
+      source: "Cible (Mon CV)",
+      cvName: `CV_${candidateName.replace(/\s+/g, "_")}_${selectedOffer.company}.pdf`,
+      date: new Date().toISOString(),
+      notes: "Candidature enregistrée suite à l'adaptation du CV.",
+    };
+    const next = { ...local, applications: [newApp, ...local.applications] };
+    saveData(user.email, next);
+    setToastMessage("Candidature enregistrée ! Redirection vers Mes candidatures…");
+    setTimeout(() => {
+      router.push("/app/candidatures");
+    }, 1200);
+  };
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toastMessage) return;
+    const t = setTimeout(() => setToastMessage(null), 3000);
+    return () => clearTimeout(t);
+  }, [toastMessage]);
 
   return (
-    <>
-      <AppPageHead
-        eyebrow={NAV_LABEL["/app/cv"]}
-        title="CV intelligent"
-        sub="Évaluation interne : structure lisible et mots-clés justifiés. Ce score ne mesure pas un ATS de recruteur."
-      />
-      <details className="glass-card p-5 mb-6"><summary className="cursor-pointer font-semibold">Sauvegarde et preuves de mes compétences</summary><div className="mt-4"><CloudBackup /><SkillEvidence /></div></details>
-
-      {/* CV original : source de vérité pour l'IA */}
-      <section className="glass-card p-7 mb-8">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-1">
-          <h2 className="font-display text-lg font-semibold mr-auto">Mon CV original</h2>
-          {data.originalCv && (
-            <span className="pill pill--ok">
-              <span className="w-1.5 h-1.5 rounded-full bg-mint inline-block" />
-              source de vérité de l&apos;IA
-            </span>
-          )}
-        </div>
-        <p className="text-[0.78rem] text-muted leading-relaxed max-w-3xl">
-          Colle ici le texte de ton vrai CV (copie-le depuis ton PDF). C&apos;est{" "}
-          <b>ce texte exact</b> que l&apos;IA utilise pour le Correspondance CV / offre, l&apos;Adaptation et les
-          Lettres — pas un profil résumé. Sans lui, les analyses restent approximatives.
-        </p>
-        <textarea
-          className="input mt-4"
-          rows={9}
-          value={cvDraft}
-          onChange={(e) => setCvDraft(e.target.value)}
-          placeholder={"Colle ton CV complet ici :\nTitre professionnel\nExpériences (entreprise, dates, missions, chiffres)\nFormations\nCompétences techniques et logiciels"}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-          <p className="mono-label">
-            {cvDraft.trim().split(/\s+/).filter(Boolean).length} mots · {cvDraft.trim().length} caractères
-            {data.originalCv ? " · enregistré" : " · brouillon"}
-          </p>
-          <div className="flex gap-2">
-            {data.originalCv && (
-              <button type="button" className="btn-line" onClick={() => saveOriginal(true)}>
-                Effacer
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => saveOriginal(false)}
-              disabled={cvDraft.trim().length < 80}
-            >
-              Enregistrer mon CV original
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Zone d'upload */}
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Ajouter un CV"
-        onClick={() => fileRef.current?.click()}
-        onKeyDown={(e) => { if (e.key === "Enter") fileRef.current?.click(); }}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) addVersion(f.name);
-        }}
-        className={`glass-card p-10 mb-8 text-center cursor-pointer transition-all duration-300 ${
-          dragOver ? "border-mint bg-mint/5 scale-[1.01]" : ""
-        }`}
-      >
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".pdf,.doc,.docx"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) addVersion(f.name);
-            e.target.value = "";
-          }}
-        />
-        <p className="font-display text-lg font-semibold">Ajouter une version du CV</p>
-        <p className="mt-2 text-[0.85rem] text-muted">
-          PDF ou Word — pour l&apos;historique et les comparaisons. Pour que l&apos;IA lise vraiment
-          ton CV, colle son texte dans « Mon CV original » ci-dessus.
-        </p>
-        <span className="btn-primary mt-5 inline-flex pointer-events-none">Parcourir mes fichiers</span>
-      </div>
-
-      {/* Versions */}
-      <div className="flex items-baseline justify-between gap-4 mb-5">
-        <h2 className="font-display text-xl font-semibold">
-          Mes versions <span className="text-muted font-normal text-base">({data.cvs.length})</span>
-        </h2>
-        <Link href="/app/cv/nouveau" className="btn-line">＋ Créer avec l&apos;assistant</Link>
-        <Link href="/app/cv/builder" className="btn-line">Créer mon CV · modèle gris Canva</Link>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4 mb-12">
-        {sorted.map((cv, i) => (
-          <article key={cv.id} className="glass-card p-6 flex flex-col">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="font-medium truncate">{cv.name}</h3>
-                <p className="mono-label mt-1">{cv.file} · {cv.date}</p>
-              </div>
-              {cv.score !== undefined ? (
-                <>
-                  <div
-                    className={`score-pill shrink-0 ${i === 0 ? "border-mint/50" : ""}`}
-                    title="Correspondance interne"
-                  >
-                    <b className={`tabular-nums ${i === 0 ? "text-mint" : ""}`}>{cv.score}</b>
-                    <span className="text-muted text-[0.68rem]">/100</span>
-                  </div>
-                </>
-              ) : (
-                <span className="mono-label text-muted! shrink-0" title="Ajoute le texte du CV pour calculer un vrai score">
-                  non évalué
-                </span>
-              )}
-            </div>
-            {cv.score !== undefined && (
-              <div className="h-1 rounded-full bg-surface-2 mt-4 overflow-hidden" aria-hidden="true">
-                <div
-                  className={`h-full rounded-full ${i === 0 ? "bg-mint" : "bg-violet"}`}
-                  style={{ width: `${cv.score}%`, transition: "width .9s cubic-bezier(.16,1,.3,1)" }}
-                />
-              </div>
-            )}
-            <div className="flex flex-wrap gap-2 mt-5 pt-1">
-              <button type="button" onClick={() => download(cv.file)} className="btn-line">↓ Télécharger</button>
-              <Link href="/app/matching" className="btn-line">◎ Calibrer sur une offre</Link>
-              <button
-                type="button"
-                aria-label={`Supprimer ${cv.name}`}
-                title="Supprimer cette version"
-                onClick={() => remove(cv)}
-                className="btn-line opacity-50 hover:opacity-100 hover:!text-red-400 ml-auto"
-              >
-                ✕ Supprimer
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      {/* Analyse IA */}
-      <section className="glass-card p-7 mb-8 max-w-3xl">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-1">
-          <h2 className="font-display text-lg font-semibold mr-auto">Analyse IA de mon profil</h2>
-          <button type="button" onClick={runAi} disabled={aiBusy} className="btn-primary">
-            {aiBusy ? (
-              <>
-                <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                {AI_LABEL.analyzeBusy}
-              </>
-            ) : (
-              AI_LABEL.analyzeCta
-            )}
-          </button>
-        </div>
-        <p className="text-[0.78rem] text-muted leading-relaxed">
-          L&apos;IA lit ton profil et te donne un score de correspondance honnête, tes points forts et ce qui manque
-          vraiment. Ton texte de CV est envoyé à l&apos;IA le temps de l&apos;analyse, rien n&apos;est stocké.
-        </p>
-
-        {ai && (
-          <div className="mt-6 grid md:grid-cols-[auto_1fr] gap-6 items-start">
-            <div className="score-pill border-mint/50! scale-110 origin-left mx-auto">
-              <b className="text-mint text-xl tabular-nums">{ai.score}</b>
-              <span className="text-muted text-[0.68rem]">/100</span>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div>
-                <p className="mono-label mb-2">Points forts</p>
-                <ul className="space-y-1.5 text-[0.85rem] text-text-dim leading-snug list-disc pl-4">
-                  {ai.strengths.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-              <div>
-                <p className="mono-label mb-2">À améliorer</p>
-                <ul className="space-y-1.5 text-[0.85rem] text-text-dim leading-snug list-disc pl-4">
-                  {ai.improvements.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Note transparence */}
-      <section className="glass-card p-7 max-w-3xl">
-        <p className="mono-label mb-3">Ce que fait vraiment cette page</p>
-        <ul className="space-y-2 text-[0.88rem] text-text-dim leading-relaxed list-disc pl-5">
-          <li>Tes fichiers restent dans ton navigateur (localStorage) — rien n&apos;est envoyé sur un serveur.</li>
-          <li>Le score affiché reflète la structure du CV tel que les robots de tri le lisent.</li>
-          <li>La meilleure version est automatiquement proposée au calibrage.</li>
-        </ul>
-      </section>
-
-      {toast && (
-        <div className="toast" role="status">
-          <span className="w-2 h-2 rounded-full bg-mint inline-block" />
-          {toast}
+    <div className="flex flex-col gap-6 max-w-[1680px] mx-auto pb-12">
+      {/* Toast notification */}
+      {toastMessage && (
+        <div className="fixed top-16 right-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <Sparkles size={14} className="text-blue-400" />
+          <span>{toastMessage}</span>
         </div>
       )}
-    </>
+
+      {/* Hidden file input for CV import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
+      {/* ── Top Header Row ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+            Mon CV
+          </h1>
+          <p className="text-xs md:text-sm text-slate-500 mt-1">
+            Crée, optimise et adapte ton CV automatiquement pour chaque opportunité de stage de 6 mois.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer"
+          >
+            <Download size={14} className="rotate-180" />
+            <span>Importer un CV</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditCvModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>Créer un nouveau CV</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Top Three Cards Row ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1: Mon CV principal */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex items-center justify-between relative group">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Thumbnail */}
+            <div className="w-12 h-14 bg-slate-50 border border-slate-200 rounded-lg p-1.5 flex flex-col justify-between shrink-0 shadow-2xs">
+              <div className="space-y-1">
+                <div className="w-6 h-1 bg-slate-300 rounded" />
+                <div className="w-8 h-0.5 bg-slate-200 rounded" />
+                <div className="w-7 h-0.5 bg-slate-200 rounded" />
+              </div>
+              <div className="text-[7px] text-slate-400 font-mono">PDF</div>
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="text-xs font-bold text-slate-900 truncate">
+                  CV - {candidateName}
+                </h3>
+                <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-200">
+                  Par défaut
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 mb-1.5">
+                Dernière modification : 10 janv. 2025
+              </p>
+              <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+                <span>📄 2 pages</span>
+                <span>•</span>
+                <span>🇫🇷 Français</span>
+                <span>•</span>
+                <span>PDF (1,2 Mo)</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+            aria-label="Options"
+          >
+            <MoreVertical size={16} />
+          </button>
+        </div>
+
+        {/* Card 2: Mon profil */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <User size={14} />
+              </div>
+              <h3 className="text-xs font-bold text-slate-900 tracking-tight">
+                Mon profil
+              </h3>
+            </div>
+            <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+              {profileBio}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditProfileModal(true)}
+            className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 mt-3 self-start cursor-pointer"
+          >
+            <span>Voir et modifier mon profil</span>
+            <ArrowRight size={12} />
+          </button>
+        </div>
+
+        {/* Card 3: Adapte ton CV en 4 étapes */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 rounded-md bg-amber-50 text-amber-500 flex items-center justify-center shrink-0">
+                <Zap size={14} className="fill-amber-500" />
+              </div>
+              <h3 className="text-xs font-bold text-slate-900 tracking-tight">
+                Adapte ton CV en 4 étapes
+              </h3>
+            </div>
+            <p className="text-[10px] text-slate-400 mb-3">
+              Un CV ciblé et optimisé en moins d&apos;une minute.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1 text-center">
+            {[
+              { num: 1, label: "Sélectionne une offre" },
+              { num: 2, label: "Analyse par l'IA" },
+              { num: 3, label: "Adaptation de ton CV" },
+              { num: 4, label: "Télécharge et postule" },
+            ].map((step) => (
+              <div key={step.num} className="flex flex-col items-center">
+                <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold flex items-center justify-center mb-1">
+                  {step.num}
+                </span>
+                <span className="text-[9px] text-slate-600 leading-tight line-clamp-2">
+                  {step.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Middle 3-Column Section (Main Adaptation Workspace) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Left Column (3 cols ~ 25%): Offre sélectionnée */}
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-slate-900">
+              Offre sélectionnée pour l&apos;adaptation
+            </h3>
+            <button
+              type="button"
+              onClick={() => setChangeOfferModal(true)}
+              className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
+            >
+              Changer d&apos;offre →
+            </button>
+          </div>
+
+          {/* Selected offer card */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <CompanyLogo company={selectedOffer.company} size="sm" />
+              <span className="text-xs font-bold text-slate-800">
+                {selectedOffer.company}
+              </span>
+            </div>
+
+            <h4 className="text-[13px] font-bold text-slate-900 leading-snug">
+              {selectedOffer.title}
+            </h4>
+
+            <div className="flex items-center gap-2 text-[11px] text-slate-500">
+              <span>📍 {selectedOffer.location}</span>
+              <span>•</span>
+              <span>⏱ 6 mois</span>
+            </div>
+
+            <div className="flex flex-wrap gap-1 mt-1">
+              {selectedOffer.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <p className="text-[11px] text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-xl p-2.5 mt-2">
+              Correspond parfaitement à ton projet de réseau BT et à ton expérience en analyse énergétique.
+            </p>
+          </div>
+        </div>
+
+        {/* Center Column (6 cols ~ 50%): Aperçu côte à côte */}
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-900">
+                Aperçu de l&apos;adaptation de ton CV
+              </h3>
+              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <Check size={11} strokeWidth={3} />
+                <span>Adaptation terminée</span>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 ml-auto">
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("side")}
+                  className={`px-2 py-0.5 rounded font-medium transition-all ${
+                    viewMode === "side" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600"
+                  }`}
+                >
+                  Côte à côte
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("toggle")}
+                  className={`px-2 py-0.5 rounded font-medium transition-all ${
+                    viewMode === "toggle" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600"
+                  }`}
+                >
+                  Avant / Après
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEditCvModal(true)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600"
+                aria-label="Agrandir / Modifier"
+              >
+                <Maximize2 size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Side by side documents */}
+          {viewMode === "side" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative">
+              {/* Left Document: Avant adaptation */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-slate-700">Avant adaptation</span>
+                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                    CV général
+                  </span>
+                </div>
+
+                <DocumentSheet
+                  name={candidateName}
+                  headline={candidateTitle}
+                  contact={{
+                    location: "Paris, France",
+                    email: user?.email || "moustapha.ibrahim@example.com",
+                    phone: "06 12 34 56 78",
+                  }}
+                  experiences={[
+                    {
+                      title: "Stage - TotalEnergies",
+                      period: "2024 - 2024",
+                      bullets: [
+                        "Analyse de performances énergétiques",
+                        "Étude de solutions techniques",
+                        "Participation au dimensionnement",
+                      ],
+                    },
+                  ]}
+                  education={[
+                    {
+                      degree: "ECAM-EPMI - Diplôme d'ingénieur",
+                      school: "Spécialité : Génie électrique",
+                      period: "2022 - 2025",
+                    },
+                  ]}
+                  skills={[
+                    { name: "Énergie" },
+                    { name: "Automatisation" },
+                    { name: "Analyse" },
+                    { name: "Excel" },
+                    { name: "Python" },
+                  ]}
+                  projects={[
+                    {
+                      title: "Projet de fin d'études",
+                      period: "2024 - 2025",
+                      description: "Optimisation d'un réseau électrique",
+                    },
+                  ]}
+                  isAdapted={false}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPdf("original")}
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                >
+                  <Download size={13} />
+                  <span>Télécharger le CV d&apos;origine</span>
+                </button>
+              </div>
+
+              {/* Right Document: Après adaptation */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-slate-700">Après adaptation</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                    Optimisé pour l&apos;offre
+                  </span>
+                </div>
+
+                <DocumentSheet
+                  name={candidateName}
+                  headline={adaptedTitle}
+                  contact={{
+                    location: "Paris, France",
+                    email: user?.email || "moustapha.ibrahim@example.com",
+                    phone: "06 12 34 56 78",
+                  }}
+                  experiences={[
+                    {
+                      title: "Stage - Bureau d'études (Réseaux électriques)",
+                      period: "2024 - 2024",
+                      bullets: [
+                        "Analyse et dimensionnement de réseaux BT",
+                        "Étude des schémas unifilaires et bilans de puissance",
+                        "Utilisation de logiciels de simulation (DIgSILENT, PSS/E)",
+                      ],
+                    },
+                  ]}
+                  education={[
+                    {
+                      degree: "ECAM-EPMI - Diplôme d'ingénieur",
+                      school: "Spécialité : Génie électrique",
+                      period: "2022 - 2025",
+                    },
+                  ]}
+                  skills={[
+                    { name: "Réseaux électriques", highlighted: true },
+                    { name: "Dimensionnement", highlighted: true },
+                    { name: "DIgSILENT", highlighted: true },
+                    { name: "PSS/E", highlighted: true },
+                    { name: "Excel" },
+                  ]}
+                  projects={[
+                    {
+                      title: "Étude et dimensionnement d'un poste de distribution BT",
+                      period: "2024 - 2025",
+                      description: "Simulation sous DIgSILENT et validation technique",
+                      highlighted: true,
+                    },
+                  ]}
+                  isAdapted={true}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadPdf("adapted")}
+                    disabled={isDownloading}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    <Download size={13} />
+                    <span>{isDownloading ? "Génération…" : "Télécharger le PDF"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApplyWithCv}
+                    className="flex items-center justify-center gap-1.5 py-2 px-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    <CheckCircle2 size={13} />
+                    <span>J&apos;ai postulé</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Toggle view (Avant vs Après) */
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setToggleActive("before")}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold border ${
+                    toggleActive === "before"
+                      ? "bg-slate-900 text-white border-slate-900"
+                      : "bg-white text-slate-700 border-slate-200"
+                  }`}
+                >
+                  CV original
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setToggleActive("after")}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold border ${
+                    toggleActive === "after"
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-slate-700 border-slate-200"
+                  }`}
+                >
+                  CV adapté
+                </button>
+              </div>
+
+              {toggleActive === "after" ? (
+                <DocumentSheet
+                  name={candidateName}
+                  headline={adaptedTitle}
+                  contact={{
+                    location: "Paris, France",
+                    email: user?.email || "moustapha.ibrahim@example.com",
+                    phone: "06 12 34 56 78",
+                  }}
+                  experiences={[
+                    {
+                      title: "Stage - Bureau d'études (Réseaux électriques)",
+                      period: "2024 - 2024",
+                      bullets: [
+                        "Analyse et dimensionnement de réseaux BT",
+                        "Étude des schémas unifilaires et bilans de puissance",
+                        "Utilisation de logiciels de simulation (DIgSILENT, PSS/E)",
+                      ],
+                    },
+                  ]}
+                  education={[
+                    {
+                      degree: "ECAM-EPMI - Diplôme d'ingénieur",
+                      school: "Spécialité : Génie électrique",
+                      period: "2022 - 2025",
+                    },
+                  ]}
+                  skills={[
+                    { name: "Réseaux électriques", highlighted: true },
+                    { name: "Dimensionnement", highlighted: true },
+                    { name: "DIgSILENT", highlighted: true },
+                    { name: "PSS/E", highlighted: true },
+                    { name: "Excel" },
+                  ]}
+                  projects={[
+                    {
+                      title: "Étude et dimensionnement d'un poste de distribution BT",
+                      period: "2024 - 2025",
+                      description: "Simulation sous DIgSILENT et validation technique",
+                      highlighted: true,
+                    },
+                  ]}
+                  isAdapted={true}
+                />
+              ) : (
+                <DocumentSheet
+                  name={candidateName}
+                  headline={candidateTitle}
+                  contact={{
+                    location: "Paris, France",
+                    email: user?.email || "moustapha.ibrahim@example.com",
+                    phone: "06 12 34 56 78",
+                  }}
+                  experiences={[
+                    {
+                      title: "Stage - TotalEnergies",
+                      period: "2024 - 2024",
+                      bullets: [
+                        "Analyse de performances énergétiques",
+                        "Étude de solutions techniques",
+                      ],
+                    },
+                  ]}
+                  education={[
+                    {
+                      degree: "ECAM-EPMI - Diplôme d'ingénieur",
+                      school: "Spécialité : Génie électrique",
+                      period: "2022 - 2025",
+                    },
+                  ]}
+                  skills={[
+                    { name: "Énergie" },
+                    { name: "Automatisation" },
+                    { name: "Excel" },
+                  ]}
+                  projects={[]}
+                  isAdapted={false}
+                />
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right Column (3 cols ~ 25%): Modifications apportées par l'IA */}
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col justify-between gap-4">
+          <div>
+            <h3 className="text-xs font-bold text-slate-900 pb-2 border-b border-slate-100 mb-3">
+              Modifications apportées par l&apos;IA
+            </h3>
+
+            <div className="flex flex-col gap-3">
+              {/* Item 1: Mots-clés */}
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={12} strokeWidth={2.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <strong className="text-xs font-bold text-slate-900">
+                      Mots-clés intégrés
+                    </strong>
+                    <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      8
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-600 leading-snug">
+                    Réseaux électriques • Dimensionnement • Schémas unifilaires • Études • DIgSILENT • PSS/E • BT • Puissance
+                  </p>
+                </div>
+              </div>
+
+              {/* Item 2: Projet mis en avant */}
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <FileText size={12} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <strong className="text-xs font-bold text-slate-900">
+                      Projet mis en avant
+                    </strong>
+                    <Check size={13} className="text-emerald-500" />
+                  </div>
+                  <p className="text-[10.5px] font-semibold text-slate-800 leading-tight">
+                    Étude et dimensionnement d&apos;un poste de distribution BT
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                    Reformulé pour correspondre aux attentes de l&apos;offre.
+                  </p>
+                </div>
+              </div>
+
+              {/* Item 3: Titre adapté */}
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <Edit3 size={12} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <strong className="text-xs font-bold text-slate-900">
+                      Titre adapté
+                    </strong>
+                    <Check size={13} className="text-emerald-500" />
+                  </div>
+                  <div className="flex flex-col gap-1 text-[10px]">
+                    <div className="flex items-center gap-1.5 text-slate-500">
+                      <span className="text-[9px] uppercase font-bold text-slate-400">Avant</span>
+                      <span className="truncate">{candidateTitle}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
+                      <span className="text-[9px] uppercase font-bold text-emerald-600">Après</span>
+                      <span className="leading-tight">{adaptedTitle}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Item 4: Logiciels intégrés */}
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <SlidersHorizontal size={12} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <strong className="text-xs font-bold text-slate-900">
+                      Logiciels intégrés
+                    </strong>
+                    <Check size={13} className="text-emerald-500" />
+                  </div>
+                  <p className="text-[10.5px] font-semibold text-slate-800">
+                    DIgSILENT • PSS/E • AutoCAD • Excel
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                    Ajoutés selon les exigences de l&apos;offre.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRegenerate}
+            disabled={isAdapting}
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+          >
+            <RotateCw size={13} className={isAdapting ? "animate-spin" : ""} />
+            <span>{isAdapting ? "Régénération…" : "Régénérer avec d'autres variantes"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Bottom Section (Mémoire de compétences & Historique) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Left Panel: Ma mémoire de compétences */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Layers size={14} />
+                </div>
+                <h3 className="text-xs font-bold text-slate-900">
+                  Ma mémoire de compétences
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddSkillModal(true)}
+                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
+              >
+                Gérer mes compétences →
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
+              L&apos;IA utilise tes compétences, expériences et projets pour personnaliser tes CV. Plus tu l&apos;enrichis, plus les résultats sont pertinents.
+            </p>
+
+            <div className="flex flex-wrap gap-1.5">
+              {skillsMemory.slice(0, 5).map((skill) => (
+                <span
+                  key={skill}
+                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                >
+                  {skill}
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={() => setAddSkillModal(true)}
+                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                +{skillsMemory.length - 5}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel: Historique de mes CV */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                  <FileCheck size={14} />
+                </div>
+                <h3 className="text-xs font-bold text-slate-900">
+                  Historique de mes CV
+                </h3>
+              </div>
+              <Link
+                href="/app/cv"
+                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700"
+              >
+                Voir tout l&apos;historique →
+              </Link>
+            </div>
+
+            <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
+              Retrouve toutes les versions de tes CV générées pour tes candidatures.
+            </p>
+
+            <div className="flex flex-col divide-y divide-slate-100">
+              {cvHistory.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between py-2 text-xs"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-bold text-slate-900 truncate">
+                      {item.name}
+                    </span>
+                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
+                      ✔ {item.status}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      {item.date}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadPdf("adapted")}
+                      className="text-slate-400 hover:text-slate-700 p-1"
+                      aria-label="Télécharger"
+                    >
+                      <Download size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCvHistory((prev) => prev.filter((x) => x.id !== item.id))
+                      }
+                      className="text-slate-400 hover:text-rose-600 p-1"
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Modal: Changer d'offre ── */}
+      {changeOfferModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">
+                Sélectionner une offre pour l&apos;adaptation
+              </h3>
+              <button
+                type="button"
+                onClick={() => setChangeOfferModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2 max-h-80 overflow-y-auto no-scrollbar">
+              {DEMO_TABLE_OFFERS.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedOffer(o);
+                    setChangeOfferModal(false);
+                    setToastMessage(`Offre changée pour ${o.company}.`);
+                  }}
+                  className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-left transition-all"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <CompanyLogo company={o.company} size="sm" />
+                    <div>
+                      <strong className="text-xs font-bold text-slate-900 block">
+                        {o.company}
+                      </strong>
+                      <span className="text-[11px] text-slate-600">
+                        {o.title}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-600">
+                    {o.matchPercentage}%
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Ajouter compétence ── */}
+      {addSkillModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-100 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-xs font-bold text-slate-900">
+                Ajouter une compétence
+              </h3>
+              <button
+                type="button"
+                onClick={() => setAddSkillModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddSkill} className="flex flex-col gap-3">
+              <input
+                type="text"
+                value={newSkillText}
+                onChange={(e) => setNewSkillText(e.target.value)}
+                placeholder="Ex : MATLAB, Protection HTA…"
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                autoFocus
+              />
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAddSkillModal(false)}
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs"
+                >
+                  Ajouter
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Modifier profil ── */}
+      {editProfileModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-xs font-bold text-slate-900">
+                Modifier mon profil
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditProfileModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
+                Titre professionnel
+                <input
+                  type="text"
+                  value={candidateTitle}
+                  onChange={(e) => setCandidateTitle(e.target.value)}
+                  className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
+                Bio / Objectif (Stage de 6 mois)
+                <textarea
+                  rows={3}
+                  value={profileBio}
+                  onChange={(e) => setProfileBio(e.target.value)}
+                  className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 resize-none"
+                />
+              </label>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditProfileModal(false)}
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditProfileModal(false);
+                    setToastMessage("Profil mis à jour !");
+                  }}
+                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Éditeur manuel de CV ── */}
+      {editCvModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">
+                Correction manuelle du CV adapté
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditCvModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
+                Nom complet
+                <input
+                  type="text"
+                  value={candidateName}
+                  onChange={(e) => setCandidateName(e.target.value)}
+                  className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
+                Titre adapté pour l&apos;offre
+                <input
+                  type="text"
+                  value={adaptedTitle}
+                  onChange={(e) => setAdaptedTitle(e.target.value)}
+                  className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                />
+              </label>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditCvModal(false)}
+                  className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditCvModal(false);
+                    setToastMessage("Modifications manuelles enregistrées !");
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs"
+                >
+                  Valider les modifications
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

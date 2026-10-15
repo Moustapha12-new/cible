@@ -6,6 +6,7 @@ import { isCompleteOffer } from "./offer-quality";
 
 import { createHash } from "node:crypto";
 import { gmailAccountContext } from "./gmail-account";
+import type { EnrichLevel, PageOutcomeKind } from "./offer-enrich";
 
 export type EnrichStatus = "none" | "ok" | "partial" | "blocked" | "skipped";
 
@@ -46,6 +47,10 @@ export type EnrichResult = {
   enrichReason: string;
   enrichedAt?: string;
   data?: Partial<EnrichedOfferData>;
+  /** Niveau L0–L3 réellement atteint (Jalon B) — absent si aucun fetch. */
+  enrichLevel?: EnrichLevel;
+  /** Issue de page distincte (403/login/CAPTCHA/404/429/timeout…). */
+  enrichOutcome?: PageOutcomeKind;
 };
 
 export type EnrichCandidate = {

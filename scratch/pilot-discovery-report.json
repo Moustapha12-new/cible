@@ -1,0 +1,666 @@
+{
+  "generatedAt": "2026-10-14T22:27:29.537Z",
+  "source": "https://recherche-entreprises.api.gouv.fr (API publique, sans clé)",
+  "targetExperimental": 100,
+  "discovered": 199,
+  "runs": [
+    {
+      "department": "92",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "03",
+      "totalResults": 194,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "11",
+      "totalResults": 210,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "21",
+      "totalResults": 120,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "22",
+      "totalResults": 74,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "31",
+      "totalResults": 20,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "32",
+      "totalResults": 58,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "41",
+      "totalResults": 32,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "42",
+      "totalResults": 13,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "91",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "03",
+      "totalResults": 93,
+      "received": 10,
+      "newUnique": 9
+    },
+    {
+      "department": "91",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "11",
+      "totalResults": 109,
+      "received": 10,
+      "newUnique": 9
+    },
+    {
+      "department": "91",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "21",
+      "totalResults": 31,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "91",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "22",
+      "totalResults": 24,
+      "received": 10,
+      "newUnique": 9
+    },
+    {
+      "department": "91",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "31",
+      "totalResults": 7,
+      "received": 7,
+      "newUnique": 7
+    },
+    {
+      "department": "91",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "32",
+      "totalResults": 24,
+      "received": 10,
+      "newUnique": 6
+    },
+    {
+      "department": "91",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "41",
+      "totalResults": 13,
+      "received": 10,
+      "newUnique": 5
+    },
+    {
+      "department": "91",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "42",
+      "totalResults": 2,
+      "received": 2,
+      "newUnique": 0
+    },
+    {
+      "department": "69",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "03",
+      "totalResults": 236,
+      "received": 10,
+      "newUnique": 10
+    },
+    {
+      "department": "69",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "11",
+      "totalResults": 276,
+      "received": 10,
+      "newUnique": 6
+    },
+    {
+      "department": "69",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "21",
+      "totalResults": 158,
+      "received": 10,
+      "newUnique": 6
+    },
+    {
+      "department": "69",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "22",
+      "totalResults": 89,
+      "received": 10,
+      "newUnique": 6
+    },
+    {
+      "department": "69",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "31",
+      "totalResults": 21,
+      "received": 10,
+      "newUnique": 5
+    },
+    {
+      "department": "69",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "32",
+      "totalResults": 56,
+      "received": 10,
+      "newUnique": 1
+    },
+    {
+      "department": "69",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "41",
+      "totalResults": 36,
+      "received": 10,
+      "newUnique": 3
+    },
+    {
+      "department": "69",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "42",
+      "totalResults": 13,
+      "received": 10,
+      "newUnique": 0
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "35.11Z",
+        "35.12Z",
+        "35.13Z"
+      ],
+      "tranche": "03",
+      "totalResults": 0,
+      "received": 0,
+      "newUnique": 0
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "35.11Z",
+        "35.12Z",
+        "35.13Z"
+      ],
+      "tranche": "11",
+      "totalResults": 1,
+      "received": 1,
+      "newUnique": 1
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "35.11Z",
+        "35.12Z",
+        "35.13Z"
+      ],
+      "tranche": "21",
+      "totalResults": 1,
+      "received": 1,
+      "newUnique": 1
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "35.11Z",
+        "35.12Z",
+        "35.13Z"
+      ],
+      "tranche": "22",
+      "totalResults": 2,
+      "received": 2,
+      "newUnique": 2
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "35.11Z",
+        "35.12Z",
+        "35.13Z"
+      ],
+      "tranche": "31",
+      "totalResults": 0,
+      "received": 0,
+      "newUnique": 0
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "35.11Z",
+        "35.12Z",
+        "35.13Z"
+      ],
+      "tranche": "32",
+      "totalResults": 0,
+      "received": 0,
+      "newUnique": 0
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "35.11Z",
+        "35.12Z",
+        "35.13Z"
+      ],
+      "tranche": "41",
+      "totalResults": 0,
+      "received": 0,
+      "newUnique": 0
+    },
+    {
+      "department": "92",
+      "nafCodes": [
+        "35.11Z",
+        "35.12Z",
+        "35.13Z"
+      ],
+      "tranche": "42",
+      "totalResults": 0,
+      "received": 0,
+      "newUnique": 0
+    },
+    {
+      "department": "44",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "03",
+      "totalResults": 109,
+      "received": 10,
+      "newUnique": 8
+    },
+    {
+      "department": "44",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "11",
+      "totalResults": 150,
+      "received": 10,
+      "newUnique": 6
+    },
+    {
+      "department": "44",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "21",
+      "totalResults": 98,
+      "received": 10,
+      "newUnique": 1
+    },
+    {
+      "department": "44",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "22",
+      "totalResults": 51,
+      "received": 10,
+      "newUnique": 4
+    },
+    {
+      "department": "44",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "31",
+      "totalResults": 17,
+      "received": 10,
+      "newUnique": 2
+    },
+    {
+      "department": "44",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "32",
+      "totalResults": 43,
+      "received": 10,
+      "newUnique": 1
+    },
+    {
+      "department": "44",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "41",
+      "totalResults": 24,
+      "received": 10,
+      "newUnique": 0
+    },
+    {
+      "department": "44",
+      "nafCodes": [
+        "71.12B"
+      ],
+      "tranche": "42",
+      "totalResults": 11,
+      "received": 10,
+      "newUnique": 1
+    }
+  ],
+  "nafFamilies": [
+    "71.12B",
+    "43.21A",
+    "33.20Z",
+    "27.11Z",
+    "26.51Z",
+    "35.11Z",
+    "35.12Z",
+    "35.13Z",
+    "27.20Z",
+    "28.99Z",
+    "71.12A"
+  ],
+  "tranches": [
+    "03",
+    "11",
+    "21",
+    "22",
+    "31",
+    "32",
+    "41",
+    "42"
+  ],
+  "preferredRegion": "Île-de-France",
+  "byTier": {
+    "cœur": 195,
+    "énergie": 4
+  },
+  "bySize": {
+    "petite": 69,
+    "PME": 101,
+    "ETI": 29
+  },
+  "top10": [
+    {
+      "siren": "399596808",
+      "name": "AIP INGENIERIE",
+      "commune": "MONTREUIL",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "petite",
+      "tranche": "10–19 salariés",
+      "score": 58,
+      "websiteStatus": "hypothesis",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille 10–19 — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé",
+        "domaine https://aipingenierie.fr non confirmé (bare + www) — site non déduit"
+      ]
+    },
+    {
+      "siren": "890666431",
+      "name": "DBCI INGENIERIE (DBCI CONSTRUCTION)",
+      "commune": "MASSY",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "petite",
+      "tranche": "6–9 salariés",
+      "score": 58,
+      "websiteStatus": "hypothesis",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille 10–19 — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé",
+        "domaine https://dbciingenierie.fr non confirmé (bare + www) — site non déduit"
+      ]
+    },
+    {
+      "siren": "799222823",
+      "name": "ERESE (ENERGIE, RESEAUX, ENVIRONNEMENT)",
+      "commune": "PARIS",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "PME",
+      "tranche": "20–49 salariés",
+      "score": 58,
+      "website": "https://erese.fr",
+      "websiteStatus": "confirmed",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque l'énergie",
+        "taille PME — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)",
+        "site officiel confirmé (https://erese.fr)"
+      ],
+      "missing": [
+        "site officiel non confirmé"
+      ]
+    },
+    {
+      "siren": "337609622",
+      "name": "I S L INGENIERIE (ISL)",
+      "commune": "PARIS",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "PME",
+      "tranche": "50–99 salariés",
+      "score": 58,
+      "websiteStatus": "hypothesis",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille PME — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé",
+        "domaine https://ingenierie.fr non confirmé (bare + www) — site non déduit"
+      ]
+    },
+    {
+      "siren": "488225053",
+      "name": "LCV INGENIERIE",
+      "commune": "PARIS",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "petite",
+      "tranche": "10–19 salariés",
+      "score": 58,
+      "websiteStatus": "hypothesis",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille 10–19 — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé",
+        "domaine https://lcvingenierie.fr non confirmé (bare + www) — site non déduit"
+      ]
+    },
+    {
+      "siren": "413609595",
+      "name": "METRES COORDINATION INGENIERIE (MCI)",
+      "commune": "MANDRES-LES-ROSES",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "petite",
+      "tranche": "6–9 salariés",
+      "score": 58,
+      "websiteStatus": "hypothesis",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille 10–19 — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé",
+        "domaine https://metrescoordinationingenierie.fr non confirmé (bare + www) — site non déduit"
+      ]
+    },
+    {
+      "siren": "421025875",
+      "name": "OFFICE D INGENIERIE SANITAIRE (OFIS)",
+      "commune": "PARIS",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "PME",
+      "tranche": "20–49 salariés",
+      "score": 58,
+      "websiteStatus": "hypothesis",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille PME — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé",
+        "domaine https://officeingenieriesanitaire.fr non confirmé (bare + www) — site non déduit"
+      ]
+    },
+    {
+      "siren": "323420349",
+      "name": "SCOPING - SOCIETE DE COORDINATION D'ORDONNANCEMENT DE PILOTAGE ET D'INGENIERIE (SCOPING SA)",
+      "commune": "MASSY",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "PME",
+      "tranche": "50–99 salariés",
+      "score": 58,
+      "websiteStatus": "hypothesis",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille PME — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé",
+        "domaine https://scopingsocietedecoordinationor.fr non confirmé (bare + www) — site non déduit"
+      ]
+    },
+    {
+      "siren": "324668144",
+      "name": "SEGIC INGENIERIE",
+      "commune": "VERRIERES-LE-BUISSON",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "PME",
+      "tranche": "20–49 salariés",
+      "score": 58,
+      "websiteStatus": "none",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille PME — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé"
+      ]
+    },
+    {
+      "siren": "831608302",
+      "name": "SOGETEC INGENIERIE",
+      "commune": "PARIS",
+      "naf": "71.12B Ingénierie, études techniques",
+      "size": "petite",
+      "tranche": "6–9 salariés",
+      "score": 58,
+      "websiteStatus": "none",
+      "reasons": [
+        "activité administrative au cœur du profil (NAF 71.12B)",
+        "nom évoque des études/ingénierie",
+        "taille 10–19 — structure accessible à un stagiaire",
+        "zone préférée (Île-de-France)"
+      ],
+      "missing": [
+        "site officiel non confirmé"
+      ]
+    }
+  ],
+  "websiteResolution": {
+    "attempted": 8,
+    "confirmed": 1,
+    "hypothesisOnly": 7
+  },
+  "careerLinksDetected": 0,
+  "stageConfirmed": 0,
+  "note": "Aucune annonce de stage n'est créée sans vérification. Le code NAF est un signal administratif, pas une preuve de spécialisation."
+}

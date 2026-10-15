@@ -1,0 +1,891 @@
+From: alerts@hellowork.example.invalid
+To: candidate@example.invalid
+Subject: Fixture de test hellowork =?utf-8?b?4oCU?= email multi-offres
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============1213990640014527473=="
+
+--===============1213990640014527473==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Fixture HTML multi-offres: hellowork.
+
+--===============1213990640014527473==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<!DOCTYPE html>
+<html xmlns:o=3D"urn:schemas-microsoft-com:office:office"><head><meta charset=
+=3D"utf-8"/><meta content=3D"width=3Ddevice-width, initial-scale=3D1.0" name=
+=3D"viewport"/><meta content=3D"telephone=3Dno" name=3D"format-detection"/><m=
+eta content=3D"date=3Dno" name=3D"format-detection"/><meta content=3D"address=
+=3Dno" name=3D"format-detection"/><meta content=3D"email=3Dno" name=3D"format=
+-detection"/><meta content=3D"IE=3Dedge" http-equiv=3D"X-UA-Compatible"/><met=
+a content=3D"light dark" name=3D"color-scheme"/><meta content=3D"light dark" =
+name=3D"supported-color-schemes"/><meta name=3D"x-apple-disable-message-refor=
+matting"/><title></title><!--[if gte mso 9]> <xml> <o:OfficeDocumentSettings>=
+ <o:AllowPNG> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSetting=
+s> </xml> <![endif]--><style>.ReadMsgBody{width:100%;background-color:#EFEFEF=
+}.ExternalClass{width:100%;background-color:#EFEFEF}body{width:100%;backgroun=
+d-color:#EFEFEF;margin:0;padding:0;-webkit-font-smoothing:antialiased;font-fa=
+mily:Georgia,Times,serif}table{border-collapse:collapse}a[x-apple-data-detect=
+ors]{color:inherit !important;text-decoration:none !important;font-size:inher=
+it !important;font-family:inherit !important;font-weight:inherit !important;l=
+ine-height:inherit !important}:root{Color-scheme:light dark;supported-color-s=
+chemes:light dark}@media only screen and (max-width:499px) and (min-width:360=
+px){.br-0{border-radius:0 !important}.btn-width{width:328px !important}.btn-w=
+idth-2{width:134px !important}.center{text-align:center !important}.cgu-foote=
+r{text-align:left !important;padding:8px 0 0 0 !important;border:none !import=
+ant}.flex{display:flex !important}.font-mob-20{font-size:20px !important;line=
+-height:26px !important}.font-mob-16{font-size:16px !important}.hide-mobile{d=
+isplay:none !important}.lh-24{line-height:24px !important}.mobileWidth{width:=
+100% !important}.mobileWidth2{min-width:310px !important}.mobileWidth3{min-wi=
+dth:144px !important}.mobileSize{font-size:20px !important;line-height:26px !=
+important}.padding-banner{padding:24px 24px 16px 24px !important}.padding-con=
+tent{padding:0 16px 32px 16px !important}.padding-header{padding:16px 0 0 16p=
+x !important}.padding-16{padding:16px !important}.padding-footer{padding:24px=
+ 16px !important}.padding-cards{padding:12px 16px !important}.padding-cards-o=
+utils{padding:24px 0 16px 24px !important}.padding-0{padding:0 !important}.pb=
+-8{padding-bottom:8px !important}.pb-16{padding-bottom:16px !important}.pb-24=
+{padding-bottom:24px !important}.pb-32{padding-bottom:32px !important}.pb-40{=
+padding-bottom:40px !important}.pl-0{padding-left:0 !important}.pl-8{padding-=
+left:8px !important}.pl-12{padding:0 0 0 12px !important}.pt-8{padding-top:8p=
+x !important}.ps-btn-yn{padding:0 66px !important}.pt-12{padding-top:12px !im=
+portant}.pt-24{padding-top:24px !important}.pt-16{padding-top:16px !important=
+}.pt-24{padding-top:24px !important}.pt-32{padding-top:32px !important}.pt-40=
+{padding-top:40px !important}.visu-mobile{display:block !important;max-height=
+:100% !important}.visu-mobile-320{display:none !important;max-height:100% !im=
+portant}.width-auto{width:auto !important}}@media only screen and (max-width:=
+360px){.br-0{border-radius:0 !important}.btn-width{width:328px !important}.bt=
+n-width-2{width:134px !important}.center{text-align:center !important}.cgu-fo=
+oter{text-align:left !important;padding:8px 0 0 0 !important;border:none !imp=
+ortant}.flex{display:flex !important}.font-mob-20{font-size:20px !important;l=
+ine-height:26px !important}.font-mob-16{font-size:16px !important}.hide-mobil=
+e{display:none !important}.lh-24{line-height:24px !important}.mobileWidth{wid=
+th:100% !important}.mobileWidth2{min-width:310px !important}.mobileWidth3{min=
+-width:320px !important}.mobileSize{font-size:20px !important;line-height:26p=
+x !important}.padding-banner{padding:24px 24px 16px 24px !important}.padding-=
+content{padding:0 16px 32px 16px !important}.padding-header{padding:16px 0 0 =
+16px !important}.padding-16{padding:16px !important}.padding-footer{padding:2=
+4px 16px !important}.padding-cards{padding:12px 16px !important}.padding-card=
+s-outils{padding:24px 0 16px 24px !important}.padding-0{padding:0 !important}=
+.pb-8{padding-top:8px !important}.pb-16{padding-bottom:16px !important}.pb-24=
+{padding-bottom:24px !important}.pb-32{padding-bottom:32px !important}.pb-40{=
+padding-bottom:40px !important}.pl-0{padding-left:0 !important}.pl-8{padding-=
+left:8px !important}.pl-12{padding:0 0 0 12px !important}.pt-8{padding-top:8p=
+x !important}.pt-12{padding-top:12px !important}.pt-16{padding-top:16px !impo=
+rtant}.pt-24{padding-top:24px !important}.pt-32{padding-top:32px !important}.=
+pt-40{padding-top:40px !important}.visu-mobile{display:none !important;max-he=
+ight:100% !important}.visu-mobile-320{display:block !important;max-height:100=
+% !important}.width-auto{width:auto !important}}@media (prefers-color-scheme:=
+dark){.bg-dark{background-color:#383838 !important}.bg-dark-content{backgroun=
+d-color:#292929 !important}.bg-dark-cards{background-color:#3D3D3D !important=
+;border:none !important}.bg-dark-grey{background-color:#3D3D3D !important}.da=
+rk-style-color{color:#F2F2F2 !important}.footer-color{color:#B3B3B3 !importan=
+t}.light-cta{background-color:#F2F2F2 !important;color:#292929 !important}.bg=
+-dark-tags{background-color:#F2F2F2 !important;color:#000000 !important}.dark=
+-cta{background-color:#292929 !important;color:#F6F6F6 !important;border-colo=
+r:#F6F6F6 !important}.cards-cta{background-color:#3D3D3D !important;color:#FA=
+FAFA !important;border-color:#FAFAFA !important}.hide-dark-mode{display:none =
+!important}.visu-dark-mode{display:block !important}.social-dark-mode{display=
+:table-cell !important}.no-border{border:none !important}}@media (prefers-col=
+or-scheme:dark){[data-ogsc] .bg-dark{background-color:#383838 !important}[dat=
+a-ogsc] .bg-dark-content{background-color:#292929 !important}[data-ogsc] .bg-=
+dark-cards{background-color:#3D3D3D !important;border:none !important}[data-o=
+gsc] .bg-dark-grey{background-color:#3D3D3D !important}[data-ogsc] .cards-cta=
+{background-color:#3D3D3D !important;color:#FAFAFA !important;border-color:#F=
+AFAFA !important}[data-ogsc] .dark-style-color{color:#F2F2F2 !important}[data=
+-ogsc] .footer-color{color:#B3B3B3 !important}[data-ogsc] .light-cta{backgrou=
+nd-color:#F2F2F2 !important;color:#292929 !important}[data-ogsc] .bg-dark-tag=
+s{background-color:#F2F2F2 !important;color:#000000 !important}[data-ogsc] .d=
+ark-cta{background-color:#292929 !important;color:#F6F6F6 !important;border-c=
+olor:#F6F6F6 !important}[data-ogsc] .dark-cta{background-color:#292929 !impor=
+tant;color:#F6F6F6 !important;border-color:#F6F6F6 !important}[data-ogsc] .hi=
+de-dark-mode{display:none !important}[data-ogsc] .visu-dark-mode{display:bloc=
+k !important}[data-ogsc] .social-dark-mode{display:table-cell !important}[dat=
+a-ogsc] .no-border{border:none !important}}</style></head><body bgcolor=3D"#E=
+FEFEF" leftmargin=3D"0" marginheight=3D"0" marginwidth=3D"0" topmargin=3D"0">=
+<table align=3D"center" bgcolor=3D"#F2F2F2" border=3D"0" cellpadding=3D"0" ce=
+llspacing=3D"0" class=3D"bg-dark" width=3D"100%"><tr><td bgcolor=3D"#F2F2F2" =
+class=3D"bg-dark padding-0" style=3D"padding:15px 0" valign=3D"top" width=3D"=
+100%"><table align=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0=
+" class=3D"mobileWidth" width=3D"600"><tr><td style=3D"display:none;visibilit=
+y:hidden;mso-hide:all">Ing=C3=A9nieur Electricit=C3=A9 - Electronique =C2=B7 =
+Aulnay-sous-Bois - 93 =C2=B7 Stage</td></tr></table><table align=3D"center" b=
+gcolor=3D"#F2F2F2" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"=
+mobileWidth bg-dark" width=3D"600"><tr><td style=3D"overflow:hidden;border-ra=
+dius:15px"><table bgcolor=3D"#FFFFFF" cellpadding=3D"0" cellspacing=3D"0" cla=
+ss=3D"bg-dark-content br-0" width=3D"100%"><tr><td class=3D"hide-dark-mode" s=
+tyle=3D"text-align:center;overflow:hidden;padding:24px 0;display:block"><a hr=
+ef=3D"#" rel=3D"noopener" target=3D"_blank"> <img alt=3D"Logo Hellowork" bord=
+er=3D"0" height=3D"68" src=3D"https://example.invalid/asset" width=3D"123"/> =
+</a></td><td class=3D"visu-dark-mode" style=3D"text-align:center;overflow:hid=
+den;padding:24px 0;display:none"><a href=3D"#" target=3D"_blank"> <img alt=3D=
+"Logo Hellowork" border=3D"0" height=3D"45" src=3D"https://example.invalid/as=
+set" width=3D"99"/> </a></td></tr><tr><td class=3D"padding-content" style=3D"=
+padding:0 40px 32px 40px;color:#000000;font-size:14px;font-family:Arial,Helve=
+tica,sans-serif;line-height:18px"><table cellpadding=3D"0" cellspacing=3D"0" =
+width=3D"100%"><tr><td style=3D"padding-bottom:16px"><table border=3D"0" cell=
+padding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td class=3D"padding-16" s=
+tyle=3D"border-radius:10px;background:#FFD36E;padding:24px"><table border=3D"=
+0" cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td class=3D"visu-m=
+obile pb-8" style=3D"display:none"><img alt=3D"Visuel" src=3D"https://example=
+.invalid/asset" style=3D"vertical-align:top"/></td></tr><tr><td class=3D"visu=
+-mobile-320 pb-8" style=3D"display:none"><img alt=3D"Visuel" src=3D"https://e=
+xample.invalid/asset" style=3D"vertical-align:top"/></td></tr><tr><td class=
+=3D"hide-mobile" style=3D"padding-right:24px;width:48px"><table align=3D"left=
+" cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td><img alt=3D"Visu=
+el" src=3D"https://example.invalid/asset" style=3D"vertical-align:top"/></td>=
+</tr></table></td><td><table align=3D"left" cellpadding=3D"0" cellspacing=3D"=
+0" width=3D"100%"><tr><td style=3D"text-align:left;color:#000000;font-size:12=
+px;font-family:Arial,Helvetica,sans-serif;line-height:normal">Hello Candidat =
+!</td></tr></table><table align=3D"left" cellpadding=3D"0" cellspacing=3D"0" =
+width=3D"100%"><tr><td class=3D"font-mob-20" style=3D"text-align:left;color:#=
+000000;font-size:20px;font-family:Arial,Helvetica,sans-serif;line-height:26px=
+;padding-top:8px"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr=
+><td style=3D"font-size:24px;font-family:Arial,Helvetica,sans-serif;color:#00=
+0000;font-weight:700;margin:0;line-height:30px">2 nouvelles offres<br/></td><=
+/tr></table>correspondent =C3=A0 votre alerte.</td></tr><tr><td style=3D"colo=
+r:#292929;font-family:Arial;font-size:14px;line-height:20px;padding-top:8px;f=
+ont-weight:400">Ing=C3=A9nieur d'=C3=A9tudes en g=C3=A9nie =C3=A9lectrique - =
+France - Stage</td></tr></table></td></tr></table></td></tr></table></td></tr=
+><tr><td><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" width=3D"100=
+%"><tr><td style=3D"padding-top:16px"><table border=3D"0" cellpadding=3D"0" c=
+ellspacing=3D"0" style=3D"border-collapse:separate" width=3D"100%"><tr><td cl=
+ass=3D"bg-dark-cards padding-cards" style=3D"padding:12px 24px;border:1px sol=
+id #E5E5E5;border-radius:8px"><table align=3D"left" border=3D"0" cellpadding=
+=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td style=3D"font-family:Arial,He=
+lvetica,sans-serif"><a class=3D"dark-style-color font-mob-16" href=3D"https:/=
+/emails.hellowork.com/clic/fixture-003/details" rel=3D"noopener" style=3D"col=
+or:#000000;font-size:18px;font-weight:400;line-height:23px;text-decoration:un=
+derline;letter-spacing:-0.16px;text-decoration-thickness:1px;text-underline-o=
+ffset:2px" target=3D"_blank"> Ing=C3=A9nieur Electricit=C3=A9 - Electronique =
+H/F </a></td></tr><tr><td style=3D"color:#606060;font-family:Arial;font-weigh=
+t:400;line-height:normal;text-align:left;padding-top:8px"><table border=3D"0"=
+ cellpadding=3D"0" cellspacing=3D"0"><tr><td class=3D"dark-style-color" style=
+=3D"color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-=
+weight:400;line-height:normal;line-height:16px">FAYAT ENERGIES SERVICES</td><=
+/tr></table></td></tr><tr><td style=3D"padding-top:4px"><table align=3D"left"=
+ border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:left"><tr><t=
+d style=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadding=3D"0" cells=
+pacing=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D"bg-dark-tags" =
+href=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px;color:#000000;=
+display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:12px;fo=
+nt-weight:400;line-height:16px;text-decoration:none;-webkit-text-size-adjust:=
+none;padding:6px 8px">Aulnay-sous-Bois - 93</a></td></tr></table></td></tr></=
+table><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" =
+style=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><table border=3D=
+"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-events:none"=
+><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F6F6;borde=
+r-radius:4px;color:#000000;display:inline-block;font-family:Arial,Helvetica,s=
+ans-serif;font-size:12px;font-weight:400;line-height:16px;text-decoration:non=
+e;-webkit-text-size-adjust:none;padding:6px 8px">Stage</a></td></tr></table><=
+/td></tr></table><table align=3D"right" border=3D"0" cellpadding=3D"0" cellsp=
+acing=3D"0" class=3D"mobileWidth" style=3D"float:right"><tr><td class=3D"pl-0=
+" style=3D"padding:12px 0 0 12px"><!--[if mso]> <v:roundrect xmlns:v=3Durn:sc=
+hemas-microsoft-com:vml xmlns:w=3Durn:schemas-microsoft-com:office:word href=
+=3D"https://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/4/=
+17dab9ab2e83eb84c673081169d090b8/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczov=
+L3d3dy5oZWxsb3dvcmsuY29tL2ZyLWZyL2VtcGxvaXMvODQyNTIwNjguaHRtbD91dG1fc291cmNlP=
+WpvYmFsZXJ0JnV0bV9tZWRpdW09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0JnV0bV90ZXJtPT=
+g0MjUyMDY4JnV0bV9jb250ZW50PWxpc3RlMUNUQV9C" style=3Dheight:30px;v-text-anchor=
+:middle;width:105px arcsize=3D120% strokecolor=3D#000000 fillcolor=3D#FFFFFF>=
+ <w:anchorlock><center style=3Dcolor:#000000;font-family:sans-serif;font-size=
+:14px;font-weight:400>Voir l=E2=80=99offre</center></v:roundrect> <![endif]--=
+> <a class=3D"cards-cta" href=3D"#" style=3D"background-color:#FFFFFF;border:=
+1px solid #000000;border-radius:80px;color:#000000;display:inline-block;font-=
+family:sans-serif;font-size:14px;font-weight:400;line-height:30px;text-align:=
+center;text-decoration:none;-webkit-text-size-adjust:none;mso-hide:all;paddin=
+g:0 18px">Voir l=E2=80=99offre</a></td></tr></table></td></tr></table></td></=
+tr></table></td></tr><tr><td style=3D"padding-top:16px"><table border=3D"0" c=
+ellpadding=3D"0" cellspacing=3D"0" style=3D"border-collapse:separate" width=
+=3D"100%"><tr><td class=3D"bg-dark-cards padding-cards" style=3D"padding:12px=
+ 24px;border:1px solid #E5E5E5;border-radius:8px"><table align=3D"left" borde=
+r=3D"0" cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td style=3D"f=
+ont-family:Arial,Helvetica,sans-serif"><a class=3D"dark-style-color font-mob-=
+16" href=3D"https://emails.hellowork.com/clic/fixture-007/details" rel=3D"noo=
+pener" style=3D"color:#000000;font-size:18px;font-weight:400;line-height:23px=
+;text-decoration:underline;letter-spacing:-0.16px;text-decoration-thickness:1=
+px;text-underline-offset:2px" target=3D"_blank"> Ing=C3=A9nieur =C3=89tudes H=
+/F </a></td></tr><tr><td style=3D"color:#606060;font-family:Arial;font-weight=
+:400;line-height:normal;text-align:left;padding-top:8px"><table border=3D"0" =
+cellpadding=3D"0" cellspacing=3D"0"><tr><td class=3D"dark-style-color" style=
+=3D"color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-=
+weight:400;line-height:normal;line-height:16px">FAYAT ENERGIES SERVICES</td><=
+/tr></table></td></tr><tr><td style=3D"padding-top:4px"><table align=3D"left"=
+ border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:left"><tr><t=
+d style=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadding=3D"0" cells=
+pacing=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D"bg-dark-tags" =
+href=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px;color:#000000;=
+display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:12px;fo=
+nt-weight:400;line-height:16px;text-decoration:none;-webkit-text-size-adjust:=
+none;padding:6px 8px">Viry-Ch=C3=A2tillon - 91</a></td></tr></table></td></tr=
+></table><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"=
+0" style=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><table border=
+=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-events:no=
+ne"><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F6F6;bo=
+rder-radius:4px;color:#000000;display:inline-block;font-family:Arial,Helvetic=
+a,sans-serif;font-size:12px;font-weight:400;line-height:16px;text-decoration:=
+none;-webkit-text-size-adjust:none;padding:6px 8px">Stage</a></td></tr></tabl=
+e></td></tr></table><table align=3D"right" border=3D"0" cellpadding=3D"0" cel=
+lspacing=3D"0" class=3D"mobileWidth" style=3D"float:right"><tr><td class=3D"p=
+l-0" style=3D"padding:12px 0 0 12px"><!--[if mso]> <v:roundrect xmlns:v=3Durn=
+:schemas-microsoft-com:vml xmlns:w=3Durn:schemas-microsoft-com:office:word hr=
+ef=3D"https://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/=
+7/0526d646f6b247286c90b6533320cc5e/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwcz=
+ovL3d3dy5oZWxsb3dvcmsuY29tL2ZyLWZyL2VtcGxvaXMvODQyNTA4ODQuaHRtbD91dG1fc291cmN=
+lPWpvYmFsZXJ0JnV0bV9tZWRpdW09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0JnV0bV90ZXJt=
+PTg0MjUwODg0JnV0bV9jb250ZW50PWxpc3RlMUNUQV9C" style=3Dheight:30px;v-text-anch=
+or:middle;width:105px arcsize=3D120% strokecolor=3D#000000 fillcolor=3D#FFFFF=
+F> <w:anchorlock><center style=3Dcolor:#000000;font-family:sans-serif;font-si=
+ze:14px;font-weight:400>Voir l=E2=80=99offre</center></v:roundrect> <![endif]=
+--> <a class=3D"cards-cta" href=3D"#" style=3D"background-color:#FFFFFF;borde=
+r:1px solid #000000;border-radius:80px;color:#000000;display:inline-block;fon=
+t-family:sans-serif;font-size:14px;font-weight:400;line-height:30px;text-alig=
+n:center;text-decoration:none;-webkit-text-size-adjust:none;mso-hide:all;padd=
+ing:0 18px">Voir l=E2=80=99offre</a></td></tr></table></td></tr></table></td>=
+</tr></table></td></tr><tr><td style=3D"padding:16px 0 48px 0;text-align:left=
+"><!--[if mso]> <v:roundrect xmlns:v=3Durn:schemas-microsoft-com:vml xmlns:w=
+=3Durn:schemas-microsoft-com:office:word href=3D"https://emails.hellowork.com=
+/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/9/f0f6c8150dbc241aebb0b6c0afa860c2=
+/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3dy5oZWxsb3dvcmsuY29tL2ZyLWZy=
+L2NhbmRpZGF0L2FsZXJ0ZXMuaHRtbC80YjZhZGJmYi1hZjM1LTQwMTQtYmU1Mi1jY2FlZjNiNGFhO=
+GI_dXRtX3NvdXJjZT1qb2JhbGVydCZ1dG1fbWVkaXVtPWVtYWlsJnV0bV9jYW1wYWlnbj1qb2JhbG=
+VydCZ1dG1fY29udGVudD1idG5fdm9pcnRvdXRfQg" style=3Dheight:45px;v-text-anchor:m=
+iddle;width:187px arcsize=3D107% stroke=3Df fillcolor=3D#000000> <w:anchorloc=
+k><center><![endif]--> <a class=3D"light-cta" href=3D"#" style=3D"background-=
+color:#000000;border-radius:48px;color:#ffffff;display:inline-block;font-fami=
+ly:sans-serif;font-size:14px;font-weight:700;line-height:45px;text-align:cent=
+er;text-decoration:none;-webkit-text-size-adjust:none;padding:0 25px">Voir to=
+utes les offres</a> <!--[if mso]></center></v:roundrect> <![endif]--></td></t=
+r><tr><td class=3D"dark-style-color" style=3D"color:#000000;font-family:Arial=
+,Helvetica,sans-serif;font-size:24px;line-height:30px">Ces offres publi=C3=A9=
+es derni=C3=A8rement,<br/> <strong>sont faites pour vous :</strong></td></tr>=
+<tr><td style=3D"padding-top:16px"><table border=3D"0" cellpadding=3D"0" cell=
+spacing=3D"0" style=3D"border-collapse:separate" width=3D"100%"><tr><td class=
+=3D"bg-dark-cards padding-cards" style=3D"padding:12px 24px;border:1px solid =
+#E5E5E5;border-radius:8px"><table align=3D"left" border=3D"0" cellpadding=3D"=
+0" cellspacing=3D"0" width=3D"100%"><tr><td style=3D"font-family:Arial,Helvet=
+ica,sans-serif"><a class=3D"dark-style-color font-mob-16" href=3D"https://ema=
+ils.hellowork.com/clic/fixture-012/details" rel=3D"noopener" style=3D"color:#=
+000000;font-size:18px;font-weight:400;line-height:23px;text-decoration:underl=
+ine;letter-spacing:-0.16px;text-decoration-thickness:1px;text-underline-offse=
+t:2px" target=3D"_blank"> Ing=C3=A9nieur Electricit=C3=A9 - Electronique H/F =
+</a></td></tr><tr><td style=3D"color:#606060;font-family:Arial;font-weight:40=
+0;line-height:normal;text-align:left;padding-top:8px"><table border=3D"0" cel=
+lpadding=3D"0" cellspacing=3D"0"><tr><td class=3D"dark-style-color" style=3D"=
+color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weig=
+ht:400;line-height:normal;line-height:16px">FAYAT ENERGIES SERVICES</td></tr>=
+</table></td></tr><tr><td style=3D"padding-top:4px"><table align=3D"left" bor=
+der=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:left"><tr><td st=
+yle=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadding=3D"0" cellspaci=
+ng=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D"bg-dark-tags" href=
+=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px;color:#000000;disp=
+lay:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-w=
+eight:400;line-height:16px;text-decoration:none;-webkit-text-size-adjust:none=
+;padding:6px 8px">Aulnay-sous-Bois - 93</a></td></tr></table></td></tr></tabl=
+e><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" styl=
+e=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><table border=3D"0" =
+cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-events:none"><a =
+class=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F6F6;border-ra=
+dius:4px;color:#000000;display:inline-block;font-family:Arial,Helvetica,sans-=
+serif;font-size:12px;font-weight:400;line-height:16px;text-decoration:none;-w=
+ebkit-text-size-adjust:none;padding:6px 8px">Stage</a></td></tr></table></td>=
+</tr></table><table align=3D"right" border=3D"0" cellpadding=3D"0" cellspacin=
+g=3D"0" class=3D"mobileWidth" style=3D"float:right"><tr><td class=3D"pl-0" st=
+yle=3D"padding:12px 0 0 12px"><!--[if mso]> <v:roundrect xmlns:v=3Durn:schema=
+s-microsoft-com:vml xmlns:w=3Durn:schemas-microsoft-com:office:word href=3D"h=
+ttps://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/12/4b58=
+b8d2309f4e001fefb05061c53117/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3=
+dy5oZWxsb3dvcmsuY29tL2ZyLWZyL2VtcGxvaXMvODQyNTIwNjguaHRtbD91dG1fc291cmNlPWpvY=
+mFsZXJ0JnV0bV9tZWRpdW09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0X2Nvbm5leGVzJnV0bV=
+90ZXJtPTg0MjUyMDY4JnV0bV9jb250ZW50PWxpc3RlMkNUQV9C" style=3Dheight:30px;v-tex=
+t-anchor:middle;width:105px arcsize=3D120% strokecolor=3D#000000 fillcolor=3D=
+#FFFFFF> <w:anchorlock><center style=3Dcolor:#000000;font-family:sans-serif;f=
+ont-size:14px;font-weight:400>Voir l=E2=80=99offre</center></v:roundrect> <![=
+endif]--> <a class=3D"cards-cta" href=3D"#" style=3D"background-color:#FFFFFF=
+;border:1px solid #000000;border-radius:80px;color:#000000;display:inline-blo=
+ck;font-family:sans-serif;font-size:14px;font-weight:400;line-height:30px;tex=
+t-align:center;text-decoration:none;-webkit-text-size-adjust:none;mso-hide:al=
+l;padding:0 18px">Voir l=E2=80=99offre</a></td></tr></table></td></tr></table=
+></td></tr></table></td></tr><tr><td style=3D"padding-top:16px"><table border=
+=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"border-collapse:separate"=
+ width=3D"100%"><tr><td class=3D"bg-dark-cards padding-cards" style=3D"paddin=
+g:12px 24px;border:1px solid #E5E5E5;border-radius:8px"><table align=3D"left"=
+ border=3D"0" cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td styl=
+e=3D"font-family:Arial,Helvetica,sans-serif"><a class=3D"dark-style-color fon=
+t-mob-16" href=3D"https://emails.hellowork.com/clic/fixture-016/details" rel=
+=3D"noopener" style=3D"color:#000000;font-size:18px;font-weight:400;line-heig=
+ht:23px;text-decoration:underline;letter-spacing:-0.16px;text-decoration-thic=
+kness:1px;text-underline-offset:2px" target=3D"_blank"> Ing=C3=A9nieur =C3=89=
+tudes H/F </a></td></tr><tr><td style=3D"color:#606060;font-family:Arial;font=
+-weight:400;line-height:normal;text-align:left;padding-top:8px"><table border=
+=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td class=3D"dark-style-color"=
+ style=3D"color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:12px=
+;font-weight:400;line-height:normal;line-height:16px">FAYAT ENERGIES SERVICES=
+</td></tr></table></td></tr><tr><td style=3D"padding-top:4px"><table align=3D=
+"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:left">=
+<tr><td style=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadding=3D"0"=
+ cellspacing=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D"bg-dark-=
+tags" href=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px;color:#0=
+00000;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:1=
+2px;font-weight:400;line-height:16px;text-decoration:none;-webkit-text-size-a=
+djust:none;padding:6px 8px">Viry-Ch=C3=A2tillon - 91</a></td></tr></table></t=
+d></tr></table><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspaci=
+ng=3D"0" style=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><table =
+border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-eve=
+nts:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F=
+6F6;border-radius:4px;color:#000000;display:inline-block;font-family:Arial,He=
+lvetica,sans-serif;font-size:12px;font-weight:400;line-height:16px;text-decor=
+ation:none;-webkit-text-size-adjust:none;padding:6px 8px">Stage</a></td></tr>=
+</table></td></tr></table><table align=3D"right" border=3D"0" cellpadding=3D"=
+0" cellspacing=3D"0" class=3D"mobileWidth" style=3D"float:right"><tr><td clas=
+s=3D"pl-0" style=3D"padding:12px 0 0 12px"><!--[if mso]> <v:roundrect xmlns:v=
+=3Durn:schemas-microsoft-com:vml xmlns:w=3Durn:schemas-microsoft-com:office:w=
+ord href=3D"https://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf0008=
+91c04/15/aeee762d4bc256347080565c71dcfc53/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJ=
+odHRwczovL3d3dy5oZWxsb3dvcmsuY29tL2ZyLWZyL2VtcGxvaXMvODQyNTA4ODQuaHRtbD91dG1f=
+c291cmNlPWpvYmFsZXJ0JnV0bV9tZWRpdW09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0X2Nvb=
+m5leGVzJnV0bV90ZXJtPTg0MjUwODg0JnV0bV9jb250ZW50PWxpc3RlMkNUQV9C" style=3Dheig=
+ht:30px;v-text-anchor:middle;width:105px arcsize=3D120% strokecolor=3D#000000=
+ fillcolor=3D#FFFFFF> <w:anchorlock><center style=3Dcolor:#000000;font-family=
+:sans-serif;font-size:14px;font-weight:400>Voir l=E2=80=99offre</center></v:r=
+oundrect> <![endif]--> <a class=3D"cards-cta" href=3D"#" style=3D"background-=
+color:#FFFFFF;border:1px solid #000000;border-radius:80px;color:#000000;displ=
+ay:inline-block;font-family:sans-serif;font-size:14px;font-weight:400;line-he=
+ight:30px;text-align:center;text-decoration:none;-webkit-text-size-adjust:non=
+e;mso-hide:all;padding:0 18px">Voir l=E2=80=99offre</a></td></tr></table></td=
+></tr></table></td></tr></table></td></tr><tr><td style=3D"padding-top:16px">=
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"border-colla=
+pse:separate" width=3D"100%"><tr><td class=3D"bg-dark-cards padding-cards" st=
+yle=3D"padding:12px 24px;border:1px solid #E5E5E5;border-radius:8px"><table a=
+lign=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"=
+><tr><td style=3D"font-family:Arial,Helvetica,sans-serif"><a class=3D"dark-st=
+yle-color font-mob-16" href=3D"https://emails.hellowork.com/clic/fixture-020/=
+details" rel=3D"noopener" style=3D"color:#000000;font-size:18px;font-weight:4=
+00;line-height:23px;text-decoration:underline;letter-spacing:-0.16px;text-dec=
+oration-thickness:1px;text-underline-offset:2px" target=3D"_blank"> Stagiaire=
+ Ingenieur=C2=B7e Ara Electricite H/F </a></td></tr><tr><td style=3D"color:#6=
+06060;font-family:Arial;font-weight:400;line-height:normal;text-align:left;pa=
+dding-top:8px"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><t=
+d class=3D"dark-style-color" style=3D"color:#000000;font-family:Arial,Helveti=
+ca,sans-serif;font-size:12px;font-weight:400;line-height:normal;line-height:1=
+6px">Eiffage Energie Syst=C3=A8mes</td></tr></table></td></tr><tr><td style=
+=3D"padding-top:4px"><table align=3D"left" border=3D"0" cellpadding=3D"0" cel=
+lspacing=3D"0" style=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><=
+table border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"point=
+er-events:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-colo=
+r:#F6F6F6;border-radius:4px;color:#000000;display:inline-block;font-family:Ar=
+ial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:16px;text=
+-decoration:none;-webkit-text-size-adjust:none;padding:6px 8px">Jou=C3=A9-l=
+=C3=A8s-Tours - 37</a></td></tr></table></td></tr></table><table align=3D"lef=
+t" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:left"><tr>=
+<td style=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadding=3D"0" cel=
+lspacing=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D"bg-dark-tags=
+" href=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px;color:#00000=
+0;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:12px;=
+font-weight:400;line-height:16px;text-decoration:none;-webkit-text-size-adjus=
+t:none;padding:6px 8px">Stage</a></td></tr></table></td></tr></table><table a=
+lign=3D"right" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"mobi=
+leWidth" style=3D"float:right"><tr><td class=3D"pl-0" style=3D"padding:12px 0=
+ 0 12px"><!--[if mso]> <v:roundrect xmlns:v=3Durn:schemas-microsoft-com:vml x=
+mlns:w=3Durn:schemas-microsoft-com:office:word href=3D"https://emails.hellowo=
+rk.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/18/8e6fe909e36824a1628d4bca5=
+581887c/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3dy5oZWxsb3dvcmsuY29tL=
+2ZyLWZyL2VtcGxvaXMvODQwODIyMDMuaHRtbD91dG1fc291cmNlPWpvYmFsZXJ0JnV0bV9tZWRpdW=
+09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0X2Nvbm5leGVzJnV0bV90ZXJtPTg0MDgyMjAzJnV=
+0bV9jb250ZW50PWxpc3RlMkNUQV9C" style=3Dheight:30px;v-text-anchor:middle;width=
+:105px arcsize=3D120% strokecolor=3D#000000 fillcolor=3D#FFFFFF> <w:anchorloc=
+k><center style=3Dcolor:#000000;font-family:sans-serif;font-size:14px;font-we=
+ight:400>Voir l=E2=80=99offre</center></v:roundrect> <![endif]--> <a class=3D=
+"cards-cta" href=3D"#" style=3D"background-color:#FFFFFF;border:1px solid #00=
+0000;border-radius:80px;color:#000000;display:inline-block;font-family:sans-s=
+erif;font-size:14px;font-weight:400;line-height:30px;text-align:center;text-d=
+ecoration:none;-webkit-text-size-adjust:none;mso-hide:all;padding:0 18px">Voi=
+r l=E2=80=99offre</a></td></tr></table></td></tr></table></td></tr></table></=
+td></tr><tr><td style=3D"padding-top:16px"><table border=3D"0" cellpadding=3D=
+"0" cellspacing=3D"0" style=3D"border-collapse:separate" width=3D"100%"><tr><=
+td class=3D"bg-dark-cards padding-cards" style=3D"padding:12px 24px;border:1p=
+x solid #E5E5E5;border-radius:8px"><table align=3D"left" border=3D"0" cellpad=
+ding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td style=3D"font-family:Aria=
+l,Helvetica,sans-serif"><a class=3D"dark-style-color font-mob-16" href=3D"htt=
+ps://emails.hellowork.com/clic/fixture-024/details" rel=3D"noopener" style=3D=
+"color:#000000;font-size:18px;font-weight:400;line-height:23px;text-decoratio=
+n:underline;letter-spacing:-0.16px;text-decoration-thickness:1px;text-underli=
+ne-offset:2px" target=3D"_blank"> Stage Ingenieur=C2=B7e Ara Electricite H/F =
+</a></td></tr><tr><td style=3D"color:#606060;font-family:Arial;font-weight:40=
+0;line-height:normal;text-align:left;padding-top:8px"><table border=3D"0" cel=
+lpadding=3D"0" cellspacing=3D"0"><tr><td class=3D"dark-style-color" style=3D"=
+color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weig=
+ht:400;line-height:normal;line-height:16px">Eiffage Energie Syst=C3=A8mes</td=
+></tr></table></td></tr><tr><td style=3D"padding-top:4px"><table align=3D"lef=
+t" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:left"><tr>=
+<td style=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadding=3D"0" cel=
+lspacing=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D"bg-dark-tags=
+" href=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px;color:#00000=
+0;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:12px;=
+font-weight:400;line-height:16px;text-decoration:none;-webkit-text-size-adjus=
+t:none;padding:6px 8px">La Chapelle-Saint-Ursin - 18</a></td></tr></table></t=
+d></tr></table><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspaci=
+ng=3D"0" style=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><table =
+border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-eve=
+nts:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F=
+6F6;border-radius:4px;color:#000000;display:inline-block;font-family:Arial,He=
+lvetica,sans-serif;font-size:12px;font-weight:400;line-height:16px;text-decor=
+ation:none;-webkit-text-size-adjust:none;padding:6px 8px">Stage</a></td></tr>=
+</table></td></tr></table><table align=3D"right" border=3D"0" cellpadding=3D"=
+0" cellspacing=3D"0" class=3D"mobileWidth" style=3D"float:right"><tr><td clas=
+s=3D"pl-0" style=3D"padding:12px 0 0 12px"><!--[if mso]> <v:roundrect xmlns:v=
+=3Durn:schemas-microsoft-com:vml xmlns:w=3Durn:schemas-microsoft-com:office:w=
+ord href=3D"https://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf0008=
+91c04/21/cd6111f63951ca9846f866fcb93f651a/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJ=
+odHRwczovL3d3dy5oZWxsb3dvcmsuY29tL2ZyLWZyL2VtcGxvaXMvODQwODIyMTMuaHRtbD91dG1f=
+c291cmNlPWpvYmFsZXJ0JnV0bV9tZWRpdW09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0X2Nvb=
+m5leGVzJnV0bV90ZXJtPTg0MDgyMjEzJnV0bV9jb250ZW50PWxpc3RlMkNUQV9C" style=3Dheig=
+ht:30px;v-text-anchor:middle;width:105px arcsize=3D120% strokecolor=3D#000000=
+ fillcolor=3D#FFFFFF> <w:anchorlock><center style=3Dcolor:#000000;font-family=
+:sans-serif;font-size:14px;font-weight:400>Voir l=E2=80=99offre</center></v:r=
+oundrect> <![endif]--> <a class=3D"cards-cta" href=3D"#" style=3D"background-=
+color:#FFFFFF;border:1px solid #000000;border-radius:80px;color:#000000;displ=
+ay:inline-block;font-family:sans-serif;font-size:14px;font-weight:400;line-he=
+ight:30px;text-align:center;text-decoration:none;-webkit-text-size-adjust:non=
+e;mso-hide:all;padding:0 18px">Voir l=E2=80=99offre</a></td></tr></table></td=
+></tr></table></td></tr></table></td></tr><tr><td style=3D"padding-top:16px">=
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"border-colla=
+pse:separate" width=3D"100%"><tr><td class=3D"bg-dark-cards padding-cards" st=
+yle=3D"padding:12px 24px;border:1px solid #E5E5E5;border-radius:8px"><table a=
+lign=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"=
+><tr><td style=3D"font-family:Arial,Helvetica,sans-serif"><a class=3D"dark-st=
+yle-color font-mob-16" href=3D"https://emails.hellowork.com/clic/fixture-028/=
+details" rel=3D"noopener" style=3D"color:#000000;font-size:18px;font-weight:4=
+00;line-height:23px;text-decoration:underline;letter-spacing:-0.16px;text-dec=
+oration-thickness:1px;text-underline-offset:2px" target=3D"_blank"> Stage - I=
+ng=C3=A9nieur Distribution =C3=89lectrique H/F </a></td></tr><tr><td style=3D=
+"color:#606060;font-family:Arial;font-weight:400;line-height:normal;text-alig=
+n:left;padding-top:8px"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"=
+0"><tr><td class=3D"dark-style-color" style=3D"color:#000000;font-family:Aria=
+l,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:normal;line=
+-height:16px">Edvance</td></tr></table></td></tr><tr><td style=3D"padding-top=
+:4px"><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" =
+style=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><table border=3D=
+"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-events:none"=
+><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F6F6;borde=
+r-radius:4px;color:#000000;display:inline-block;font-family:Arial,Helvetica,s=
+ans-serif;font-size:12px;font-weight:400;line-height:16px;text-decoration:non=
+e;-webkit-text-size-adjust:none;padding:6px 8px">Montrouge - 92</a></td></tr>=
+</table></td></tr></table><table align=3D"left" border=3D"0" cellpadding=3D"0=
+" cellspacing=3D"0" style=3D"float:left"><tr><td style=3D"padding:12px 12px 0=
+ 0"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"=
+pointer-events:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"background=
+-color:#F6F6F6;border-radius:4px;color:#000000;display:inline-block;font-fami=
+ly:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:16px=
+;text-decoration:none;-webkit-text-size-adjust:none;padding:6px 8px">Stage</a=
+></td></tr></table></td></tr></table><table align=3D"left" border=3D"0" cellp=
+adding=3D"0" cellspacing=3D"0" style=3D"float:left"><tr><td style=3D"padding-=
+top:12px"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td sty=
+le=3D"pointer-events:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"back=
+ground-color:#F6F6F6;border-radius:4px;color:#000000;display:inline-block;fon=
+t-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:600;line-heigh=
+t:16px;text-decoration:none;-webkit-text-size-adjust:none;padding:6px 8px"> 1=
+ 400 - 1 500 =E2=82=AC / mois </a></td></tr></table></td></tr></table><table =
+align=3D"right" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"mob=
+ileWidth" style=3D"float:right"><tr><td class=3D"pl-0" style=3D"padding:12px =
+0 0 12px"><!--[if mso]> <v:roundrect xmlns:v=3Durn:schemas-microsoft-com:vml =
+xmlns:w=3Durn:schemas-microsoft-com:office:word href=3D"https://emails.hellow=
+ork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/24/12b4b24f8bff93ab1b6e88ec=
+9aa220eb/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3dy5oZWxsb3dvcmsuY29t=
+L2ZyLWZyL2VtcGxvaXMvODQyMTQzNDkuaHRtbD91dG1fc291cmNlPWpvYmFsZXJ0JnV0bV9tZWRpd=
+W09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0X2Nvbm5leGVzJnV0bV90ZXJtPTg0MjE0MzQ5Jn=
+V0bV9jb250ZW50PWxpc3RlMkNUQV9C" style=3Dheight:30px;v-text-anchor:middle;widt=
+h:105px arcsize=3D120% strokecolor=3D#000000 fillcolor=3D#FFFFFF> <w:anchorlo=
+ck><center style=3Dcolor:#000000;font-family:sans-serif;font-size:14px;font-w=
+eight:400>Voir l=E2=80=99offre</center></v:roundrect> <![endif]--> <a class=
+=3D"cards-cta" href=3D"#" style=3D"background-color:#FFFFFF;border:1px solid =
+#000000;border-radius:80px;color:#000000;display:inline-block;font-family:san=
+s-serif;font-size:14px;font-weight:400;line-height:30px;text-align:center;tex=
+t-decoration:none;-webkit-text-size-adjust:none;mso-hide:all;padding:0 18px">=
+Voir l=E2=80=99offre</a></td></tr></table></td></tr></table></td></tr></table=
+></td></tr><tr><td style=3D"padding-top:16px"><table border=3D"0" cellpadding=
+=3D"0" cellspacing=3D"0" style=3D"border-collapse:separate" width=3D"100%"><t=
+r><td class=3D"bg-dark-cards padding-cards" style=3D"padding:12px 24px;border=
+:1px solid #E5E5E5;border-radius:8px"><table align=3D"left" border=3D"0" cell=
+padding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td style=3D"font-family:A=
+rial,Helvetica,sans-serif"><a class=3D"dark-style-color font-mob-16" href=3D"=
+https://emails.hellowork.com/clic/fixture-033/details" rel=3D"noopener" style=
+=3D"color:#000000;font-size:18px;font-weight:400;line-height:23px;text-decora=
+tion:underline;letter-spacing:-0.16px;text-decoration-thickness:1px;text-unde=
+rline-offset:2px" target=3D"_blank"> Stage - Vers des Composants de Puissance=
+ de Prochaine G=C3=A9n=C3=A9ration en Aln H/F </a></td></tr><tr><td style=3D"=
+color:#606060;font-family:Arial;font-weight:400;line-height:normal;text-align=
+:left;padding-top:8px"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0=
+"><tr><td class=3D"dark-style-color" style=3D"color:#000000;font-family:Arial=
+,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:normal;line-=
+height:16px">CEA</td></tr></table></td></tr><tr><td style=3D"padding-top:4px"=
+><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=
+=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><table border=3D"0" c=
+ellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-events:none"><a c=
+lass=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F6F6;border-rad=
+ius:4px;color:#000000;display:inline-block;font-family:Arial,Helvetica,sans-s=
+erif;font-size:12px;font-weight:400;line-height:16px;text-decoration:none;-we=
+bkit-text-size-adjust:none;padding:6px 8px">Grenoble - 38</a></td></tr></tabl=
+e></td></tr></table><table align=3D"left" border=3D"0" cellpadding=3D"0" cell=
+spacing=3D"0" style=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><t=
+able border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointe=
+r-events:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-color=
+:#F6F6F6;border-radius:4px;color:#000000;display:inline-block;font-family:Ari=
+al,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:16px;text-=
+decoration:none;-webkit-text-size-adjust:none;padding:6px 8px">Stage</a></td>=
+</tr></table></td></tr></table><table align=3D"right" border=3D"0" cellpaddin=
+g=3D"0" cellspacing=3D"0" class=3D"mobileWidth" style=3D"float:right"><tr><td=
+ class=3D"pl-0" style=3D"padding:12px 0 0 12px"><!--[if mso]> <v:roundrect xm=
+lns:v=3Durn:schemas-microsoft-com:vml xmlns:w=3Durn:schemas-microsoft-com:off=
+ice:word href=3D"https://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-db=
+f000891c04/27/fdc0ed1384935251d767a088692614e2/bW91c3RhbGVkLjUzQGdtYWlsLmNvbf=
+CfqqJodHRwczovL3d3dy5oZWxsb3dvcmsuY29tL2ZyLWZyL2VtcGxvaXMvODM5MjY4NzMuaHRtbD9=
+1dG1fc291cmNlPWpvYmFsZXJ0JnV0bV9tZWRpdW09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0=
+X2Nvbm5leGVzJnV0bV90ZXJtPTgzOTI2ODczJnV0bV9jb250ZW50PWxpc3RlMkNUQV9C" style=
+=3Dheight:30px;v-text-anchor:middle;width:105px arcsize=3D120% strokecolor=3D=
+#000000 fillcolor=3D#FFFFFF> <w:anchorlock><center style=3Dcolor:#000000;font=
+-family:sans-serif;font-size:14px;font-weight:400>Voir l=E2=80=99offre</cente=
+r></v:roundrect> <![endif]--> <a class=3D"cards-cta" href=3D"#" style=3D"back=
+ground-color:#FFFFFF;border:1px solid #000000;border-radius:80px;color:#00000=
+0;display:inline-block;font-family:sans-serif;font-size:14px;font-weight:400;=
+line-height:30px;text-align:center;text-decoration:none;-webkit-text-size-adj=
+ust:none;mso-hide:all;padding:0 18px">Voir l=E2=80=99offre</a></td></tr></tab=
+le></td></tr></table></td></tr></table></td></tr><tr><td style=3D"padding-top=
+:16px"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"borde=
+r-collapse:separate" width=3D"100%"><tr><td class=3D"bg-dark-cards padding-ca=
+rds" style=3D"padding:12px 24px;border:1px solid #E5E5E5;border-radius:8px"><=
+table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" width=
+=3D"100%"><tr><td style=3D"font-family:Arial,Helvetica,sans-serif"><a class=
+=3D"dark-style-color font-mob-16" href=3D"https://emails.hellowork.com/clic/f=
+ixture-037/details" rel=3D"noopener" style=3D"color:#000000;font-size:18px;fo=
+nt-weight:400;line-height:23px;text-decoration:underline;letter-spacing:-0.16=
+px;text-decoration-thickness:1px;text-underline-offset:2px" target=3D"_blank"=
+> Stagiaire Ingenieur=C2=B7e Ara Electricite H/F </a></td></tr><tr><td style=
+=3D"color:#606060;font-family:Arial;font-weight:400;line-height:normal;text-a=
+lign:left;padding-top:8px"><table border=3D"0" cellpadding=3D"0" cellspacing=
+=3D"0"><tr><td class=3D"dark-style-color" style=3D"color:#000000;font-family:=
+Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:normal;=
+line-height:16px">Eiffage Energie Syst=C3=A8mes</td></tr></table></td></tr><t=
+r><td style=3D"padding-top:4px"><table align=3D"left" border=3D"0" cellpaddin=
+g=3D"0" cellspacing=3D"0" style=3D"float:left"><tr><td style=3D"padding:12px =
+12px 0 0"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td sty=
+le=3D"pointer-events:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"back=
+ground-color:#F6F6F6;border-radius:4px;color:#000000;display:inline-block;fon=
+t-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-heigh=
+t:16px;text-decoration:none;-webkit-text-size-adjust:none;padding:6px 8px">Or=
+l=C3=A9ans - 45</a></td></tr></table></td></tr></table><table align=3D"left" =
+border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:left"><tr><td=
+ style=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadding=3D"0" cellsp=
+acing=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D"bg-dark-tags" h=
+ref=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px;color:#000000;d=
+isplay:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:12px;fon=
+t-weight:400;line-height:16px;text-decoration:none;-webkit-text-size-adjust:n=
+one;padding:6px 8px">Stage</a></td></tr></table></td></tr></table><table alig=
+n=3D"right" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"mobileW=
+idth" style=3D"float:right"><tr><td class=3D"pl-0" style=3D"padding:12px 0 0 =
+12px"><!--[if mso]> <v:roundrect xmlns:v=3Durn:schemas-microsoft-com:vml xmln=
+s:w=3Durn:schemas-microsoft-com:office:word href=3D"https://emails.hellowork.=
+com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/30/2bdf4990bea988104d6f10fd3121=
+0f60/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3dy5oZWxsb3dvcmsuY29tL2Zy=
+LWZyL2VtcGxvaXMvODQwOTEyNzAuaHRtbD91dG1fc291cmNlPWpvYmFsZXJ0JnV0bV9tZWRpdW09Z=
+W1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0X2Nvbm5leGVzJnV0bV90ZXJtPTg0MDkxMjcwJnV0bV=
+9jb250ZW50PWxpc3RlMkNUQV9C" style=3Dheight:30px;v-text-anchor:middle;width:10=
+5px arcsize=3D120% strokecolor=3D#000000 fillcolor=3D#FFFFFF> <w:anchorlock><=
+center style=3Dcolor:#000000;font-family:sans-serif;font-size:14px;font-weigh=
+t:400>Voir l=E2=80=99offre</center></v:roundrect> <![endif]--> <a class=3D"ca=
+rds-cta" href=3D"#" style=3D"background-color:#FFFFFF;border:1px solid #00000=
+0;border-radius:80px;color:#000000;display:inline-block;font-family:sans-seri=
+f;font-size:14px;font-weight:400;line-height:30px;text-align:center;text-deco=
+ration:none;-webkit-text-size-adjust:none;mso-hide:all;padding:0 18px">Voir l=
+=E2=80=99offre</a></td></tr></table></td></tr></table></td></tr></table></td>=
+</tr><tr><td style=3D"padding-top:16px"><table border=3D"0" cellpadding=3D"0"=
+ cellspacing=3D"0" style=3D"border-collapse:separate" width=3D"100%"><tr><td =
+class=3D"bg-dark-cards padding-cards" style=3D"padding:12px 24px;border:1px s=
+olid #E5E5E5;border-radius:8px"><table align=3D"left" border=3D"0" cellpaddin=
+g=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td style=3D"font-family:Arial,H=
+elvetica,sans-serif"><a class=3D"dark-style-color font-mob-16" href=3D"https:=
+//emails.hellowork.com/clic/fixture-041/details" rel=3D"noopener" style=3D"co=
+lor:#000000;font-size:18px;font-weight:400;line-height:23px;text-decoration:u=
+nderline;letter-spacing:-0.16px;text-decoration-thickness:1px;text-underline-=
+offset:2px" target=3D"_blank"> Stagaire Ing=C3=A9nieur Electrique H/F </a></t=
+d></tr><tr><td style=3D"color:#606060;font-family:Arial;font-weight:400;line-=
+height:normal;text-align:left;padding-top:8px"><table border=3D"0" cellpaddin=
+g=3D"0" cellspacing=3D"0"><tr><td class=3D"dark-style-color" style=3D"color:#=
+000000;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;=
+line-height:normal;line-height:16px">RATP Cap Ateliers Championnet</td></tr><=
+/table></td></tr><tr><td style=3D"padding-top:4px"><table align=3D"left" bord=
+er=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:left"><tr><td sty=
+le=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadding=3D"0" cellspacin=
+g=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D"bg-dark-tags" href=
+=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px;color:#000000;disp=
+lay:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-w=
+eight:400;line-height:16px;text-decoration:none;-webkit-text-size-adjust:none=
+;padding:6px 8px">Paris 18e - 75</a></td></tr></table></td></tr></table><tabl=
+e align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"fl=
+oat:left"><tr><td style=3D"padding:12px 12px 0 0"><table border=3D"0" cellpad=
+ding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-events:none"><a class=
+=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F6F6;border-radius:=
+4px;color:#000000;display:inline-block;font-family:Arial,Helvetica,sans-serif=
+;font-size:12px;font-weight:400;line-height:16px;text-decoration:none;-webkit=
+-text-size-adjust:none;padding:6px 8px">Stage</a></td></tr></table></td></tr>=
+</table><table align=3D"right" border=3D"0" cellpadding=3D"0" cellspacing=3D"=
+0" class=3D"mobileWidth" style=3D"float:right"><tr><td class=3D"pl-0" style=
+=3D"padding:12px 0 0 12px"><!--[if mso]> <v:roundrect xmlns:v=3Durn:schemas-m=
+icrosoft-com:vml xmlns:w=3Durn:schemas-microsoft-com:office:word href=3D"http=
+s://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/33/80ca48d=
+52c6f3eb9969b9dd0dc508cc1/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3dy5=
+oZWxsb3dvcmsuY29tL2ZyLWZyL2VtcGxvaXMvODMwMzMzMjQuaHRtbD91dG1fc291cmNlPWpvYmFs=
+ZXJ0JnV0bV9tZWRpdW09ZW1haWwmdXRtX2NhbXBhaWduPWpvYmFsZXJ0X2Nvbm5leGVzJnV0bV90Z=
+XJtPTgzMDMzMzI0JnV0bV9jb250ZW50PWxpc3RlMkNUQV9C" style=3Dheight:30px;v-text-a=
+nchor:middle;width:105px arcsize=3D120% strokecolor=3D#000000 fillcolor=3D#FF=
+FFFF> <w:anchorlock><center style=3Dcolor:#000000;font-family:sans-serif;font=
+-size:14px;font-weight:400>Voir l=E2=80=99offre</center></v:roundrect> <![end=
+if]--> <a class=3D"cards-cta" href=3D"#" style=3D"background-color:#FFFFFF;bo=
+rder:1px solid #000000;border-radius:80px;color:#000000;display:inline-block;=
+font-family:sans-serif;font-size:14px;font-weight:400;line-height:30px;text-a=
+lign:center;text-decoration:none;-webkit-text-size-adjust:none;mso-hide:all;p=
+adding:0 18px">Voir l=E2=80=99offre</a></td></tr></table></td></tr></table></=
+td></tr></table></td></tr><tr><td style=3D"padding-top:16px"><table border=3D=
+"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"border-collapse:separate" wi=
+dth=3D"100%"><tr><td class=3D"bg-dark-cards padding-cards" style=3D"padding:1=
+2px 24px;border:1px solid #E5E5E5;border-radius:8px"><table align=3D"left" bo=
+rder=3D"0" cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td style=
+=3D"font-family:Arial,Helvetica,sans-serif"><a class=3D"dark-style-color font=
+-mob-16" href=3D"https://emails.hellowork.com/clic/fixture-045/details" rel=
+=3D"noopener" style=3D"color:#000000;font-size:18px;font-weight:400;line-heig=
+ht:23px;text-decoration:underline;letter-spacing:-0.16px;text-decoration-thic=
+kness:1px;text-underline-offset:2px" target=3D"_blank"> Stage - Ing=C3=A9nieu=
+r Distribution =C3=89lectrique H/F </a></td></tr><tr><td style=3D"color:#6060=
+60;font-family:Arial;font-weight:400;line-height:normal;text-align:left;paddi=
+ng-top:8px"><table border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td c=
+lass=3D"dark-style-color" style=3D"color:#000000;font-family:Arial,Helvetica,=
+sans-serif;font-size:12px;font-weight:400;line-height:normal;line-height:16px=
+">Edvance</td></tr></table></td></tr><tr><td style=3D"padding-top:4px"><table=
+ align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"flo=
+at:left"><tr><td style=3D"padding:12px 12px 0 0"><table border=3D"0" cellpadd=
+ing=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-events:none"><a class=3D=
+"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F6F6;border-radius:4px=
+;color:#000000;display:inline-block;font-family:Arial,Helvetica,sans-serif;fo=
+nt-size:12px;font-weight:400;line-height:16px;text-decoration:none;-webkit-te=
+xt-size-adjust:none;padding:6px 8px">Montrouge - 92</a></td></tr></table></td=
+></tr></table><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacin=
+g=3D"0" style=3D"float:left"><tr><td style=3D"padding:12px 12px 0 0"><table b=
+order=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointer-even=
+ts:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-color:#F6F6=
+F6;border-radius:4px;color:#000000;display:inline-block;font-family:Arial,Hel=
+vetica,sans-serif;font-size:12px;font-weight:400;line-height:16px;text-decora=
+tion:none;-webkit-text-size-adjust:none;padding:6px 8px">Stage</a></td></tr><=
+/table></td></tr></table><table align=3D"left" border=3D"0" cellpadding=3D"0"=
+ cellspacing=3D"0" style=3D"float:left"><tr><td style=3D"padding-top:12px"><t=
+able border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td style=3D"pointe=
+r-events:none"><a class=3D"bg-dark-tags" href=3D"#" style=3D"background-color=
+:#F6F6F6;border-radius:4px;color:#000000;display:inline-block;font-family:Ari=
+al,Helvetica,sans-serif;font-size:12px;font-weight:600;line-height:16px;text-=
+decoration:none;-webkit-text-size-adjust:none;padding:6px 8px"> 1 400 - 1 500=
+ =E2=82=AC / mois </a></td></tr></table></td></tr></table><table align=3D"rig=
+ht" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"mobileWidth" st=
+yle=3D"float:right"><tr><td class=3D"pl-0" style=3D"padding:12px 0 0 12px"><!=
+--[if mso]> <v:roundrect xmlns:v=3Durn:schemas-microsoft-com:vml xmlns:w=3Dur=
+n:schemas-microsoft-com:office:word href=3D"https://emails.hellowork.com/clic=
+/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/36/fcfdcf09b20e4529c0841cf16e57123a/bW9=
+1c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3dy5oZWxsb3dvcmsuY29tL2ZyLWZyL2Vt=
+cGxvaXMvODQxNDcyMjYuaHRtbD91dG1fc291cmNlPWpvYmFsZXJ0JnV0bV9tZWRpdW09ZW1haWwmd=
+XRtX2NhbXBhaWduPWpvYmFsZXJ0X2Nvbm5leGVzJnV0bV90ZXJtPTg0MTQ3MjI2JnV0bV9jb250ZW=
+50PWxpc3RlMkNUQV9C" style=3Dheight:30px;v-text-anchor:middle;width:105px arcs=
+ize=3D120% strokecolor=3D#000000 fillcolor=3D#FFFFFF> <w:anchorlock><center s=
+tyle=3Dcolor:#000000;font-family:sans-serif;font-size:14px;font-weight:400>Vo=
+ir l=E2=80=99offre</center></v:roundrect> <![endif]--> <a class=3D"cards-cta"=
+ href=3D"#" style=3D"background-color:#FFFFFF;border:1px solid #000000;border=
+-radius:80px;color:#000000;display:inline-block;font-family:sans-serif;font-s=
+ize:14px;font-weight:400;line-height:30px;text-align:center;text-decoration:n=
+one;-webkit-text-size-adjust:none;mso-hide:all;padding:0 18px">Voir l=E2=80=
+=99offre</a></td></tr></table></td></tr></table></td></tr></table></td></tr><=
+tr><td style=3D"text-align:left;padding:16px 0 28px 0"><!--[if mso]> <v:round=
+rect xmlns:v=3Durn:schemas-microsoft-com:vml xmlns:w=3Durn:schemas-microsoft-=
+com:office:word href=3D"https://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-=
+9efc-dbf000891c04/38/f0f6c8150dbc241aebb0b6c0afa860c2/bW91c3RhbGVkLjUzQGdtYWl=
+sLmNvbfCfqqJodHRwczovL3d3dy5oZWxsb3dvcmsuY29tL2ZyLWZyL2NhbmRpZGF0L2FsZXJ0ZXMu=
+aHRtbC80YjZhZGJmYi1hZjM1LTQwMTQtYmU1Mi1jY2FlZjNiNGFhOGI_dXRtX3NvdXJjZT1qb2Jhb=
+GVydCZ1dG1fbWVkaXVtPWVtYWlsJnV0bV9jYW1wYWlnbj1qb2JhbGVydCZ1dG1fY29udGVudD1idG=
+5fdm9pcnRvdXRfQg" style=3Dheight:45px;v-text-anchor:middle;width:187px arcsiz=
+e=3D107% stroke=3Df fillcolor=3D#000000> <w:anchorlock><center><![endif]--> <=
+a class=3D"light-cta" href=3D"#" style=3D"background-color:#000000;border-rad=
+ius:48px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:=
+14px;font-weight:700;line-height:45px;text-align:center;text-decoration:none;=
+-webkit-text-size-adjust:none;padding:0 25px">Voir toutes les offres</a> <!--=
+[if mso]></center></v:roundrect> <![endif]--></td></tr><tr><td class=3D"dark-=
+style-color" style=3D"color:#000000;font-size:14px;font-family:Arial,Helvetic=
+a,sans-serif;line-height:21px;padding:16px 0 16px 0">=C3=80 tr=C3=A8s vite da=
+ns vos recherches ! =F0=9F=91=8B <br/> L'=C3=A9quipe Hellowork</td></tr><tr><=
+td><table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" wid=
+th=3D"100%"><tr><td class=3D"footer-color padding-footer bg-dark" style=3D"pa=
+dding:24px 32px 24px 32px;border-radius:8px;background-color:#F6F6F6;color:#6=
+06060;font-family:Arial;font-size:12px;line-height:16px;text-align:left"><tab=
+le cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td style=3D"paddin=
+g-bottom:32px"><table cellpadding=3D"0" cellspacing=3D"0" width=3D"100%"><tr>=
+<td><table align=3D"left" cellpadding=3D"0" cellspacing=3D"0" style=3D"float:=
+left"><tr><td class=3D"hide-dark-mode" style=3D"text-align:left;display:block=
+"><a href=3D"#" rel=3D"noopener" target=3D"_blank"> <img alt=3D"Logo Hellowor=
+k" src=3D"https://example.invalid/asset"/> </a></td><td class=3D"social-dark-=
+mode" style=3D"text-align:left;display:none"><a href=3D"#" rel=3D"noopener" t=
+arget=3D"_blank"> <img alt=3D"Logo Hellowork" src=3D"https://example.invalid/=
+asset"/> </a></td></tr></table></td><td><table align=3D"right" cellpadding=3D=
+"0" cellspacing=3D"0" style=3D"float:right"><tr><td class=3D"hide-dark-mode" =
+style=3D"mso-hide:all"><a href=3D"#" rel=3D"noopener" style=3D"text-decoratio=
+n:none;padding-right:16px" target=3D"_blank"> <img alt=3D"Facebook Hellowork"=
+ border=3D"0" src=3D"https://example.invalid/asset" style=3D"vertical-align:m=
+iddle"/> </a> <a href=3D"#" rel=3D"noopener" style=3D"text-decoration:none;pa=
+dding-right:16px" target=3D"_blank"> <img alt=3D"YouTube Hellowork" border=3D=
+"0" src=3D"https://example.invalid/asset" style=3D"vertical-align:middle"/> <=
+/a> <a href=3D"#" rel=3D"noopener" style=3D"text-decoration:none;padding-righ=
+t:16px" target=3D"_blank"> <img alt=3D"Reseau social X Hellowork" border=3D"0=
+" src=3D"https://example.invalid/asset" style=3D"vertical-align:middle"/> </a=
+> <a href=3D"#" rel=3D"noopener" style=3D"text-decoration:none;padding-right:=
+16px" target=3D"_blank"> <img alt=3D"TikTok Hellowork" border=3D"0" src=3D"ht=
+tps://example.invalid/asset" style=3D"vertical-align:middle"/> </a> <a href=
+=3D"#" rel=3D"noopener" style=3D"text-decoration:none;padding-right:16px" tar=
+get=3D"_blank"> <img alt=3D"Instagram Hellowork" border=3D"0" src=3D"https://=
+example.invalid/asset" style=3D"vertical-align:middle"/> </a> <a href=3D"#" r=
+el=3D"noopener" style=3D"text-decoration:none" target=3D"_blank"> <img alt=3D=
+"LinkedIn Hellowork" border=3D"0" src=3D"https://example.invalid/asset" style=
+=3D"vertical-align:middle"/> </a></td><td class=3D"social-dark-mode" style=3D=
+"display:none;mso-hide:all"><a href=3D"#" rel=3D"noopener" style=3D"text-deco=
+ration:none;padding-right:16px" target=3D"_blank"> <img alt=3D"Facebook Hello=
+work" border=3D"0" src=3D"https://example.invalid/asset" style=3D"vertical-al=
+ign:middle"/> </a> <a href=3D"#" rel=3D"noopener" style=3D"text-decoration:no=
+ne;padding-right:16px" target=3D"_blank"> <img alt=3D"YouTube Hellowork" bord=
+er=3D"0" src=3D"https://example.invalid/asset" style=3D"vertical-align:middle=
+"/> </a> <a href=3D"#" rel=3D"noopener" style=3D"text-decoration:none;padding=
+-right:16px" target=3D"_blank"> <img alt=3D"Reseau social X Hellowork" border=
+=3D"0" src=3D"https://example.invalid/asset" style=3D"vertical-align:middle"/=
+> </a> <a href=3D"#" rel=3D"noopener" style=3D"text-decoration:none;padding-r=
+ight:16px" target=3D"_blank"> <img alt=3D"TikTok Hellowork" border=3D"0" src=
+=3D"https://example.invalid/asset" style=3D"vertical-align:middle"/> </a> <a =
+href=3D"#" rel=3D"noopener" style=3D"text-decoration:none;padding-right:16px"=
+ target=3D"_blank"> <img alt=3D"Instagram Hellowork" border=3D"0" src=3D"http=
+s://example.invalid/asset" style=3D"vertical-align:middle"/> </a> <a href=3D"=
+#" rel=3D"noopener" style=3D"text-decoration:none" target=3D"_blank"> <img al=
+t=3D"LinkedIn Hellowork" border=3D"0" src=3D"https://example.invalid/asset" s=
+tyle=3D"vertical-align:middle"/> </a></td><!--[if mso]><table class=3Dhide-da=
+rk-mode></tr><tr><td style=3Dtext-decoration:none;padding-right:16px><a href=
+=3Dhttps://www.facebook.com/helloworkcom target=3D_blank rel=3Dnoopener> <img=
+ src=3Dhttps://f.hellowork.com/img/mail/picto/facebook-light-mode.png style=
+=3Dvertical-align:middle border=3D0 alt=3D"Facebook Hellowork"> </a></td><td =
+style=3Dtext-decoration:none;padding-right:16px><a href=3Dhttps://www.youtube=
+.com/channel/UCry7TiN8-dFKQUgyUMYANTQ target=3D_blank rel=3Dnoopener> <img sr=
+c=3Dhttps://f.hellowork.com/img/mail/picto/youtube-light-mode.png style=3Dver=
+tical-align:middle border=3D0 alt=3D"YouTube Hellowork"> </a></td><td style=
+=3Dtext-decoration:none;padding-right:16px><a href=3Dhttps://x.com/hellowork =
+target=3D_blank rel=3Dnoopener> <img src=3Dhttps://f.hellowork.com/img/mail/p=
+icto/x-light-mode.png style=3Dvertical-align:middle border=3D0 alt=3D"Reseau =
+social X Hellowork"> </a></td><td style=3Dtext-decoration:none;padding-right:=
+16px><a href=3Dhttps://www.tiktok.com/@helloworkcom target=3D_blank rel=3Dnoo=
+pener> <img src=3Dhttps://f.hellowork.com/img/mail/picto/tiktok-light-mode.pn=
+g style=3Dvertical-align:middle border=3D0 alt=3D"TikTok Hellowork"> </a></td=
+><td style=3Dtext-decoration:none;padding-right:16px><a href=3D"https://email=
+s.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04/46/3946f46d2397aafa=
+f13c74489a358025/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3dy5pbnN0YWdy=
+YW0uY29tL2hlbGxvd29ya18v" target=3D_blank rel=3Dnoopener> <img src=3Dhttps://=
+f.hellowork.com/img/mail/picto/instagram-light-mode.png style=3Dvertical-alig=
+n:middle border=3D0 alt=3D"Instagram Hellowork"> </a></td><td style=3Dtext-de=
+coration:none><a href=3D"https://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c=
+-9efc-dbf000891c04/47/516cf893b64483bd7b990c7c20350f7a/bW91c3RhbGVkLjUzQGdtYW=
+lsLmNvbfCfqqJodHRwczovL3d3dy5saW5rZWRpbi5jb20vY29tcGFueS9oZWxsb3dvcmtjb20v" t=
+arget=3D_blank rel=3Dnoopener> <img src=3Dhttps://f.hellowork.com/img/mail/pi=
+cto/linkedin-light-mode.png style=3Dvertical-align:middle border=3D0 alt=3D"L=
+inkedIn Hellowork"> </a></td></tr></table><table class=3Dsocial-dark-mode></t=
+r><tr><td style=3Dtext-decoration:none;display:none;padding-right:16px><a hre=
+f=3Dhttps://www.facebook.com/helloworkcom target=3D_blank rel=3Dnoopener> <im=
+g src=3Dhttps://f.hellowork.com/img/mail/picto/facebook-dark-mode.png style=
+=3Dvertical-align:middle border=3D0 alt=3D"Facebook Hellowork"> </a></td><td =
+style=3Dtext-decoration:none;display:none;padding-right:16px><a href=3Dhttps:=
+//www.youtube.com/channel/UCry7TiN8-dFKQUgyUMYANTQ target=3D_blank rel=3Dnoop=
+ener> <img src=3Dhttps://f.hellowork.com/img/mail/picto/youtube-dark-mode.png=
+ style=3Dvertical-align:middle border=3D0 alt=3D"YouTube Hellowork"> </a></td=
+><td style=3Dtext-decoration:none;display:none;padding-right:16px><a href=3Dh=
+ttps://x.com/hellowork target=3D_blank rel=3Dnoopener> <img src=3Dhttps://f.h=
+ellowork.com/img/mail/picto/x-dark-mode.png style=3Dvertical-align:middle bor=
+der=3D0 alt=3D"Reseau social X Hellowork"> </a></td><td style=3Dtext-decorati=
+on:none;display:none;padding-right:16px><a href=3Dhttps://www.tiktok.com/@hel=
+loworkcom target=3D_blank rel=3Dnoopener> <img src=3Dhttps://f.hellowork.com/=
+img/mail/picto/tiktok-dark-mode.png style=3Dvertical-align:middle border=3D0 =
+alt=3D"TikTok Hellowork"> </a></td><td style=3Dtext-decoration:none;display:n=
+one;padding-right:16px><a href=3D"https://emails.hellowork.com/clic/e0fcf5d9-=
+3f99-4e0c-9efc-dbf000891c04/48/3946f46d2397aafaf13c74489a358025/bW91c3RhbGVkL=
+jUzQGdtYWlsLmNvbfCfqqJodHRwczovL3d3dy5pbnN0YWdyYW0uY29tL2hlbGxvd29ya18v" targ=
+et=3D_blank rel=3Dnoopener> <img src=3Dhttps://f.hellowork.com/img/mail/picto=
+/instagram-dark-mode.png style=3Dvertical-align:middle border=3D0 alt=3D"Inst=
+agram Hellowork"> </a></td><td style=3Dtext-decoration:none;display:none><a h=
+ref=3D"https://emails.hellowork.com/clic/e0fcf5d9-3f99-4e0c-9efc-dbf000891c04=
+/49/516cf893b64483bd7b990c7c20350f7a/bW91c3RhbGVkLjUzQGdtYWlsLmNvbfCfqqJodHRw=
+czovL3d3dy5saW5rZWRpbi5jb20vY29tcGFueS9oZWxsb3dvcmtjb20v" target=3D_blank rel=
+=3Dnoopener> <img src=3Dhttps://f.hellowork.com/img/mail/picto/linkedin-dark-=
+mode.png style=3Dvertical-align:middle border=3D0 alt=3D"LinkedIn Hellowork">=
+ </a></td></tr></table><![endif]--></tr></table></td></tr></table></td></tr><=
+/table><table><tr><td class=3D"footer-color" style=3D"font-weight:400;color:#=
+606060;margin:0;font-size:14px;font-family:Arial">T=C3=A9l=C3=A9chargez notre=
+ application</td></tr></table><table align=3D"left" cellpadding=3D"0" cellspa=
+cing=3D"0"><tr><td style=3D"padding:8px 12px 32px 0"><a href=3D"#" rel=3D"noo=
+pener" target=3D"_blank"> <img alt=3D"Google Play" border=3D"0" height=3D"34"=
+ src=3D"https://example.invalid/asset" width=3D"115"/> </a></td><td style=3D"=
+padding:8px 0 32px 0"><a href=3D"#" rel=3D"noopener" target=3D"_blank"> <img =
+alt=3D"Apple Store" border=3D"0" height=3D"34" src=3D"https://example.invalid=
+/asset" width=3D"109"/> </a></td></tr></table><table align=3D"center" cellpad=
+ding=3D"0" cellspacing=3D"0" width=3D"100%"><tr><td><table align=3D"left" cel=
+lpadding=3D"0" cellspacing=3D"0" class=3D"mobileWidth" style=3D"float:left" w=
+idth=3D"23%"><tr><td class=3D"cgu-footer" style=3D"padding-right:10px;border-=
+right:solid 1px #ADADAD;text-align:left;font-family:Arial;font-weight:400;fon=
+t-size:12px;line-height:16px"><a class=3D"footer-color" href=3D"#" rel=3D"noo=
+pener" style=3D"color:#606060;text-decoration:none" target=3D"_blank"> Espace=
+ candidat </a></td></tr></table><table align=3D"left" cellpadding=3D"0" cells=
+pacing=3D"0" class=3D"mobileWidth" style=3D"float:left" width=3D"23%"><tr><td=
+ class=3D"cgu-footer" style=3D"padding:0 10px;border-right:solid 1px #ADADAD;=
+text-align:center;font-family:Arial;font-weight:400;font-size:12px;line-heigh=
+t:16px"><a class=3D"footer-color" href=3D"#" rel=3D"noopener" style=3D"color:=
+#606060;text-decoration:none" target=3D"_blank"> Aide et contact </a></td></t=
+r></table><table align=3D"left" cellpadding=3D"0" cellspacing=3D"0" class=3D"=
+mobileWidth" style=3D"float:left" width=3D"11%"><tr><td class=3D"cgu-footer" =
+style=3D"padding:0 10px;border-right:solid 1px #ADADAD;text-align:center;font=
+-family:Arial;font-weight:400;font-size:12px;line-height:16px"><a class=3D"fo=
+oter-color" href=3D"#" rel=3D"noopener" style=3D"color:#606060;text-decoratio=
+n:none" target=3D"_blank"> CGU </a></td></tr></table><table align=3D"left" ce=
+llpadding=3D"0" cellspacing=3D"0" class=3D"mobileWidth" style=3D"float:left" =
+width=3D"35%"><tr><td class=3D"cgu-footer" style=3D"padding-left:10px;text-al=
+ign:left;font-family:Arial;font-weight:400;font-size:12px;line-height:16px"><=
+a class=3D"footer-color" href=3D"#" rel=3D"noopener" style=3D"color:#606060;t=
+ext-decoration:none" target=3D"_blank"> Politique de confidentialit=C3=A9 </a=
+></td></tr></table></td></tr><tr><td class=3D"footer-color" style=3D"padding-=
+top:16px;font-family:Arial;font-size:12px;color:#606060;line-height:16px"><ta=
+ble><tr><td class=3D"footer-color" style=3D"font-family:Arial;font-size:12px;=
+color:#606060;line-height:16px">Si vous ne souhaitez plus recevoir ce type d=
+=E2=80=99e-mail de la part de Hellowork, vous pouvez modifier <a class=3D"foo=
+ter-color" href=3D"#" id=3D"notification_link" rel=3D"noopener" style=3D"colo=
+r:#606060;text-decoration:underline" target=3D"_blank"> vos pr=C3=A9f=C3=A9re=
+nces </a> ou <a class=3D"footer-color" href=3D"#" id=3D"unsubscribe_link" rel=
+=3D"noopener" style=3D"color:#606060;text-decoration:underline" target=3D"_bl=
+ank">vous d=C3=A9sabonner</a>.</td></tr><tr><td class=3D"footer-color" style=
+=3D"padding-top:16px;font-family:Arial;font-size:12px;color:#606060;line-heig=
+ht:16px">Conform=C3=A9ment au r=C3=A8glement g=C3=A9n=C3=A9ral sur la protect=
+ion des donn=C3=A9es =C3=A0 caract=C3=A8re personnel du 25 mai 2018, vous pou=
+vez <a class=3D"footer-color" href=3D"#" style=3D"color:#606060;text-decorati=
+on:underline"> exercer vos droits d=E2=80=99acc=C3=A8s, de suppression et de =
+rectification </a> aux informations qui vous concernent.</td></tr></table></t=
+d></tr></table><table align=3D"left" cellpadding=3D"0" cellspacing=3D"0"><tr>=
+<td class=3D"footer-color" style=3D"padding-top:16px;color:#606060;font-famil=
+y:Arial;font-size:12px;margin:0;text-decoration:none">Hellowork.com est un se=
+rvice =C3=A9dit=C3=A9 par Hellowork</td></tr><tr><td class=3D"footer-color" s=
+tyle=3D"color:#606060;font-family:Arial;font-size:12px;margin:0;text-decorati=
+on:none">Hellowork SASU =E2=80=A2 2 rue de la Mabilais =E2=80=A2 35000 RENNES=
+</td></tr></table></td></tr></table></td></tr></table></td></tr></table></td>=
+</tr></table></td></tr></table></td></tr></table><img alt=3D"" border=3D"0" h=
+eight=3D"1" src=3D"https://example.invalid/asset" style=3D"height:1px !import=
+ant;width:1px !important;border-width:0 !important;margin-top:0 !important;ma=
+rgin-bottom:0 !important;margin-right:0 !important;margin-left:0 !important;p=
+adding-top:0 !important;padding-bottom:0 !important;padding-right:0 !importan=
+t;padding-left:0 !important;" width=3D"1"/></body></html>
+
+--===============1213990640014527473==--

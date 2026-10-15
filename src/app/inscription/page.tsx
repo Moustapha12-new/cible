@@ -1,15 +1,5 @@
-import type { Metadata } from "next";
-import { AuthProvider } from "@/lib/auth";
-import InscriptionForm from "./form";
-
-export const metadata: Metadata = {
-  title: "Créer un compte",
-};
+import { redirect } from "next/navigation";
 
 export default function InscriptionPage() {
-  return (
-    <AuthProvider>
-      <InscriptionForm />
-    </AuthProvider>
-  );
+  redirect("/connexion");
 }

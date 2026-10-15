@@ -242,7 +242,7 @@ Sois strict : ne gonfle pas le score, un CV non fourni = score bas. Ne propose q
       return `Voici le CV ORIGINAL du candidat, texte intégral :
 """${cv}"""
 
-Orientation éditoriale choisie : ${b.orientation === "energy" ? "énergie, performance énergétique et renouvelables" : "génie électrique, électrotechnique et bureau d'études"}. Ce cadrage sert uniquement à hiérarchiser les faits déjà présents dans le CV. Il ne constitue aucune preuve de compétence et ne doit ajouter aucun logiciel, projet ou résultat.
+Orientation éditoriale choisie : ${b.orientation === "energy" ? "énergie, performance énergétique et renouvelables" : b.orientation === "electrical" ? "génie électrique, électrotechnique et bureau d'études" : "les missions réelles de l'offre, uniquement lorsqu'elles correspondent à un fait explicite du CV"}. Ce cadrage sert uniquement à hiérarchiser les faits déjà présents dans le CV. Il ne constitue aucune preuve de compétence et ne doit ajouter aucun logiciel, projet ou résultat.
 
 Voici l'offre visée :
 """${b.offerText}"""

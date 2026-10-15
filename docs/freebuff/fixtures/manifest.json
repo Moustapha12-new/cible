@@ -1,0 +1,35 @@
+{
+  "description": "Corpus de 3 alertes utilisateurs anonymisé pour tester extraction multi-annonces. Comptages observés sur les emails sources. Les HTML conservés contiennent des offres réelles et des URLs de test non personnalisées.",
+  "cases": [
+    {
+      "source": "indeed",
+      "file": "fixtures/indeed_anonymise.eml",
+      "job_related_anchors_detected": 8,
+      "unique_expected": 8,
+      "special_cases": "8 identifiants jk différents; ne pas confondre la recherche générale/footer avec offre."
+    },
+    {
+      "source": "linkedin",
+      "file": "fixtures/linkedin_anonymise.eml",
+      "job_related_anchors_detected": 31,
+      "unique_expected": 10,
+      "special_cases": "Liens dupliqués par carte (zone cliquable et titre); objet WSP + lien contexte ne constitue PAS une des 10 recommandations; deux fiches VINCI au titre presque identique mais IDs différents."
+    },
+    {
+      "source": "hellowork",
+      "file": "fixtures/hellowork_anonymise.eml",
+      "job_related_anchors_detected": 11,
+      "unique_expected": 8,
+      "special_cases": "Le sujet dit 2 nouvelles offres; 11 liens principaux vers des cartes, mais 8 offres distinctes : 2 mises en avant répétées puis 6 recommandations uniques. URL tracking différente ne prouve pas une nouvelle offre."
+    }
+  ],
+  "acceptance": {
+    "expected_distinct_total": 26,
+    "expected_by_source": {
+      "indeed": 8,
+      "linkedin": 10,
+      "hellowork": 8
+    },
+    "notes": "Counts verified from provided examples; fixtures sanitize click-through URLs, so real web-enrichment must be verified with authenticated original sources."
+  }
+}

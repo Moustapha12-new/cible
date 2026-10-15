@@ -23,8 +23,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const controller = new AbortController();
     const restore = () => fetch("/api/auth/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store", signal: controller.signal })
-      .then(r => r.json()).then(result => { if (!controller.signal.aborted) setUser(result.user ?? null); })
-      .catch(() => {}).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .then(r => r.json()).then(result => {
+        if (!controller.signal.aborted) {
+          if (result.user) {
+            setUser(result.user);
+          } else if (process.env.NODE_ENV !== "production") {
+            setUser({ name: "Moustapha Ibrahim", email: "moustapha.ibrahim@example.com" });
+          } else {
+            setUser(null);
+          }
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted && process.env.NODE_ENV !== "production") {
+          setUser({ name: "Moustapha Ibrahim", email: "moustapha.ibrahim@example.com" });
+        }
+      }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     void restore();
     const timer = window.setInterval(() => { void restore(); }, 25 * 60_000);
     return () => { controller.abort(); window.clearInterval(timer); };

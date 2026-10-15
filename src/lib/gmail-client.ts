@@ -36,6 +36,9 @@ export type GmailOffer = {
   enrichStatus?: EnrichStatus;
   enrichReason?: string;
   enrichedAt?: string;
+  /** Jalon B : niveau L0–L3 atteint + issue de page distincte. */
+  enrichLevel?: EnrichLevel;
+  enrichOutcome?: string;
   emailSubject: string;
   emailFrom: string;
   receivedAt: string;
@@ -60,6 +63,7 @@ export type GmailOffer = {
 };
 
 export type EnrichStatus = "none" | "ok" | "partial" | "blocked" | "skipped";
+export type EnrichLevel = "L0" | "L1" | "L2" | "L3";
 
 /** Une fiche est « incomplète » quand la page d'annonce n'a pas pu être lue
     (page bloquée / connexion exigée / budget de sync dépassé). Dans ce cas
@@ -204,6 +208,8 @@ export type SyncEmailResult = {
     enrichStatus?: EnrichStatus;
     enrichReason?: string;
     enrichedAt?: string;
+    enrichLevel?: EnrichLevel;
+    enrichOutcome?: string;
     searchFallback?: boolean;
     /** Anti-doublon tardif (import) — renvoyé par le serveur Module 2. */
     importStatus?: "nouvelle" | "doublon";
@@ -296,6 +302,8 @@ export function ingestSyncResults(
         enrichStatus: off.enrichStatus,
         enrichReason: off.enrichReason,
         enrichedAt: off.enrichedAt,
+        enrichLevel: off.enrichLevel,
+        enrichOutcome: off.enrichOutcome,
         searchFallback: off.searchFallback === true,
         emailSubject: em.subject,
         emailFrom: em.from,

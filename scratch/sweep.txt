@@ -1,0 +1,11 @@
+
+Jalon C — moteur CV fondé sur preuves validé :
+· 4 offres métier → 4 choix de preuves DIFFÉRENTS (MBDA/WSP/TotalEnergies/Mews Labs)
+· DIRECTE / TRANSFÉRABLE / PARTIELLE / NON_DÉMONTRÉE avec IDs de preuves
+· citation vs inférence tracées, 5 besoins max, catégories d'analyse
+· aucun ajout de compétence non prouvée (maintenance, Revit, PyTorch, NetworkX)
+· cas « sans modification » validé · vérification anti-invention · diff exact
+P1-B CV : source immuable, contrôles anti-invention, acceptation/refus, péremption, historique et reprise vérifiés.
+cv-auto-adapt: 19 assertions passed
+Modèles CV vérifiés : contenu conservé, une colonne, sécurité HTML et export A4.
+cv-one-page: source preserved, PDF fits one A4 page

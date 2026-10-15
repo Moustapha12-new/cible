@@ -8,6 +8,7 @@ import { getOrCreateData, saveData, type UserData } from "@/lib/data";
 import { AppPageHead } from "@/components/app/AppShell";
 import { AI_LABEL } from "@/lib/ai-labels";
 import { enrichBadge, isIndirectOfferUrl, stripHtml, type DashboardPayload, type ProcessedEmail, type RawOffer } from "@/lib/gmail-dashboard";
+import { outcomeLabel } from "@/lib/offer-enrich";
 import { analyzeOffer } from "@/lib/skills";
 import {
   CANDIDATURE_STEPS,
@@ -627,6 +628,7 @@ export default function OfferDetailPage() {
             {eb && (
               <span className={eb.cls} data-enrich={offer.enrichStatus || "none"}>
                 enrich · {eb.label}
+                {offer.enrichLevel ? ` · ${offer.enrichLevel}` : ""}
               </span>
             )}
           </div>
@@ -636,7 +638,8 @@ export default function OfferDetailPage() {
               className="text-[0.78rem] text-amber mb-4 border-l-2! border-l-amber! pl-3"
               data-testid="enrich-warning"
             >
-              Offre non enrichie — affichage des données extraites de l&apos;e-mail
+              Offre non enrichie — niveau {offer.enrichLevel || "L0"} · {outcomeLabel(offer.enrichOutcome)} — affichage des
+              données extraites de l&apos;e-mail
               {offer.enrichReason ? ` (${offer.enrichReason})` : ""}.
             </p>
           )}

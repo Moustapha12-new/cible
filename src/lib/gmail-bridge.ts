@@ -44,6 +44,11 @@ export type OfferLike = {
   prerequisites?: string[];
   applicationInfo?: string;
   enrichStatus?: string;
+  /** Jalon B : niveau L0–L3 + issue de page distincte. */
+  enrichLevel?: string;
+  enrichOutcome?: string;
+  status?: string;
+  receivedAt?: string;
 };
 
 /* ── Clé d'identité (match dashboard ↔ page détail) ────────────── */
@@ -138,12 +143,17 @@ export function offerToDetectedOffer(offer: OfferLike, match = 0): DetectedOffer
     source: offer.source || "Alertes Gmail",
     contract: offer.contract,
     duration: offer.duration,
+    deadline: offer.deadline,
+    receivedAt: offer.receivedAt,
+    gmailStatus: offer.status,
     description: offer.description,
     missions: offer.missions,
     skills: offer.skills,
     prerequisites: offer.prerequisites,
     profile: offer.profile,
     enrichStatus: offer.enrichStatus,
+    enrichLevel: offer.enrichLevel,
+    enrichOutcome: offer.enrichOutcome,
   };
 }
 

@@ -3,7 +3,8 @@
    Contrainte : ne modifie PAS gmail-core / gmail-enrich / sync route. */
 
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup as renderMarkupRaw } from "react-dom/server";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -61,6 +62,24 @@ import EmailCard from "@/components/alertes-gmail/EmailCard";
 import EmailList from "@/components/alertes-gmail/EmailList";
 import RunHistory from "@/components/alertes-gmail/RunHistory";
 import GmailConnectionStatus from "@/components/alertes-gmail/GmailConnectionStatus";
+
+/* OfferCard appelle useRouter (App Router) : hors requête Next, le contexte
+   est absent et le rendu statique plante. On fournit UN stub de routeur ici
+   plutôt que de modifier les composants testés. */
+const ROUTER_STUB = {
+  push() {},
+  replace() {},
+  back() {},
+  forward() {},
+  prefetch() {},
+  refresh() {},
+  bfcacheId: "",
+};
+function renderToStaticMarkup(node: Parameters<typeof renderMarkupRaw>[0]): string {
+  return renderMarkupRaw(
+    createElement(AppRouterContext.Provider, { value: ROUTER_STUB }, node)
+  );
+}
 
 let passed = 0;
 let failed = 0;
@@ -273,12 +292,12 @@ async function main() {
     assertEq(enrichBadge("partial").label, "enrichie (partielle)", "enrich badge partial → FR");
     assertEq(
       enrichBadge("blocked").label,
-      "site protégé — réessai auto",
+      "source inaccessible",
       "enrich badge blocked → FR"
     );
     assertEq(
       enrichBadge("skipped").label,
-      "non enrichie (délai dépassé)",
+      "enrichissement en attente",
       "enrich badge skipped → FR"
     );
 

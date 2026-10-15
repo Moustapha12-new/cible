@@ -23,10 +23,13 @@ import {
   type ParsedEmail,
 } from "@/lib/gmail-server";
 import { enrichCacheKey, isUsefulEnrichRow, isCacheableEnrichResult, type EnrichStatus, type EnrichResult, type EnrichedOfferData } from "@/lib/gmail-enrich";
+import { classifyPageOutcome, type EnrichLevel, type PageOutcome } from "@/lib/offer-enrich";
 import { repairCheckpoint } from "@/lib/text-repair";
 import { stampAnalysis } from "@/lib/gmail-dashboard";
 import type { DetectSummary, AnchorEntry } from "@/lib/offer-links";
 import { groundedOfferData } from "./grounded-offer";
+import { extractOffersFromEmail } from "@/lib/offer-extract";
+import type { Platform } from "@/lib/offer-links";
 
 export { stampAnalysis };
 
@@ -74,6 +77,9 @@ export type RawOffer = {
   enrichedAt?: string;
   enrichAttempts?: number;
   enrichAttemptedAt?: string;
+  /** Jalon B : niveau L0–L3 réellement atteint + issue de page distincte. */
+  enrichLevel?: EnrichLevel;
+  enrichOutcome?: PageOutcome["kind"];
   searchFallback?: boolean;
   keywords?: string[];
   prerequisites?: string[];
@@ -822,7 +828,7 @@ function codeOffersFrom(
   email: ParsedEmail,
   det: ReturnType<typeof extractOfferLinks>
 ): RawOffer[] {
-  return det.offers.map((a) => {
+  const base = det.offers.map((a) => {
     const block = isolateBlock(email.html ?? "", a.href);
     return {
       title: (block?.title || a.rawTitle || "").trim(),
@@ -840,6 +846,58 @@ function codeOffersFrom(
       snippet: block?.snippet || undefined,
     };
   });
+  /* Chantier 2 : les parseurs par carte (offer-extract) apportent le titre,
+     l'entreprise et la localisation les plus fiables pour LinkedIn/HelloWork
+     et couvrent les offres qu'une simple regex d'URL peut manquer. On FUSIONNE
+     par URL canonique : la carte prime si elle renseigne mieux un champ, et une
+     carte sans équivalent URL est ajoutée. Jamais d'offre fabriquée : seules des
+     ancres réelles du HTML entrent. */
+  const card = extractOffersFromEmail({
+    id: email.id,
+    from: email.from,
+    subject: email.subject,
+    html: email.html,
+  });
+  if (card.offers.length === 0) return base;
+  const byUrl = new Map<string, number>();
+  base.forEach((o) => {
+    const k = o.applicationUrl || "";
+    if (k) byUrl.set(k, byUrl.size);
+  });
+  const merged = [...base];
+  for (const c of card.offers) {
+    const url = c.canonicalUrl || c.rawHrefs[0] || "";
+    const hit = url ? byUrl.get(url) : undefined;
+    if (hit !== undefined) {
+      const cur = merged[hit];
+      merged[hit] = {
+        ...cur,
+        title: c.title || cur.title,
+        company: c.company || cur.company,
+        location: c.location || cur.location,
+        contract: c.contract || cur.contract,
+        ...(c.sourceJobId ? { anchorText: cur.anchorText || c.title } : {}),
+      };
+    } else {
+      merged.push({
+        title: c.title.trim(),
+        company: c.company.trim(),
+        location: c.location.trim(),
+        contract: c.contract || "",
+        duration: "",
+        deadline: "",
+        skills: [],
+        description: "",
+        applicationUrl: url,
+        source: c.provider as Platform,
+        sourceUrl: c.rawHrefs[0],
+        anchorText: c.title.trim(),
+        snippet: undefined,
+      });
+      if (url) byUrl.set(url, merged.length - 1);
+    }
+  }
+  return merged;
 }
 
 function realUrlSet(email: ParsedEmail, anchors: AnchorEntry[], code: RawOffer[]): string[] {
@@ -1336,6 +1394,10 @@ function applyEnrichData(o: RawOffer, r: EnrichResult, cvText: string): void {
   o.enrichStatus = r.enrichStatus === "ok" && !isCompleteOffer(o) ? "partial" : r.enrichStatus;
   o.enrichReason = o.enrichStatus === "partial" ? `${r.enrichReason} — à compléter : ${missingOfferContent(o).join(", ")}` : r.enrichReason;
   if (r.enrichedAt) o.enrichedAt = r.enrichedAt;
+  /* Jalon B : niveau + issue honnêtes propagés (jamais en cas d'absence :
+     un budget dépassé ne rétrograde pas un niveau déjà attesté). */
+  if (r.enrichLevel) o.enrichLevel = r.enrichLevel;
+  if (r.enrichOutcome) o.enrichOutcome = r.enrichOutcome;
   /* Calcul et stockage du score ATS (0-100) */
   const keywords = o.keywords ?? [];
   if (cvText.trim() && keywords.length) o.atsScore = calculateAtsScore(keywords, cvText);
@@ -1389,7 +1451,7 @@ export type EnrichProcessedOptions = {
   max?: number;
   timeBudgetMs?: number;
   /** Injection tests : fetch de page. */
-  fetchPageImpl?: (url: string) => Promise<{ ok: true; text: string } | { ok: false; reason: string }>;
+  fetchPageImpl?: (url: string) => Promise<{ ok: true; text: string; outcome?: PageOutcome } | { ok: false; reason: string; outcome?: PageOutcome }>;
   /** Injection tests : appel IA (parse déjà fait → results rows). */
   askImpl?: (prompt: string) => Promise<{ results?: EnrichRow[] }>;
   /** Désactive le cache serveur (tests). */
@@ -1455,19 +1517,28 @@ export async function enrichProcessed(
         });
         continue;
       }
+      /* Jalon B : niveau + issue réellement observés sur CE fetch. */
+      let trace: { enrichLevel?: EnrichLevel; enrichOutcome?: PageOutcome["kind"] } = {};
       try {
         const cacheKey = enrichCacheKey(c.applicationUrl);
         if (!opts.skipCache) {
           const hit = await loadEnrichCache(cacheKey);
           if (hit) {
-            results.set(c.id, hit);
+            /* Cacheable ⇒ issue « ok » lors d'un fetch précédent (L2) ;
+               backfill honnête pour les entrées antérieures à la trace. */
+            results.set(c.id, { ...hit, enrichLevel: hit.enrichLevel ?? "L2", enrichOutcome: hit.enrichOutcome ?? "ok" });
             continue;
           }
         }
 
         const page = await fetchPage(c.applicationUrl);
+        const outcome: PageOutcome = page.outcome ?? (page.ok ? { kind: "ok", httpStatus: 200 } : classifyPageOutcome({}));
+        trace = {
+          enrichLevel: page.ok ? "L2" : outcome.kind === "content_unusable" ? "L1" : "L0",
+          enrichOutcome: outcome.kind,
+        };
         if (!page.ok && (c.emailText || "").trim().length < 250) {
-          results.set(c.id, { enrichStatus: "blocked", enrichReason: `${page.reason} — texte de l’e-mail insuffisant pour compléter la fiche` });
+          results.set(c.id, { ...trace, enrichStatus: "blocked", enrichReason: `${page.reason} — texte de l’e-mail insuffisant pour compléter la fiche` });
           continue;
         }
         let pageText = "";
@@ -1498,6 +1569,7 @@ export async function enrichProcessed(
         } catch {
           const grounded = { title: c.title, ...groundedOfferData(page.ok ? pageText : c.emailText) };
           const partial: EnrichResult = {
+            ...trace,
             enrichStatus: page.ok && isCompleteOffer(grounded) ? "ok" : "partial",
             enrichReason: page.ok ? "Fiche extraite de l’annonce ; analyse IA indisponible" : "Fiche extraite de l’e-mail ; page inaccessible",
             enrichedAt: new Date().toISOString(),
@@ -1512,6 +1584,7 @@ export async function enrichProcessed(
         const useful = isUsefulEnrichRow(row);
         const okResult: EnrichResult = useful
           ? {
+              ...trace,
               enrichStatus: page.ok && isCompleteOffer(row) ? "ok" : "partial",
               enrichReason:
                 page.ok || enrichmentMark
@@ -1525,6 +1598,7 @@ export async function enrichProcessed(
                 : undefined,
             }
           : {
+              ...trace,
               enrichStatus: "partial",
               enrichReason:
                 page.ok || enrichmentMark
@@ -1537,6 +1611,7 @@ export async function enrichProcessed(
         if (page.ok && !opts.skipCache) await saveEnrichCache(cacheKey, okResult);
       } catch (e) {
         results.set(c.id, {
+          ...trace,
           enrichStatus: "partial",
           enrichReason: `Erreur isolée : ${e instanceof Error ? e.message : String(e)}`.slice(0, 200),
         });

@@ -91,6 +91,7 @@ export default function OfferCard({
         </div>
         <span className={eb.cls} data-enrich={offer.enrichStatus || "none"}>
           {eb.label}
+          {offer.enrichLevel ? ` · ${offer.enrichLevel}` : ""}
         </span>
       </div>
 

@@ -7,6 +7,7 @@
 
 import { lookup } from "node:dns/promises";
 import * as cheerio from "cheerio";
+import { classifyPageOutcome, type PageOutcome } from "./offer-enrich";
 
 export const SCRAPE_UAS = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -68,7 +69,7 @@ export function extractJobPostingText(html: string): string {
 const BLOCK_MARKERS =
   /just a moment|enable javascript|cf-chl|attention required|access denied|authwall|session_required|sign ?in\?|captcha|unusual traffic|requested url is not authorized|vérification anti-bot|robot verificaton|antirobot/i;
 
-export type PageResult = { ok: true; text: string } | { ok: false; reason: string };
+export type PageResult = { ok: true; text: string; outcome?: PageOutcome } | { ok: false; reason: string; outcome?: PageOutcome };
 
 /* ════════════ SSRF : contrôle d'URL avant tout fetch ════════════
    Règles : http(s) uniquement, pas d'hôte local/privé/réservé, taille max,
@@ -197,17 +198,20 @@ async function fetchOnce(url: string, ua: string, timeoutMs = 15_000): Promise<R
 export async function fetchOfferPage(url: string, options: { timeoutMs?: number } = {}): Promise<PageResult> {
   const deadline = Date.now() + (options.timeoutMs ?? 20_000);
   if (!(await isSafeOfferUrlResolved(url))) {
+    /* Lien refusé par politique locale : aucune page n'a été requise —
+       pas d'invention d'issue HTTP, outcome volontairement absent. */
     return { ok: false, reason: "Lien non autorisé (hôte local ou protocole invalide)" };
   }
   let lastErr = "Page illisible";
+  let lastOutcome: PageOutcome | undefined;
   for (const ua of SCRAPE_UAS) {
-    if (Date.now() >= deadline) return { ok: false, reason: "Délai de lecture de l’annonce dépassé" };
+    if (Date.now() >= deadline) return { ok: false, reason: "Délai de lecture de l’annonce dépassé", outcome: { kind: "timeout" } };
     try {
       let current = url;
       let res: Response | null = null;
       let redirects = 0;
       while (redirects <= MAX_REDIRECTS) {
-        if (Date.now() >= deadline) return { ok: false, reason: "Délai de lecture de l’annonce dépassé" };
+        if (Date.now() >= deadline) return { ok: false, reason: "Délai de lecture de l’annonce dépassé", outcome: { kind: "timeout" } };
         const r = await fetchOnce(current, ua, Math.min(15_000, deadline - Date.now()));
         if (r.status >= 300 && r.status < 400) {
           const loc = r.headers.get("location");
@@ -228,6 +232,7 @@ export async function fetchOfferPage(url: string, options: { timeoutMs?: number 
       }
       if (redirects > MAX_REDIRECTS) {
         lastErr = "Redirections trop nombreuses";
+        lastOutcome = { kind: "network" };
         continue;
       }
       if (!res || !res.ok) {
@@ -236,21 +241,27 @@ export async function fetchOfferPage(url: string, options: { timeoutMs?: number 
           status === 403
             ? "Accès bloqué (anti-robot ou lien privé)"
             : `Site inaccessible (HTTP ${status})`;
+        /* 403 → bloqué, 401 → login, 404/410 → absente, 429 → quota…
+           chaque échec HTTP garde son état distinct. */
+        lastOutcome = classifyPageOutcome({ httpStatus: status });
         continue;
       }
       const ctype = (res.headers.get("content-type") || "").toLowerCase();
       if (ctype && !/text\/html|application\/xhtml\+xml|text\/plain/i.test(ctype)) {
         lastErr = "Type de contenu non HTML — fiche basée sur l'e-mail";
+        lastOutcome = { kind: "content_unusable", httpStatus: res.status };
         continue;
       }
       const len = Number(res.headers.get("content-length") || 0);
       if (len && len > MAX_PAGE_BYTES) {
         lastErr = "Page trop volumineuse — fiche basée sur l'e-mail";
+        lastOutcome = { kind: "content_unusable", httpStatus: res.status };
         continue;
       }
       const buf = await res.arrayBuffer();
       if (buf.byteLength > MAX_PAGE_BYTES) {
         lastErr = "Page trop volumineuse — fiche basée sur l'e-mail";
+        lastOutcome = { kind: "content_unusable", httpStatus: res.status };
         continue;
       }
       const html = new TextDecoder("utf-8", { fatal: false }).decode(buf);
@@ -258,17 +269,25 @@ export async function fetchOfferPage(url: string, options: { timeoutMs?: number 
       const $ = cheerio.load(html);
       const publicDescription = $(".description__text").first().text().trim();
       if (structured.length < 250 && publicDescription.length < 250 && BLOCK_MARKERS.test(html.slice(0, 20000))) {
-        return { ok: false, reason: "Page inaccessible : connexion ou anti-robot exigé" };
+        return {
+          ok: false,
+          reason: "Page inaccessible : connexion ou anti-robot exigé",
+          /* CAPTCHA ou mur de login : issue distincte selon le marqueur. */
+          outcome: classifyPageOutcome({ httpStatus: 200, bodyText: html.slice(0, 20000) }),
+        };
       }
       const text = structured.length >= 250 ? structured : htmlToText(extractMainHtml(html));
       if (text.length < 250) {
         lastErr = "Contenu trop court pour être une annonce — fiche basée sur l'e-mail";
+        lastOutcome = { kind: "content_unusable", httpStatus: res.status };
         continue;
       }
-      return { ok: true, text: text.slice(0, 9000) };
-    } catch {
+      return { ok: true, text: text.slice(0, 9000), outcome: { kind: "ok", httpStatus: res.status } };
+    } catch (e) {
       lastErr = "Délai dépassé ou site injoignable";
+      /* Timeout (AbortSignal) distinct d'une coupure réseau. */
+      lastOutcome = e instanceof Error && /timeout/i.test(e.name) ? { kind: "timeout" } : { kind: "network" };
     }
   }
-  return { ok: false, reason: lastErr };
+  return { ok: false, reason: lastErr, outcome: lastOutcome };
 }

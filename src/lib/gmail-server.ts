@@ -208,7 +208,7 @@ function blobPathname(key: string): string {
 function supabaseObjectPath(key: string): string {
   const cfg = supabaseConfig();
   if (!cfg) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants");
-  return `${cfg.url}/storage/v1/object/${cfg.bucket}/${blobPathname(key)}`;
+  return `${cfg.url}/storage/v1/object/${cfg.gmailBucket}/${blobPathname(key)}`;
 }
 
 function supabaseHeaders(): Record<string, string> {

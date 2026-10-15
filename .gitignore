@@ -40,6 +40,7 @@ _backup_secrets_*
 /supabase/.temp/
 /validation-sql.json
 /test_rpc.ps1
+/tmp/
 
 # vercel
 .vercel

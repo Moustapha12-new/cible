@@ -1,18 +1,12 @@
 import { securedRoute } from "@/lib/auth-server";
-import { NextRequest, NextResponse } from "next/server";
-import {
-  loadCatalogIndex,
-  listOffersFromIndex,
-  searchOffersFullText,
-  CatalogIndexEntry,
-} from "@/lib/permanent-offer-server";
+import { NextResponse } from "next/server";
+import { listOffersFromIndex, searchOffersFullText, CatalogIndexEntry } from "@/lib/permanent-offer-server";
 
 export const dynamic = "force-dynamic";
 
 /** GET /api/catalog/search?q=<query>&page=1&pageSize=50&filters=... */
-export const GET = securedRoute(async (req, auth) => {
+export const GET = securedRoute(async (req) => {
   const url = new URL(req.url);
-  const email = auth.user.email;
 
   // Paramètres de recherche
   const query = url.searchParams.get("q")?.trim() || "";
@@ -77,24 +71,6 @@ export const GET = securedRoute(async (req, auth) => {
   });
 
   // Facettes pour l'UI
-  const allForFacets = await listOffersFromIndex({
-    filters: {
-      states: filters["states"],
-      domains: filters["domains"],
-      regions: filters["regions"],
-      cities: filters["cities"],
-      contractTypes: filters["contractTypes"],
-      enrichStatus: filters["enrichStatus"],
-      qualificationStates: filters["qualificationStates"],
-      sourceTypes: filters["sourceTypes"],
-      isArchived: filters["isArchived"]?.[0] === "true" ? true : filters["isArchived"]?.[0] === "false" ? false : undefined,
-      hasApplication: filters["hasApplication"]?.[0] === "true",
-      hasDossier: filters["hasDossier"]?.[0] === "true",
-    },
-    page: 1,
-    pageSize: 10000, // Pour calculer les facettes sur tout le catalogue filtré
-  });
-
   return NextResponse.json({
     ok: true,
     offers: result.entries,

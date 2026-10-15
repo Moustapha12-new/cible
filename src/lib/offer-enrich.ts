@@ -33,6 +33,7 @@ export type PageOutcome =
   | { kind: "rate_limited"; httpStatus: number }
   | { kind: "timeout" }
   | { kind: "network" }
+<<<<<<< HEAD
   | { kind: "blocked" }
   /** Destination individuelle atteinte (2xx) mais contenu non exploitable
       comme fiche (type non HTML, page trop lourde, texte trop court,
@@ -40,6 +41,9 @@ export type PageOutcome =
   | { kind: "content_unusable"; httpStatus: number };
 
 export type PageOutcomeKind = PageOutcome["kind"];
+=======
+  | { kind: "blocked" };
+>>>>>>> origin/main
 
 /** État d'enrichissement affiché (badge UI) — jamais une fausse réussite. */
 export type EnrichBadge =
@@ -47,8 +51,12 @@ export type EnrichBadge =
   | { level: EnrichLevel; label: "Fiche analysée"; honest: true }
   | { level: EnrichLevel; label: "Bloquée / login"; honest: true }
   | { level: EnrichLevel; label: "À revoir"; honest: true }
+<<<<<<< HEAD
   | { level: EnrichLevel; label: "Expirée vérifiée"; honest: true }
   | { level: EnrichLevel; label: "Destination atteinte"; honest: true };
+=======
+  | { level: EnrichLevel; label: "Expirée vérifiée"; honest: true };
+>>>>>>> origin/main
 
 /** Provenance d'un champ enrichi : d'où vient la valeur, à quel niveau. */
 export type FieldProvenance = {
@@ -101,9 +109,12 @@ export function enrichBadgeFor(outcome: PageOutcome, level: EnrichLevel): Enrich
   switch (outcome.kind) {
     case "ok":
       return { level, label: level === "L0" ? "Email uniquement" : "Fiche analysée", honest: true };
+<<<<<<< HEAD
     case "content_unusable":
       // 2xx atteint mais pas une fiche : L1, jamais « analysée ».
       return { level, label: "Destination atteinte", honest: true };
+=======
+>>>>>>> origin/main
     case "login_required":
     case "captcha":
     case "blocked":
@@ -120,6 +131,7 @@ export function enrichBadgeFor(outcome: PageOutcome, level: EnrichLevel): Enrich
   }
 }
 
+<<<<<<< HEAD
 /** Libellé français distinct par issue — affiché tel quel dans le détail
     d'une offre : aucune issue n'est réduite à « bloquée » générique. */
 export function outcomeLabel(kind: PageOutcomeKind | string | undefined): string {
@@ -138,13 +150,18 @@ export function outcomeLabel(kind: PageOutcomeKind | string | undefined): string
   }
 }
 
+=======
+>>>>>>> origin/main
 /** Niveau atteint selon l'issue : inatteignable → plafonné à L0. */
 export function maxLevelFor(outcome: PageOutcome): EnrichLevel {
   switch (outcome.kind) {
     case "ok":
       return "L2"; // L3 nécessite un lien employeur séparé.
+<<<<<<< HEAD
     case "content_unusable":
       return "L1"; // destination validée, fiche non analysée.
+=======
+>>>>>>> origin/main
     default:
       return "L0";
   }

@@ -34,6 +34,7 @@ import {
   type DetectedOffer,
   type UserData,
 } from "@/lib/data";
+<<<<<<< HEAD
 import { DEFAULT_CV_DESIGN, parseCvText, cvToText } from "@/lib/cv";
 import { CompanyLogo } from "@/components/app/CompanyLogo";
 import { DocumentSheet } from "@/components/cv/DocumentSheet";
@@ -65,6 +66,15 @@ function offerRow(o: DetectedOffer): OfferRow {
     url: o.url,
   };
 }
+=======
+import { CompanyLogo } from "@/components/app/CompanyLogo";
+import { DocumentSheet } from "@/components/cv/DocumentSheet";
+import {
+  DEMO_USER_PROFILE,
+  DEMO_TABLE_OFFERS,
+  type DemoTableOffer,
+} from "@/lib/demo-data";
+>>>>>>> origin/main
 
 export default function CvPage() {
   const { user } = useAuth();
@@ -73,6 +83,7 @@ export default function CvPage() {
   const offerParam = searchParams.get("offer");
 
   const [data, setData] = useState<UserData | null>(null);
+<<<<<<< HEAD
   const [selectedOffer, setSelectedOffer] = useState<OfferRow>({
     id: "",
     company: "Aucune offre sélectionnée",
@@ -82,11 +93,18 @@ export default function CvPage() {
     date: "",
     matchPercentage: null,
   });
+=======
+  const [selectedOffer, setSelectedOffer] = useState<DemoTableOffer>(DEMO_TABLE_OFFERS[0]);
+>>>>>>> origin/main
   const [viewMode, setViewMode] = useState<"side" | "toggle">("side");
   const [toggleActive, setToggleActive] = useState<"before" | "after">("after");
 
   // CV data states
+<<<<<<< HEAD
   const [candidateName, setCandidateName] = useState("");
+=======
+  const [candidateName, setCandidateName] = useState(DEMO_USER_PROFILE.name);
+>>>>>>> origin/main
   const [candidateTitle, setCandidateTitle] = useState("Ingénieur en génie électrique");
   const [adaptedTitle, setAdaptedTitle] = useState(
     "Ingénieur en génie électrique spécialisé en réseaux et dimensionnement"
@@ -122,8 +140,27 @@ export default function CvPage() {
   ]);
 
   // CV history
+<<<<<<< HEAD
   /* Historique vide au démarrage : il ne s'enrichit que de VRAIS téléchargements. */
   const [cvHistory, setCvHistory] = useState<{ id: string; name: string; offer: string; date: string; status: string }[]>([]);
+=======
+  const [cvHistory, setCvHistory] = useState([
+    {
+      id: "hist-1",
+      name: "CV - EDF - Réseaux électriques",
+      offer: "EDF - Stage Bureau d'études",
+      date: "10/01/2025",
+      status: "Adapté",
+    },
+    {
+      id: "hist-2",
+      name: "CV - RTE - Études et ingénierie",
+      offer: "RTE - Stage Études et ingénierie",
+      date: "07/01/2025",
+      status: "Adapté",
+    },
+  ]);
+>>>>>>> origin/main
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -132,6 +169,7 @@ export default function CvPage() {
     if (!user) return;
     const local = getOrCreateData(user.name, user.email);
     setData(local);
+<<<<<<< HEAD
     setCandidateName(user.name || "");
     /* Titre d'aperçu = VRAI titre du CV maître (ou titre du profil), jamais un
        contenu de démonstration. */
@@ -147,6 +185,27 @@ export default function CvPage() {
     const match = (offerParam ? rows.find((o) => o.id === offerParam) : undefined) || rows[0];
     if (match) {
       setSelectedOffer(match);
+=======
+    setCandidateName(user.name || DEMO_USER_PROFILE.name);
+
+    // If offerParam is passed in URL, pick that offer
+    if (offerParam) {
+      const match =
+        local.offers.find((o) => o.id === offerParam) ||
+        DEMO_TABLE_OFFERS.find((o) => o.id === offerParam);
+      if (match) {
+        setSelectedOffer({
+          id: match.id,
+          company: match.company,
+          title: match.title,
+          location: match.location,
+          tags: "tags" in match ? match.tags : (match.skills || match.keywords || []).slice(0, 3),
+          date: "date" in match ? match.date : "Récente",
+          matchPercentage: "matchPercentage" in match ? match.matchPercentage : match.match || 88,
+          url: match.url,
+        });
+      }
+>>>>>>> origin/main
     }
   }, [user, offerParam]);
 
@@ -190,6 +249,7 @@ export default function CvPage() {
     setIsAdapting(true);
     setToastMessage("Adaptation du CV avec Gemini en cours…");
     try {
+<<<<<<< HEAD
       // Call AI endpoint to tailor — avec le VRAI texte du CV maître.
       const masterText = (data?.originalCv?.text?.trim() || (data?.cvData ? cvToText(data.cvData) : "")) || "";
       if (!masterText) {
@@ -200,24 +260,39 @@ export default function CvPage() {
         setToastMessage("Sélectionne d'abord une offre réelle.");
         return;
       }
+=======
+      // Call AI endpoint to tailor
+>>>>>>> origin/main
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           task: "adapt",
+<<<<<<< HEAD
           cvOriginal: masterText,
           targetOffer: `${selectedOffer.title} ${selectedOffer.company}`,
+=======
+          cvOriginal: candidateTitle + " Expérience en génie électrique et réseaux.",
+          targetOffer: selectedOffer.title + " " + selectedOffer.company,
+>>>>>>> origin/main
         }),
       });
       const json = await res.json();
       if (res.ok && json.result?.adaptedTitle) {
         setAdaptedTitle(json.result.adaptedTitle);
+<<<<<<< HEAD
         setToastMessage("Titre adapté selon les exigences de l'offre.");
       } else {
         setToastMessage("Adaptation indisponible — CV maître conservé tel quel.");
       }
     } catch {
       setToastMessage("Adaptation indisponible — CV maître conservé tel quel.");
+=======
+      }
+      setToastMessage("CV réadapté selon les exigences de l'offre !");
+    } catch {
+      setToastMessage("CV adapté selon l'offre sélectionnée.");
+>>>>>>> origin/main
     } finally {
       setIsAdapting(false);
     }
@@ -228,6 +303,7 @@ export default function CvPage() {
     setIsDownloading(true);
     setToastMessage("Génération du PDF A4 en cours…");
     try {
+<<<<<<< HEAD
       /* Vrai CV maître uniquement : structuré si présent, sinon parsé depuis
          le texte importé. Aucune expérience, coordonnée ou école de démonstration
          n'est jamais exportée (03_TESTS C.1/C.8). */
@@ -241,11 +317,15 @@ export default function CvPage() {
         setToastMessage("Sélectionne d'abord une offre réelle.");
         return;
       }
+=======
+      // Generate real PDF via endpoint or synthesize blob
+>>>>>>> origin/main
       const res = await fetch("/api/cv/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cv: {
+<<<<<<< HEAD
             ...master,
             basics: {
               ...master.basics,
@@ -255,6 +335,47 @@ export default function CvPage() {
           },
           design: data?.cvDesign ?? DEFAULT_CV_DESIGN,
           offerId: selectedOffer.id || undefined,
+=======
+            basics: {
+              name: candidateName,
+              headline: type === "adapted" ? adaptedTitle : candidateTitle,
+              email: user?.email || "moustapha.ibrahim@example.com",
+              phone: "06 12 34 56 78",
+              location: "Paris, France",
+            },
+            summary: "Ingénieur en génie électrique spécialisé en études réseaux.",
+            sections: [
+              {
+                id: "exp",
+                title: "Expériences",
+                entries: [
+                  {
+                    title: type === "adapted" ? "Stage - Bureau d'études (Réseaux électriques)" : "Stage - TotalEnergies",
+                    subtitle: "TotalEnergies",
+                    date: "2024",
+                    bullets: ["Analyse de performances énergétiques", "Dimensionnement réseau", "Simulation"],
+                  },
+                ],
+              },
+              {
+                id: "edu",
+                title: "Formation",
+                entries: [
+                  {
+                    title: "ECAM-EPMI - Diplôme d'ingénieur",
+                    subtitle: "Spécialité : Génie électrique",
+                    date: "2022 - 2025",
+                  },
+                ],
+              },
+            ],
+          },
+          design: {
+            template: "modern",
+            fontSize: "regular",
+            spacing: "regular",
+          },
+>>>>>>> origin/main
         }),
       });
 
@@ -263,7 +384,11 @@ export default function CvPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
+<<<<<<< HEAD
         a.download = `CV_${(candidateName || "candidat").replace(/\s+/g, "_")}_${selectedOffer.company}.pdf`;
+=======
+        a.download = `CV_${candidateName.replace(/\s+/g, "_")}_${selectedOffer.company}.pdf`;
+>>>>>>> origin/main
         a.click();
         URL.revokeObjectURL(url);
         setToastMessage("Téléchargement du PDF réussi !");
@@ -280,12 +405,28 @@ export default function CvPage() {
           ...prev,
         ]);
       } else {
+<<<<<<< HEAD
         /* Aucun faux PDF de secours : l'échec est dit tel quel (03_TESTS C.8). */
         const detail = await res.json().catch(() => null);
         setToastMessage(`PDF indisponible : ${detail?.error || "erreur serveur"}`);
       }
     } catch {
       setToastMessage("Téléchargement du PDF indisponible — réessaie.");
+=======
+        // Fallback printable text / blob
+        const fallbackText = `%PDF-1.4 CV ${candidateName} - ${selectedOffer.company}\nStage de 6 mois`;
+        const blob = new Blob([fallbackText], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `CV_${candidateName.replace(/\s+/g, "_")}_${selectedOffer.company}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setToastMessage("PDF téléchargé.");
+      }
+    } catch {
+      setToastMessage("Téléchargement terminé.");
+>>>>>>> origin/main
     } finally {
       setIsDownloading(false);
     }
@@ -1084,7 +1225,11 @@ export default function CvPage() {
             </div>
 
             <div className="flex flex-col gap-2 max-h-80 overflow-y-auto no-scrollbar">
+<<<<<<< HEAD
               {(data?.offers || []).map(offerRow).map((o) => (
+=======
+              {DEMO_TABLE_OFFERS.map((o) => (
+>>>>>>> origin/main
                 <button
                   key={o.id}
                   type="button"

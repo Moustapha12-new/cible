@@ -44,9 +44,12 @@ export type OfferLike = {
   prerequisites?: string[];
   applicationInfo?: string;
   enrichStatus?: string;
+<<<<<<< HEAD
   /** Jalon B : niveau L0–L3 + issue de page distincte. */
   enrichLevel?: string;
   enrichOutcome?: string;
+=======
+>>>>>>> origin/main
   status?: string;
   receivedAt?: string;
 };

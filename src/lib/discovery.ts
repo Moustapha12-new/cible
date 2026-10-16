@@ -14,8 +14,6 @@
      probabilité artificielle.
    · Aucune annonce n'est créée pour une entreprise qui n'en a pas publié. */
 
-import type { Profile } from "./data";
-
 /* ── Familles NAF ciblées (nomenclature officielle, format pointé) ─────── */
 
 export type NafFamily = {
@@ -33,7 +31,7 @@ export type NafFamily = {
    71.13B, 71.14B, 43.21C, 43.22C. 71.12A retiré : libellé réel
    « Activité des géomètres », hors profil. */
 export const NAF_FAMILIES: NafFamily[] = [
-  { code: "71.12B", label: "Ingénierie, études techniques", tier: "cœur" },
+  { code: "71.12B", label: "Ingénierie, études techniques", tier: "connexe" },
   { code: "43.21A", label: "Travaux d'installation électrique dans tous locaux", tier: "cœur" },
   { code: "43.21B", label: "Travaux d'installation électrique sur la voie publique", tier: "cœur" },
   { code: "27.11Z", label: "Fabrication de moteurs, génératrices et transformateurs électriques", tier: "cœur" },
@@ -283,7 +281,7 @@ export function scoreCompanyForProfile(company: Pick<DiscoveredCompany, "nafTier
   for (const [pattern, reason] of OUT_OF_DOMAIN_SIGNALS) {
     if (pattern.test(company.name ?? "")) { score -= 10; reasons.push(reason); }
   }
-  if (company.size === "petite" || company.size === "PME") { score += 10; reasons.push(`taille ${company.size === "petite" ? "10–19" : "PME"} — structure accessible à un stagiaire`); }
+  if (company.size === "petite" || company.size === "PME") { score += 10; reasons.push(`taille ${company.size} — structure pouvant accueillir un stagiaire`); }
   else if (company.size === "ETI") { score += 6; reasons.push("ETI — structures d'accueil de stages établies"); }
   else if (company.size === "inconnue") { missing.push("tranche d'effectif inconnue"); }
   if (region && zoneRegion) {
@@ -305,16 +303,16 @@ export type DomainAssessment = { status: "confirmed" | "probable" | "unconfirmed
     probable = au moins un token significatif du nom présent. */
 export function assessDomain(pageText: string | undefined, reachable: boolean, companyName: string, siren?: string): DomainAssessment {
   if (!reachable) return { status: "inaccessible", reasons: ["aucun hébergement joignable (bare + www, timeout/erreur réseau)"] };
-  if (!pageText || pageText.length < 50 || !companyName.trim()) return { status: "unconfirmed", reasons: ["page vide ou illisible — propriété non établie"] };
+  if (!pageText || pageText.length < 15 || !companyName.trim()) return { status: "unconfirmed", reasons: ["page vide ou illisible — propriété non établie"] };
   const norm = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const page = norm(pageText);
   if (siren && /^\d{9}$/.test(siren) && pageText.includes(siren)) {
     return { status: "confirmed", reasons: [`SIREN ${siren} retrouvé sur la page (preuve de propriété)`] };
   }
-  const tokens = norm(companyName).split(" ").filter(token => token.length >= 3);
+  const tokens = norm(companyName).split(" ").filter(token => token.length >= 3 && !/^(sas|sasu|sarl|sa|societe|groupe|ingenierie|etudes)$/.test(token));
   if (!tokens.length) return { status: "unconfirmed", reasons: ["nom exploitable vide"] };
-  const hits = tokens.filter(token => page.includes(token));
-  if (hits.length >= Math.min(2, tokens.length)) return { status: "confirmed", reasons: [`nom complet de l'entreprise présent sur la page (${hits.length}/${tokens.length} tokens)`] };
+  const hits = tokens.filter(token => new RegExp(`\\b${token}\\b`).test(page));
+  if (hits.length === tokens.length && hits.length >= 2) return { status: "confirmed", reasons: [`nom distinctif complet présent sur la page (${hits.length}/${tokens.length} tokens)`] };
   if (hits.length >= 1) return { status: "probable", reasons: [`nom partiel seulement (${hits.length}/${tokens.length} tokens) — propriété non établie`] };
   return { status: "unconfirmed", reasons: ["la page ne contient aucun élément d'identité de l'entreprise"] };
 }

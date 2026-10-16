@@ -157,7 +157,7 @@ export function OffersTable({
               className="appearance-none bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-1 text-xs font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
             >
               <option value="recent">Trier : Plus récentes</option>
-              <option value="match">Trier : Meilleur match</option>
+              <option value="match">Trier : Couverture du CV</option>
               <option value="company">Trier : Entreprise A-Z</option>
             </select>
             <ChevronDown size={12} className="absolute right-2 top-2.5 text-slate-400 pointer-events-none" />
@@ -231,7 +231,7 @@ export function OffersTable({
                 {/* Match Badge */}
                 <div className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100/80">
                   <ShieldCheck size={13} className="text-emerald-600" />
-                  <span>{offer.matchPercentage != null ? `${offer.matchPercentage}%` : "—"}</span>
+                  <span title={offer.matchExplanation}>{offer.matchPercentage != null ? `${offer.matchPercentage}% CV` : offer.matchExplanation || "—"}</span>
                 </div>
 
                 {/* Row Actions */}
@@ -294,7 +294,7 @@ export function OffersTable({
                   <span className="text-xs font-bold text-slate-800">{offer.company}</span>
                 </div>
                 <span className="text-xs font-bold text-emerald-600">
-                  {offer.matchPercentage != null ? `${offer.matchPercentage}% match` : "Match non calculé"}
+                  <span title={offer.matchExplanation}>{offer.matchPercentage != null ? `${offer.matchPercentage}% couverture CV` : offer.matchExplanation || "Analyse indisponible"}</span>
                 </span>
               </div>
               <h4 className="text-xs font-bold text-slate-900">{offer.title}</h4>

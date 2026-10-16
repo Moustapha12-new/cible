@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T22:27:29.537Z",
+  "generatedAt": "2026-10-15T01:55:58.773Z",
   "source": "https://recherche-entreprises.api.gouv.fr (API publique, sans clé)",
   "targetExperimental": 100,
   "discovered": 199,
@@ -424,15 +424,16 @@
   "nafFamilies": [
     "71.12B",
     "43.21A",
-    "33.20Z",
+    "43.21B",
     "27.11Z",
-    "26.51Z",
+    "27.12Z",
+    "27.33Z",
     "35.11Z",
     "35.12Z",
     "35.13Z",
     "27.20Z",
-    "28.99Z",
-    "71.12A"
+    "26.51B",
+    "71.11Z"
   ],
   "tranches": [
     "03",
@@ -451,8 +452,8 @@
   },
   "bySize": {
     "petite": 69,
-    "PME": 101,
-    "ETI": 29
+    "PME": 83,
+    "ETI": 47
   },
   "top10": [
     {
@@ -463,7 +464,7 @@
       "size": "petite",
       "tranche": "10–19 salariés",
       "score": 58,
-      "websiteStatus": "hypothesis",
+      "websiteStatus": "unconfirmed",
       "reasons": [
         "activité administrative au cœur du profil (NAF 71.12B)",
         "nom évoque des études/ingénierie",
@@ -483,7 +484,7 @@
       "size": "petite",
       "tranche": "6–9 salariés",
       "score": 58,
-      "websiteStatus": "hypothesis",
+      "websiteStatus": "unconfirmed",
       "reasons": [
         "activité administrative au cœur du profil (NAF 71.12B)",
         "nom évoque des études/ingénierie",
@@ -501,7 +502,7 @@
       "commune": "PARIS",
       "naf": "71.12B Ingénierie, études techniques",
       "size": "PME",
-      "tranche": "20–49 salariés",
+      "tranche": "50–99 salariés",
       "score": 58,
       "website": "https://erese.fr",
       "websiteStatus": "confirmed",
@@ -522,9 +523,9 @@
       "commune": "PARIS",
       "naf": "71.12B Ingénierie, études techniques",
       "size": "PME",
-      "tranche": "50–99 salariés",
+      "tranche": "100–199 salariés",
       "score": 58,
-      "websiteStatus": "hypothesis",
+      "websiteStatus": "unconfirmed",
       "reasons": [
         "activité administrative au cœur du profil (NAF 71.12B)",
         "nom évoque des études/ingénierie",
@@ -544,7 +545,7 @@
       "size": "petite",
       "tranche": "10–19 salariés",
       "score": 58,
-      "websiteStatus": "hypothesis",
+      "websiteStatus": "unconfirmed",
       "reasons": [
         "activité administrative au cœur du profil (NAF 71.12B)",
         "nom évoque des études/ingénierie",
@@ -564,7 +565,7 @@
       "size": "petite",
       "tranche": "6–9 salariés",
       "score": 58,
-      "websiteStatus": "hypothesis",
+      "websiteStatus": "unconfirmed",
       "reasons": [
         "activité administrative au cœur du profil (NAF 71.12B)",
         "nom évoque des études/ingénierie",
@@ -582,9 +583,9 @@
       "commune": "PARIS",
       "naf": "71.12B Ingénierie, études techniques",
       "size": "PME",
-      "tranche": "20–49 salariés",
+      "tranche": "50–99 salariés",
       "score": 58,
-      "websiteStatus": "hypothesis",
+      "websiteStatus": "unconfirmed",
       "reasons": [
         "activité administrative au cœur du profil (NAF 71.12B)",
         "nom évoque des études/ingénierie",
@@ -602,9 +603,9 @@
       "commune": "MASSY",
       "naf": "71.12B Ingénierie, études techniques",
       "size": "PME",
-      "tranche": "50–99 salariés",
+      "tranche": "100–199 salariés",
       "score": 58,
-      "websiteStatus": "hypothesis",
+      "websiteStatus": "unconfirmed",
       "reasons": [
         "activité administrative au cœur du profil (NAF 71.12B)",
         "nom évoque des études/ingénierie",
@@ -622,7 +623,7 @@
       "commune": "VERRIERES-LE-BUISSON",
       "naf": "71.12B Ingénierie, études techniques",
       "size": "PME",
-      "tranche": "20–49 salariés",
+      "tranche": "50–99 salariés",
       "score": 58,
       "websiteStatus": "none",
       "reasons": [

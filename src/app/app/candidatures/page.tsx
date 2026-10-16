@@ -50,14 +50,14 @@ export default function CandidaturesPage() {
 
   // State
   const [data, setData] = useState<UserData | null>(null);
-  const [demoMode, setDemoMode] = useState<boolean>(true);
+  const [demoMode, setDemoMode] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<
     "all" | "sent" | "interview" | "offer" | "rejected"
   >("all");
-  const [selectedAppId, setSelectedAppId] = useState<string>("app-rte-1");
+  const [selectedAppId, setSelectedAppId] = useState<string>("");
   const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [sortOrder, setSortOrder] = useState<"recent" | "company">("recent");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(["app-rte-1"]));
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Interview modal & notes state
   const [interviewModalOpen, setInterviewModalOpen] = useState(false);
@@ -100,14 +100,16 @@ export default function CandidaturesPage() {
   const applicationsPool = useMemo<DemoApplication[]>(() => {
     if (demoMode) return DEMO_APPLICATIONS;
     if (!data || !data.applications.length) return [];
-    return data.applications.map((app) => ({
+    return data.applications.map((app) => {
+      const offer = data.offers.find(o => o.id === app.offerId);
+      return ({
       id: app.id,
       company: app.company,
-      title: app.role || "Stage de 6 mois",
-      location: "France",
+      title: app.role || offer?.title || "Intitulé non renseigné",
+      location: offer?.location || "Lieu non renseigné",
       date: app.date
         ? new Date(app.date).toLocaleDateString("fr-FR")
-        : "12/01/2025",
+        : "Date non renseignée",
       status: app.status,
       statusLabel:
         app.status === "interview"
@@ -117,26 +119,24 @@ export default function CandidaturesPage() {
           : app.status === "rejected"
           ? "Refusé"
           : "Postulé",
-      tags: ["Stage de 6 mois", "Ingénierie"],
-      cvFileName: app.cvName || `CV_${app.company}.pdf`,
-      cvFileSize: "315 Ko",
-      cvSentDate: app.date ? new Date(app.date).toLocaleDateString("fr-FR") : "10/01/2025",
-      offerSummary: "Mission de stage de 6 mois au sein de l'équipe technique.",
-      offerContract: "Stage de 6 mois",
-      offerPostedDate: "02/01/2025",
-      checklist: [
-        { id: "1", text: "Relire la description de l'offre", done: true },
-        { id: "2", text: "Préparer mes réponses aux questions", done: false },
-      ],
-      notes: app.notes || "Candidature envoyée avec CV ciblé.",
+      tags: (offer?.skills || offer?.keywords || []).slice(0, 3),
+      cvFileName: app.cvName || "CV non renseigné",
+      cvFileSize: "Taille non renseignée",
+      cvSentDate: app.date ? new Date(app.date).toLocaleDateString("fr-FR") : "Date non renseignée",
+      offerSummary: offer?.description || offer?.text || "Description non enregistrée.",
+      offerContract: [offer?.contract, offer?.duration].filter(Boolean).join(" · ") || "Contrat non renseigné",
+      offerPostedDate: "Date de publication non renseignée",
+      checklist: [],
+      notes: app.notes || "",
       timeline: [
-        { step: "CV adapté", date: "Récent", active: false, completed: true },
+        { step: "CV adapté", date: app.sentCvAdaptationId ? "Version archivée" : "À vérifier", active: false, completed: !!app.sentCvAdaptationId },
         { step: "Postulé", date: "Récent", active: app.status === "sent", completed: true },
         { step: "Entretien", date: "À venir", active: app.status === "interview", completed: app.status === "interview" || app.status === "offer" },
         { step: "Décision", date: "À venir", active: app.status === "offer" || app.status === "rejected", completed: app.status === "offer" },
       ],
       journal: [],
-    }));
+    });
+    });
   }, [demoMode, data]);
 
   // Filtered applications
@@ -258,12 +258,17 @@ export default function CandidaturesPage() {
   };
 
   // Download exact archived CV
-  const handleDownloadCv = (app: DemoApplication) => {
+  const handleDownloadCv = async (app: DemoApplication) => {
+    if (demoMode) { setToastMessage("Exemple de démonstration : aucun PDF personnel archivé."); return; }
+    try {
     setToastMessage(`Téléchargement de ${app.cvFileName}…`);
-    const blob = new Blob(
-      [`%PDF-1.4 CV archivé envoyé le ${app.cvSentDate} pour ${app.company}`],
-      { type: "application/pdf" }
-    );
+    const response = await fetch(`/api/candidatures/${encodeURIComponent(app.id)}/document`, { cache: "no-store" });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || "CV archivé indisponible.");
+    }
+    if (!response.headers.get("content-type")?.includes("application/pdf")) throw new Error("Le serveur n'a pas renvoyé de PDF.");
+    const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -271,12 +276,22 @@ export default function CandidaturesPage() {
     a.click();
     URL.revokeObjectURL(url);
     setToastMessage("CV téléchargé avec succès.");
+    } catch (error) { setToastMessage(error instanceof Error ? error.message : "Téléchargement impossible."); }
   };
 
   // Save personal notes
-  const handleSaveNotes = () => {
-    setEditNotes(false);
-    setToastMessage("Note personnelle enregistrée !");
+  const handleSaveNotes = async () => {
+    if (!selectedApp || demoMode) { setToastMessage("Les notes de démonstration ne sont pas enregistrées."); return; }
+    try {
+      const response = await fetch(`/api/candidatures/${encodeURIComponent(selectedApp.id)}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notes: notesDraft }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "Enregistrement impossible.");
+      setData(current => current ? { ...current, applications: current.applications.map(a => a.id === selectedApp.id ? result.application : a) } : current);
+      setEditNotes(false);
+      setToastMessage("Note personnelle enregistrée !");
+    } catch (error) { setToastMessage(error instanceof Error ? error.message : "Enregistrement impossible."); }
   };
 
   // Auto-dismiss toast

@@ -48,6 +48,7 @@ export type Letter = {
 };
 
 export type DetectedOffer = {
+  cvCoverage?: { score: number | null; reason: string; present: string[]; missing: string[] };
   id: string;
   title: string;
   company: string;

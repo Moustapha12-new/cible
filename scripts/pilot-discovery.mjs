@@ -8,6 +8,10 @@
 
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { createClient } from '@supabase/supabase-js'
+import dotenv from 'dotenv'
+dotenv.config({ path: '.env.local' })
+
 import {
   NAF_FAMILIES,
   DEPARTMENT_ROTATION,
@@ -39,6 +43,58 @@ const fetchImpl = async (url) => {
   const res = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(20000) });
   return { ok: res.ok, status: res.status, json: () => res.json() };
 };
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  console.error('Missing Supabase URL or service role key')
+  process.exit(1)
+}
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
+
+/**
+ * Upsert a company into the cible_decouvertes_entreprises table.
+ * @param {import("../src/lib/discovery.ts").DiscoveredCompany} company
+ */
+async function upsertCompany(company) {
+  try {
+    const { data, error } = await supabase
+      .from('cible_decouvertes_entreprises')
+      .upsert({
+        siren: company.siren,
+        name: company.name,
+        commune: company.commune,
+        code_postal: company.codePostal,
+        departement: company.departement,
+        naf: company.naf,
+        naf_label: company.nafLabel,
+        naf_tier: company.nafTier,
+        tranche: company.tranche,
+        tranche_label: company.trancheLabel,
+        size: company.size,
+        date_creation: company.dateCreation,
+        website: company.website,
+        website_status: company.websiteStatus,
+        career_page: company.careerPage,
+        stage_confirmed: company.stageConfirmed ?? false,
+        reasons: company.reasons,
+        missing: company.missing,
+        score: company.score,
+        last_checked_at: company.lastCheckedAt,
+        found_at: company.foundAt,
+        found_by: company.foundBy,
+      }, { onConflict: ['siren'] }) // Use siren as the unique constraint
+
+    if (error) {
+      console.error(`Error upserting company ${company.siren}:`, error.message)
+    }
+    // Optionally log success
+    // console.log(`Upserted company ${company.siren}`)
+  } catch (err) {
+    console.error(`Exception upserting company ${company.siren}:`, err.message)
+  }
+}
 
 async function main() {
   let companies = [];
@@ -79,10 +135,16 @@ async function main() {
   companies.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
   const scored = companies.length;
 
+  /* Upsert all companies to the database */
+  console.log(`Upserting ${scored} companies to the database...`)
+  for (const company of companies) {
+    await upsertCompany(company)
+  }
+
   /* Tenter de confirmer le site officiel du top uniquement (économe). */
   const top = companies.slice(0, 8);
   let confirmed = 0;
-  let hypothesis = 0;
+  let hypothesis = 0; // now counts unconfirmed
   for (const c of top) {
     const guess = websiteHypothesis(c.name);
     if (!guess) { c.missing.push("aucune hypothèse de domaine générable"); continue; }
@@ -101,13 +163,18 @@ async function main() {
           // Repérer une page carrière/emploi dans le HTML.
           const career = html.match(/href=["']([^"']*(?:carriere|recrut|emploi|job|offres?|stages?)[^"']*)["']/i);
           if (career) { c.careerPage = new URL(career[1], url).href; c.reasons.push("lien carrières détecté"); }
+          // Update the website and website_status in the database
+          await upsertCompany(c) // Re-upsert with updated website and status
         }
       } catch { /* tentative suivante */ }
       await sleep(250);
     }
     if (!resolved) {
-      c.websiteStatus = "hypothesis"; hypothesis++;
+      c.websiteStatus = "unconfirmed"; // changed from "hypothesis" to "unconfirmed"
+      hypothesis++;
       c.missing.push(`domaine ${guess} non confirmé (bare + www) — site non déduit`);
+      // Update the website_status in the database
+      await upsertCompany(c)
     }
   }
 

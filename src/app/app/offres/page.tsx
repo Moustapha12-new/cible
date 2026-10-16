@@ -21,6 +21,8 @@ import {
   type UserData,
 } from "@/lib/data";
 import { loadGmailStore, normalizeUrl } from "@/lib/gmail-client";
+import { discoveryUrlKey } from "@/lib/discovery-identity";
+import { offerCvCoverage } from "@/lib/offer-cv-coverage";
 import { offerToDetectedOffer, type OfferLike } from "@/lib/gmail-bridge";
 import {
   eligibleOffers,
@@ -57,7 +59,9 @@ function offerKeys(o: DetectedOffer): string[] {
   if (o.id) keys.push(o.id);
   const url = normalizeUrl(o.url || "");
   if (url) keys.push(`u:${url}`);
-  keys.push(
+  const strong = discoveryUrlKey(o.url);
+  if (strong) keys.push(strong);
+  if (!url) keys.push(
     `t:${`${o.title || ""}|${o.company || ""}|${o.location || ""}`.trim().toLowerCase()}`
   );
   return keys;
@@ -111,7 +115,8 @@ function toTableRow(o: DetectedOffer, applied: boolean): DemoTableOffer {
       : "Date inconnue",
     receivedAt: o.receivedAt,
     /* Jamais de score inventé : « — » tant qu'aucun matching n'a été calculé. */
-    matchPercentage: o.match > 0 ? Math.round(o.match) : null,
+    matchPercentage: o.cvCoverage?.score ?? null,
+    matchExplanation: o.cvCoverage?.reason,
     status: applied ? "postulee" : expired ? "expiree" : o.gmailStatus === "nouvelle" ? "nouvelle" : "a_traiter",
     url: o.url,
   };
@@ -209,8 +214,10 @@ export default function OffresPage() {
       .map((o) => offerToDetectedOffer(o));
 
     let remoteOffers: DetectedOffer[] = [];
+    let remoteData: UserData | null = null;
     let remoteApplications: Application[] | null = null;
     let snapshotOffers: DetectedOffer[] = [];
+    let discoveryOffers: DetectedOffer[] = [];
     let snapshotCount: number | null = null;
     const notes: string[] = [];
 
@@ -223,6 +230,7 @@ export default function OffresPage() {
       };
       if (res.ok && json.ok && json.record?.data) {
         recordVersionRef.current = json.record.version || 0;
+        remoteData = json.record.data;
         remoteOffers = Array.isArray(json.record.data.offers) ? json.record.data.offers : [];
         remoteApplications = Array.isArray(json.record.data.applications)
           ? json.record.data.applications
@@ -255,15 +263,25 @@ export default function OffresPage() {
       notes.push("Catalogue Gmail serveur injoignable.");
     }
 
-    // 3 — Fusion : dossier serveur (curé) → catalogue → appareil.
-    const merged = mergeOffers([remoteOffers, snapshotOffers, local.offers, localGmail]);
+    // 3 — Offres publiques vérifiées, conservées dans le stockage serveur.
+    try {
+      const res = await fetch("/api/offres/discovery", { cache: "no-store" });
+      const json = await res.json() as { ok?: boolean; offers?: DetectedOffer[] };
+      if (res.ok && json.ok && Array.isArray(json.offers)) {
+        discoveryOffers = json.offers;
+      } else notes.push("Registre des stages découverts indisponible.");
+    } catch { notes.push("Registre des stages découverts indisponible."); }
+
+    // Fusion : dossier serveur → offres publiques → Gmail → appareil.
+    const merged = mergeOffers([remoteOffers, discoveryOffers, snapshotOffers, local.offers, localGmail]);
     const applications = remoteApplications
       ? [
           ...remoteApplications,
           ...local.applications.filter((a) => !remoteApplications!.some((r) => r.id === a.id)),
         ]
       : local.applications;
-    const effective: UserData = { ...local, offers: merged, applications };
+    const effective: UserData = { ...(remoteData || local), offers: merged, applications };
+    effective.offers = merged.map(offer => ({ ...offer, cvCoverage: offerCvCoverage(offer, effective) }));
     setData(effective);
 
     const blocking =

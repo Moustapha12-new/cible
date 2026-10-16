@@ -80,7 +80,7 @@ async function main() {
   assert.equal(poly.size, "PME");
   assert.equal(poly.naf, "71.12B");
   assert.equal(poly.nafLabel, "Ingénierie, études techniques");
-  assert.equal(poly.nafTier, "cœur");
+  assert.equal(poly.nafTier, "connexe", "71.12B reste de l'ingénierie généraliste, pas une spécialité électrique prouvée");
   assert.equal(poly.websiteStatus, "none", "aucun site déduit sans preuve");
   assert.equal(poly.stageConfirmed, undefined, "aucun stage « confirmé » inventé");
   /* Erreur API : message conservé, jamais interprété comme des résultats. */
@@ -110,7 +110,7 @@ async function main() {
   const base = { naf: "71.12B", commune: "COURBEVOIE", websiteStatus: "none" as const };
   const strong = scoreCompanyForProfile({ ...base, nafTier: "cœur", size: "PME", name: "ETUDES ELECTRIQUES DU VAL", website: undefined }, "Île-de-France", "Île-de-France");
   assert.ok(strong.score >= 55, `score cohérent (obtenu ${strong.score})`);
-  assert.ok(strong.reasons.some(r => r.includes("cœur du profil")), "raison NAF");
+  assert.ok(strong.reasons.some(r => r.includes("cœur du profil")), "raison NAF explicitée dans le scénario cœur");
   assert.ok(strong.reasons.some(r => r.includes("électricité")), "raison nom");
   assert.ok(strong.reasons.some(r => r.includes("zone préférée")), "raison géographique");
   assert.ok(strong.missing.some(m => m.includes("site officiel")), "site manquant déclaré");
@@ -130,7 +130,7 @@ async function main() {
      non confirmé / inaccessible. Le SIREN sur la page = preuve forte. */
   assert.equal(assessDomain(page, true, "ETUDES ELECTRIQUES DU VAL SAS", "812345679").status, "confirmed", "SIREN retrouvé sur la page → confirmé");
   assert.equal(assessDomain(page, true, "ETUDES ELECTRIQUES DU VAL SAS", "812345678").status, "confirmed", "nom complet → confirmé quand même");
-  const partial = assessDomain("Société ETUDES à Paris", true, "ETUDES ELECTRIQUES DU VAL SAS");
+  const partial = assessDomain("Société ELECTRIQUES à Paris", true, "ETUDES ELECTRIQUES DU VAL SAS");
   assert.equal(partial.status, "probable", "un seul token → probable, jamais officiel");
   assert.equal(assessDomain("Bienvenue sur notre site", true, "ETUDES ELECTRIQUES DU VAL SAS").status, "unconfirmed");
   assert.equal(assessDomain(undefined, false, "X").status, "inaccessible");

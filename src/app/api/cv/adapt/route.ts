@@ -1,9 +1,12 @@
-<<<<<<< HEAD
 import { NextResponse } from "next/server";
 import { securedRoute } from "@/lib/auth-server";
 import { loadUserRecord } from "@/lib/candidature-server";
 import { askJson } from "@/lib/ai";
 import { analyzeAndPlan, validatePlan, validatePlanOperation, type PlanOperation } from "@/lib/cv-engine";
+import { storeGet } from "@/lib/gmail-server";
+import type { DiscoveredOffer } from "@/lib/discovery-offers";
+import type { DetectedOffer } from "@/lib/data";
+import { discoveryToDetectedOffer } from "@/lib/discovery-view";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +36,13 @@ export const POST = securedRoute(async (req, { user }) => {
   try {
     const record = await loadUserRecord(user);
     const data = record.data;
-    const offer = data.offers.find(row => row.id === body.offerId);
+    let offer: DetectedOffer | undefined = data.offers.find(row => row.id === body.offerId);
+    if (!offer && body.offerId.startsWith("web:smartrecruiters:")) {
+      const raw = await storeGet("discovery:offers:v1");
+      const stored = raw ? JSON.parse(raw) as { offers?: DiscoveredOffer[] } : null;
+      const found = stored?.offers?.find(row => row.id === body.offerId && row.profileCompatible);
+      if (found) offer = discoveryToDetectedOffer(found);
+    }
     if (!offer) {
       return NextResponse.json({ ok: false, error: "Offre introuvable dans ton dossier (l'analyse exige la même fiche que la sélection)." }, { status: 404 });
     }
@@ -100,44 +109,3 @@ export const POST = securedRoute(async (req, { user }) => {
     );
   }
 });
-=======
-import { securedRoute } from "@/lib/auth-server";
-import { NextResponse } from "next/server";
-import { askJson } from "@/lib/ai";
-
-export const dynamic = "force-dynamic";
-
-export const POST = securedRoute(async (req) => {
-  let body: { cvText: string; offerText: string; offerId: string };
-  try {
-    body = (await req.json()) as typeof body;
-  } catch {
-    return NextResponse.json({ ok: false, error: "Requête invalide" }, { status: 400 });
-  }
-
-  const { cvText, offerText, offerId } = body;
-  if (!cvText || !offerText || !offerId) {
-    return NextResponse.json({ ok: false, error: "CV, offre ou ID manquant" }, { status: 400 });
-  }
-
-  try {
-    const result = await askJson("adapt", {
-      task: "adapt",
-      cvOriginal: cvText,
-      offerText,
-      orientation: "electrical",
-    });
-
-    return NextResponse.json({ ok: true, result }, { headers: { "Cache-Control": "no-store" } });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erreur inconnue";
-    if (/Gemini .* HTTP 429/.test(msg)) {
-      return NextResponse.json(
-        { ok: false, code: "AI_QUOTA", error: "Le service IA a atteint sa limite de requêtes. Tu peux préparer ton CV manuellement et réessayer plus tard." },
-        { status: 429, headers: { "Cache-Control": "no-store" } }
-      );
-    }
-    return NextResponse.json({ ok: false, error: msg }, { status: 502 });
-  }
-});
->>>>>>> origin/main

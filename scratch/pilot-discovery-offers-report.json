@@ -1,0 +1,726 @@
+{
+  "generatedAt": "2026-10-15T17:53:52.272Z",
+  "source": "https://developers.smartrecruiters.com/docs/endpoints",
+  "companyRegistryCount": 199,
+  "companySample": [
+    {
+      "siren": "909073363",
+      "name": "ENGIE MOBILITES ELECTRIQUES (EME)",
+      "commune": "LA GARENNE-COLOMBES",
+      "naf": "35.13Z",
+      "score": 58,
+      "website": "https://www.engie-vianeo.com",
+      "website_status": "confirmed",
+      "career_page": null
+    },
+    {
+      "siren": "501706170",
+      "name": "GAZELENERGIE SOLUTIONS (GAZELENERGIE)",
+      "commune": "COURBEVOIE",
+      "naf": "35.13Z",
+      "score": 52,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "878427376",
+      "name": "NEOGIES",
+      "commune": "BOULOGNE-BILLANCOURT",
+      "naf": "35.13Z",
+      "score": 44,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "799222823",
+      "name": "ERESE (ENERGIE, RESEAUX, ENVIRONNEMENT)",
+      "commune": "PARIS",
+      "naf": "71.12B",
+      "score": 45,
+      "website": "https://erese.fr",
+      "website_status": "probable",
+      "career_page": null
+    },
+    {
+      "siren": "489626135",
+      "name": "INGEROP CONSEIL ET INGENIERIE (ICI)",
+      "commune": "RUEIL MALMAISON",
+      "naf": "71.12B",
+      "score": 44,
+      "website": "https://carrieres.ingerop.com",
+      "website_status": "confirmed",
+      "career_page": "https://carrieres.ingerop.com"
+    },
+    {
+      "siren": "413609595",
+      "name": "METRES COORDINATION INGENIERIE (MCI)",
+      "commune": "MANDRES-LES-ROSES",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "unconfirmed",
+      "career_page": null
+    },
+    {
+      "siren": "324668144",
+      "name": "SEGIC INGENIERIE",
+      "commune": "VERRIERES-LE-BUISSON",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "323420349",
+      "name": "SCOPING - SOCIETE DE COORDINATION D'ORDONNANCEMENT DE PILOTAGE ET D'INGENIERIE (SCOPING SA)",
+      "commune": "MASSY",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "unconfirmed",
+      "career_page": null
+    },
+    {
+      "siren": "421025875",
+      "name": "OFFICE D INGENIERIE SANITAIRE (OFIS)",
+      "commune": "PARIS",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "unconfirmed",
+      "career_page": null
+    },
+    {
+      "siren": "488225053",
+      "name": "LCV INGENIERIE",
+      "commune": "PARIS",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "unconfirmed",
+      "career_page": null
+    },
+    {
+      "siren": "399596808",
+      "name": "AIP INGENIERIE",
+      "commune": "MONTREUIL",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "unconfirmed",
+      "career_page": null
+    },
+    {
+      "siren": "520098328",
+      "name": "XL INGENIERIE (XL EXPERTS)",
+      "commune": "PARIS",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "490398690",
+      "name": "TREFLE INGENIERIE",
+      "commune": "BOULOGNE BILLANCOURT",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "388237331",
+      "name": "SUEZ RV BIOENERGIES SA",
+      "commune": "GARGENVILLE",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "831608302",
+      "name": "SOGETEC INGENIERIE",
+      "commune": "PARIS",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "337609622",
+      "name": "I S L INGENIERIE (ISL)",
+      "commune": "PARIS",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "unconfirmed",
+      "career_page": null
+    },
+    {
+      "siren": "890666431",
+      "name": "DBCI INGENIERIE (DBCI CONSTRUCTION)",
+      "commune": "MASSY",
+      "naf": "71.12B",
+      "score": 42,
+      "website": null,
+      "website_status": "unconfirmed",
+      "career_page": null
+    },
+    {
+      "siren": "308884998",
+      "name": "AKKODIS INGENIERIE PRODUIT SAS (AKKODIS)",
+      "commune": "GUYANCOURT",
+      "naf": "71.12B",
+      "score": 38,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "442090163",
+      "name": "WPD ONSHORE FRANCE",
+      "commune": "BOULOGNE-BILLANCOURT",
+      "naf": "71.12B",
+      "score": 37,
+      "website": "https://www.wpd.fr",
+      "website_status": "probable",
+      "career_page": null
+    },
+    {
+      "siren": "817712094",
+      "name": "ZERO WATTHEURE",
+      "commune": "PALAISEAU",
+      "naf": "71.12B",
+      "score": 34,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "804448587",
+      "name": "QUARDINA (QCS SERVICES)",
+      "commune": "VELIZY-VILLACOUBLAY",
+      "naf": "71.12B",
+      "score": 34,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "784756413",
+      "name": "INSTITUT DE SOUDURE (IS)",
+      "commune": "VILLEPINTE",
+      "naf": "71.12B",
+      "score": 34,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "490572161",
+      "name": "CV ASSOCIES ENGINEERING (CVA ENGINEERING)",
+      "commune": "PUTEAUX",
+      "naf": "71.12B",
+      "score": 34,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "818611220",
+      "name": "FRESHMILE",
+      "commune": "STRASBOURG",
+      "naf": "35.13Z",
+      "score": 34,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    },
+    {
+      "siren": "432160018",
+      "name": "REALIZE",
+      "commune": "JOSSIGNY",
+      "naf": "71.12B",
+      "score": 34,
+      "website": null,
+      "website_status": "none",
+      "career_page": null
+    }
+  ],
+  "atsCompanies": [
+    "Ingrop",
+    "RTE1",
+    "EgisGroup",
+    "ENERTRAG",
+    "Statkraft1",
+    "Socotec",
+    "Talan"
+  ],
+  "listingRowsExamined": 826,
+  "detailPagesChecked": 40,
+  "offersVerified": 11,
+  "sixMonthsConfirmed": 6,
+  "profileCompatible": 10,
+  "offers": [
+    {
+      "id": "web:smartrecruiters:ingrop:744000155719906",
+      "source": "smartrecruiters",
+      "sourceCompany": "Ingrop",
+      "sourceId": "744000155719906",
+      "title": "STAGE - AMELIORATION D'UNE CALCULETTE CARBONE POUR LA CONCEPTION DE BATIMENTS DURABLES & CALCULS EN CONCEPTION F/H",
+      "company": "Ingérop",
+      "location": "RUEIL-MALMAISON, , France",
+      "contract": "stage",
+      "durationMonths": 6,
+      "durationEvidence": "6 mois",
+      "startEvidence": "démarrage : février- Mars 2027",
+      "technicalEvidence": [
+        "énergie",
+        "renouvelables"
+      ],
+      "description": "Ce stage se décline en 2 parties : La première concerne la calculette Carbone. Au sein du pôle Bâtiment Durable d’ACTIERRA, rattaché au Responsable de Département , vous travaillerez au côté des membres de la Cellule Carbone (chefs de projet, chargés d’affaires et chargés d’études), pour viser l'atteinte des objectifs Carbone (RE2020, BBCA) tout au long de la conception des bâtiments. Intégré(e) à une équipe, sous l’autorité d’un ingénieur de l’équipe Bâtiment Durable, vous participerez à l’amélioration d’une calculette carbone pour les phases amont de conception. Déjà alimenté par des précédents stages, l’objectif de la calculette est de pouvoir estimer facilement l'impact carbone d'un bâtiment dès les premières étapes de sa conception, à partir d'informations simples comme la surface du bâtiment, le nombre d'étages, le type de structure ou encore le type de façade. Elle doit permettre de vérifier rapidement si le projet tel qu'il est envisagé respecte bien les seuils d'émissions carbone imposés par la RE2020, et ce pour l'ensemble des nouveaux types de bâtiments concernés par la réglementation : bâtiments industriels, établissements d'enseignement supérieur, restaurants, commerces, hôtels, hôpitaux et aéroports. Au-delà de cette vérification, la Calculette doit offrir également la possibilité de comparer différents modes constructifs (par exemple, un plancher béton face à plancher mixte bois/béton ou entièrement en bois CLT) et de visualiser concrètement l'impact de chaque option sur l'empreinte carbone du bâtiment (indicateur IC Construction). Cette fonctionnalité aurait une vraie valeur pédagogique, elle faciliterait les échanges et les prises de décision avec nos partenaires. En résumé, cet outil permettrait de faire les bons choix constructifs le plus tôt possible dans un projet, tout en s'assurant que celui-ci sera bien conforme aux exigences carbone de la RE2020. La 2e partie du stage concerne le rôle de chargé d’études Calculs. Le but sera de réaliser des calculs en conception de bâtiments durables (ACV, calculs thermiques, STD confort, SED, ALJ, Heliodons…). Intégré(e) à l’équipe Calculs, sous l’autorité du chef de service Ernesto VELAZQUEZ, vous participerez aux différentes phases d’élaboration de projet et vous aurez notamment l’opportunité : D’approfondir vos connaissances générales sur le thème de l'énergie et du développement durable, notamment sur les énergies renouvelables, les référentiels de certification HQE BD, BREEAM et LEED De réaliser des études énergétiques sous PLEIADES De réaliser des études diverses participant à l’évaluation de la qualité environnementale des constructions De réaliser des analyses de cycle de vie de bâtiment et des recherches comparatives sur la performance environnementale des matériaux (EMERSUS) Les études seront réalisées sur différents types de projets : construction neuve ou rénovation ; industrie, enseignement, bureaux, …\n\nÉtudiant(e) en école d'ingénieurs ou à l’université (minimum Bac+4/+5), vous justifiez dans votre cursus universitaire d’une connaissance en bâtiment et en thermique. Vous avez des notions ou portez intérêt aux études Carbone / Analyse de Cycle de Vie et vous maitrisez Excel (formules sur base de données notamment). Compétences souhaitées : Pack Office : Excel, Word , Powerpoint Logiciels Carbone : Vizcab, Emersus Bonnes qualités rédactionnelles et méthodologiques Notions en AutoCAD et/ou REVIT Votre rigueur méthodologique , votre aisance relationnelle et rédactionnelle et votre curiosité seront des atouts essentiels au quotidien dans votre fonction. Personne en situation de handicap ? Actierra s’engage au quotidien, venez rejoindre nos équipes !\n\nRattaché(e) au pôle Bâtiment Durable, au sein de l’équipe Bâtiment Durable, le stage se déroulera dans les bureaux de Rueil Malmaison : 🎯 Durée : 6 mois 📅 Date de démarrage : février- Mars 2027 📍 Lieu du stage : Rueil-Malmaison 💰 Gratification : 1000 € à 1300 € brut selon niveau d’études + prime de fin de stage sur évaluation 🍽️ Repas : RIE 🚉 Transport : Remboursement à 100% de l’abonnement pour le trajet domicile-travail et/ou forfait mobilité durable (vélo) Ce qui vous attend : Des locaux spacieux et lumineux, de la bonne humeur, des moments de partage en équipe. Rejoindre une société soucieuse de la qualité de vie au travail, œuvrant pour votre montée en compétence et évolution de carrière au quotidien.",
+      "applicationUrl": "https://jobs.smartrecruiters.com/Ingrop/744000155719906-stage-amelioration-d-une-calculette-carbone-pour-la-conception-de-batiments-durables-calculs-en-conception-f-h?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/Ingrop/744000155719906",
+      "sourceCheckedAt": "2026-10-15T17:53:36.638Z",
+      "sixMonthsConfirmed": true,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:ingrop:744000155680042",
+      "source": "smartrecruiters",
+      "sourceCompany": "Ingrop",
+      "sourceId": "744000155680042",
+      "title": "STAGE - CHARGE D'ETUDES GENIE CLIMATIQUE F/H",
+      "company": "Ingérop",
+      "location": "Marseille, Provence-Alpes-Côte d'Azur, France",
+      "contract": "stage",
+      "durationMonths": 6,
+      "durationEvidence": "6 mois",
+      "startEvidence": "démarrage souhaitée : Septembre 2027",
+      "technicalEvidence": [
+        "énergétique",
+        "solaire"
+      ],
+      "description": "Le genre masculin utilisé dans cette annonce désigne aussi bien les femmes que les hommes . Votre lieu quotidien de travail sera situé à l’ agence de Marseille . Vous serez rattaché au service Fluides Génie Climatique, regroupant 8 collaboratrices et collaborateurs. Vous serez accueilli par une équipe pluridisciplinaire et dynamique, animée par le chef de service/directeur de pôle Bâtiment. s serez entouré d'équipes passionnées et engagées ! Vous serez amené à travailler sur des projets d'hôpitaux, établissements d'enseignement et de recherche, équipements culturels et sportifs, industriels, centres commerciaux. En tant que stagiaire Thermicien et Fluides chez Ingérop, votre quotidien sera rythmé par des missions variées telles que : Travailler sur les enjeux énergétiques d'aujourd'hui et de demain, la réglementation RE2020 et les différents labels Environnementaux associés (BDM, LEED, BREEAM, HQE, ...;) ; Réaliser les bilans thermiques, aérauliques, hydrauliques et notes de calcul ; Réaliser les calculs thermiques réglementaires, simulations thermiques dynamiques ; Dimensionner les installations et équipements techniques ; Réaliser des schémas de principe. Vous participerez aussi : A l'élaboration de notes de calcul interne et REX interne sur le bio climatisme ; A la continuité d'études sur des retours d'expérience sur les consommations d'énergie sur des sites existants à partir de relevés annuels et factures ; A la rédaction de pièces écrites (notices techniques et cahiers des charges) ; A la production de plans, en supervisant des projeteurs, modeleurs BIM ; Aux réunions de conceptions avec les architectes, différents partenaires ; Aux réunions de chantier avec les entreprises, maîtrise d'ouvrage, Architectes. En adéquation avec votre formation et avec l'aide de votre tuteur, il est possible de cibler un sujet de stage (ou Projet de Fin d'Etudes, PFE) plus spécifique comme : Le développement opérationnel d'offres sur des centrales d'énergie et de création de réseau de chaleur. Vous aiderez votre tuteur à prospecter de nouveaux clients ou de nouveaux secteurs géographiques permettant de développer les offres déjà proposées au sein de la région méditerranéenne. Poursuivre les études relatives à la valorisation de l'énergie fatale d'un Data Center à l'échelle du bâtiment ou d'un réseau de chaleur/froid, afin de produire une énergie présentant une forte part d'ENR. Cette valorisation s'appuierait sur une production de froid par machine à absorption, couplée à du solaire thermique (principe de la climatisation solaire).\n\nLe stage s'adresse à des étudiants de 5ème année d'école d'Ingénieurs / de niveau Bac + 5. Votre maîtrise du logiciel Pléiades sera appréciée / Vous avez déjà travaillé avec le logiciel REVIT. Vous êtes reconnu pour votre curiosité, votre rigueur, votre capacité rédactionnelle et vos qualités relationnelles. Enfin, l'Energie et les enjeux environnementaux ont un sens important pour vous.\n\n🎯 Durée : 6 mois 📅 Date de démarrage souhaitée : Septembre 2027 📍 Lieu du stage : Marseille 💰 Gratification : Selon le niveau d'études 🍽️ Repas : Tickets restaurant 🚉 Transport : remboursement de 100% de l'abonnement de transport en commun + prime FMD Personne en situation de handicap ? Ingérop s’engage au quotidien, rejoignez-nous ! Venez inventer demain avec nous 🤝 #LI-Onsite #EarlyTalent #StageIngénieur #EngineeringStudents",
+      "applicationUrl": "https://jobs.smartrecruiters.com/Ingrop/744000155680042-stage-charge-d-etudes-genie-climatique-f-h?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/Ingrop/744000155680042",
+      "sourceCheckedAt": "2026-10-15T17:53:37.026Z",
+      "sixMonthsConfirmed": true,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:ingrop:744000151014250",
+      "source": "smartrecruiters",
+      "sourceCompany": "Ingrop",
+      "sourceId": "744000151014250",
+      "title": "STAGE - ASSISTANT CHEF DE PROJET DANS LE DOMAINE DU TRANSPORT D'ENERGIE ET DE LA HTB F/H",
+      "company": "Ingérop",
+      "location": "Rueil-Malmaison, IDF, France",
+      "contract": "stage",
+      "durationMonths": null,
+      "durationEvidence": "5-6 mois",
+      "startEvidence": "démarrage : septembre 2026 et février 2027",
+      "technicalEvidence": [
+        "ENERGIE"
+      ],
+      "description": "Au sein de la Direction Infrastructure Ville et Transport (IVT), unité opérationnelle de 350 collaborateurs, tu intègreras notre département Transition Energétique et plus précisément le service Transport d'Energie : un service en plein développement où nous construisons une activité résolument tournée vers l'avenir. Le service Transport d’Energie réunit une équipe jeune et dynamique d’une dizaine d’ingénieurs, dont 1 manager. Le pilotage de projet, la maîtrise de la technique, l’envie d’apprendre et de développer animent les membres de l’équipe. Tu participeras à des projets d'envergure pour notre client RTE (Réseau de Transport et d'Electricité) pour lesquels Ingérop intervient en tant que Maître d'œuvre Externalisé . Variés, ces projets de lignes aériennes (LA) , souterraines (LS) et poste HTB sont situés en région parisienne, dans des contextes urbains denses et sur l’ensemble du territoire métropolitain (contextes urbains, péri-urbains ou ruraux). Intégré(e) à une équipe et encadré(e) par un chef de projet, tu contribueras à plusieurs projets simultanés, en tant que stagiaire Assistant(e) Chef de Projet , sur des missions variées , notamment : La réponse aux appels d'offre, Le pilotage opérationnel de la maîtrise d'œuvre, en études et travaux, L'élaboration des études techniques : AVP, PRO, ACT. Cette expérience t'offrira une immersion dans l'entreprise, une bonne compréhension du métier de l'ingénieur, une formation pratique dans la conduite des projets et dans les techniques liées à l'aménagement urbain et au contexte du transport d'électricité, ainsi qu'une approche pragmatique des relations avec les clients. En fonction des opportunités, tu contribueras à des projets de R&D ou d'innovation portés par le service : développement de nouveaux outils, méthodes, veille technologique, capitalisation des connaissances, etc.\n\nEtudiant(e) en dernière année d'école d'ingénieur ou master universitaire, tu as le sens de priorités, un bon sens de l'anticipation et de bonnes qualités relationnelles. Tourné(e) vers le futur, passionné(e) par l'énergie, l'aménagement et les grands projets que vous avez envie de développer ? Personne en situation de handicap ? Ingérop s'engage au quotidien, rejoins nos équipes. 🤝 Postulez maintenant et venez inventer demain avec nous pour bâtir un avenir durable !\n\n🎯 Durée : 5-6 mois 📅 Date de démarrage : septembre 2026 et février 2027 📍 Lieu du stage : Rueil-Malmaison (92 ), à 5 mn à pied du RER . 💰 Rémunération et indemnisations : 1 300 € brut/mois + prime de fin de stage en fonction de l’appréciation du manager 🍽️ Repas : Participation au restaurant d’entreprise sur place 🚉 Transport : Remboursement de 100% du Pass Navigo",
+      "applicationUrl": "https://jobs.smartrecruiters.com/Ingrop/744000151014250-stage-assistant-chef-de-projet-dans-le-domaine-du-transport-d-energie-et-de-la-htb-f-h?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/Ingrop/744000151014250",
+      "sourceCheckedAt": "2026-10-15T17:53:37.467Z",
+      "sixMonthsConfirmed": false,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:rte1:744000155712169",
+      "source": "smartrecruiters",
+      "sourceCompany": "RTE1",
+      "sourceId": "744000155712169",
+      "title": "Stage PFE - Ingénieur d’études en réseaux électriques F/H",
+      "company": "RTE",
+      "location": "Lille, Hauts-de-France, France",
+      "contract": "stage",
+      "durationMonths": 6,
+      "durationEvidence": "6 mois",
+      "startEvidence": null,
+      "technicalEvidence": [
+        "électrotechni",
+        "études électriques"
+      ],
+      "description": "Lieu : Lille Durée et/ou période du stage : 6 mois, à partir du 1er trimestre 2027 En tant que stagiaire, vous serez intégré au sein de la Direction Stratégie, Planification et Régulation / Groupe Etude de Réseau Lille / Plateau Ile de France - Normandie (15 personnes) dont la mission principale est de préparer le réseau électrique de demain au niveau régional et national. Le sujet du stage consiste à étudier le passage des études électriques de la zone Île-de-France à une approche multi-situations, en passant de quelques points de fonctionnement caractéristiques à 8 736 situations horaires sur une année. Il s’agira également d’intégrer les parades topologiques aux études, d’identifier les situations dans lesquelles leur mise en œuvre est possible et d’optimiser leur configuration afin d’améliorer l’efficacité des analyses. Les missions : Analyse de l’existant : étudier les méthodes actuelles d’études électriques en Île-de-France, leurs limites et les outils de simulation utilisés. Analyse et traitement des données : identifier des points caractéristiques représentatifs des situations horaires à l’aide de méthodes statistiques, de visualisation et de clustering, en utilisant Python ou R, afin d’enrichir et de configurer l’objet multi-situations. Étude des parades topologiques : évaluer la faisabilité et l’efficacité des différentes configurations topologiques selon les situations étudiées, en tenant compte de leurs impacts sur le réseau. Développement de l’approche multi-situations : adapter les études à 8 736 points horaires, préparer les données et analyser les contraintes électriques identifiées par simulation. Analyse et restitution des résultats : comparer les configurations étudiées, identifier les limites de la méthode et formuler des recommandations pour faire évoluer les études de réseaux électriques en Île-de-France.\n\nVous êtes actuellement en dernière année de cycle ingénieur ou en année de césure , et vous présentez l’un des profils suivants : Profil généraliste, ou spécialisé en études de réseaux électriques avec une spécialisation Data Analyst ou un fort intérêt pour ce domaine. Compétences techniques : Connaissances en électrotechnique et en réseaux électriques. Notions d'optimisation et de recherche de solutions techniques. Compétences en analyse et visualisation de données, avec une maîtrise de Python ou R et de leurs bibliothèques associées. Qualités requises : Capacité à résoudre des problèmes techniques. Rigueur scientifique et méthodologique. Autonomie, curiosité et capacité à travailler en équipe. Aptitude à documenter les travaux et à présenter les résultats.\n\nEn nous rejoignant, vous intégrez une entreprise engagée dans votre réussite et tournée vers l’avenir : L'opportunité de contribuer à des projets concrets, innovants et à fort impact Une gratification mensuelle attractive, déterminée en fonction de votre niveau d'études Un accompagnement par un tuteur dédié tout au long de votre stage pour favoriser votre montée en compétences Jusqu'à 5 jours de congés rémunérés, selon la durée de votre stage Des avantages complémentaires : prise en charge des frais de transport, indemnité repas et aide au logement (sous conditions). De réelles perspectives d’avenir : possibilité de poursuivre votre parcours chez RTE (embauche ou poursuite en alternance)… …Si le courant passe, ça peut durer longtemps ! Dans le cadre des activités relatives à l’emploi proposé, vous pouvez être amené(e) à accéder à un (ou des) site(s) relevant de la responsabilité de RTE. A cette fin et dans le respect des articles R1332-22-1 et suivants du Code de la Défense, nous vous informons qu’une enquête administrative est susceptible d’être réalisée à notre demande par l’autorité administrative, afin de vérifier qu’aucun fait vous concernant n’est incompatible avec l’accès envisagé.",
+      "applicationUrl": "https://jobs.smartrecruiters.com/RTE1/744000155712169-stage-pfe-ingenieur-d-etudes-en-reseaux-electriques-f-h?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/RTE1/744000155712169",
+      "sourceCheckedAt": "2026-10-15T17:53:41.183Z",
+      "sixMonthsConfirmed": true,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:rte1:744000155284773",
+      "source": "smartrecruiters",
+      "sourceCompany": "RTE1",
+      "sourceId": "744000155284773",
+      "title": "STAGE PFE - Chef de projet- Contrôle-Commande F/H",
+      "company": "RTE",
+      "location": "Jonage, Auvergne-Rhône-Alpes, France",
+      "contract": "stage",
+      "durationMonths": null,
+      "durationEvidence": "5 à 6 mois",
+      "startEvidence": null,
+      "technicalEvidence": [
+        "Électrotechni",
+        "énergie",
+        "Automatisme"
+      ],
+      "description": "Lieu : Jonage (69330) Durée et/ou période du stage : 5 à 6 mois à compter de janvier 2027. En tant que stagiaire , vous intégrerez l’équipe Système (SYS), composée de 15 personnes, au sein de la Direction technique de RTE, située sur le campus Transfo de Jonage, à l’est de Lyon. Les systèmes de contrôle-commande sont au cœur du réseau de transport d’électricité : situés dans les postes électriques, ils regroupent les éléments de protection indispensables pour détecter les incidents (foudre, chocs, etc.) et couper le courant afin de garantir la sécurité des personnes et des installations. Dans le cadre du développement et de la modernisation de nos outils, nous cherchons à optimiser nos méthodes, nos outils internes et nos processus de test. Pendant ce stage, accompagné(e) par votre tuteur, vous serez intégré(e) dans l’équipe Système de contrôle-commande avec un rôle opérationnel de chef(fe) de projet sur deux thématiques : 1. L’administration métier d’une application de gestion des nomenclatures de protections du réseau électrique. 2.Le développement et la MCO (Maintien en Condition Opérationnelle) de l’infrastructure de tests à distance des plateformes de contrôle-commande, un enjeu stratégique pour le développement de la télémaintenance. Concernant le rôle d’administrateur métier de l’outil eNOm – application permettant de choisir les composants de protection dans les systèmes de contrôle-commande – : • Vous animez la communauté d’utilisateurs de l’application. • Vous instruisez les problématiques utilisateurs liées aux données métier. • Vous vous coordonnez avec le chef de projet SI en cas de problème applicatif. • Vous mettez à jour les données de l’application. • Vous suivez les mises à jour des systèmes de contrôle-commande lors des réunions techniques de l’équipe pour les décliner dans l’application. Concernant votre rôle de chef(fe) de projet de l’infrastructure de tests à distance des plateformes de contrôle-commande, vous participerez aux enjeux du développement de la télémaintenance des postes électriques à travers les actions suivantes : • Vous coordonnez les différents interlocuteurs (chef de projet SI, sécurité et ingénieurs en charge des essais) pour maintenir un bon niveau de service sur l’infrastructure de test. • Vous lancez des campagnes de tests avec les fournisseurs de plateformes de systèmes de contrôle-commande, pour documenter les gestes de télémaintenance réalisables. • Vous êtes force de proposition pour l’évolutivité de la plateforme d’essai : évolution de l’architecture informatique et de l’architecture réseau, configuration, etc. • Vous assurez la traçabilité des travaux et formez les utilisateurs aux nouveaux modes opératoires et outils. Des déplacements ponctuels (2 à 3 jours, 3 à 4 fois durant le stage) sont à prévoir sur les plateformes techniques (ex. : Toulouse, Montpellier) pour appréhender concrètement les systèmes de contrôle-commande.\n\nQualifications Vous êtes actuellement étudiant(e) en Master 2 ou dernière année de Cycle Ingénieur avec idéalement une spécialisation en Automatisme Industriel, Systèmes d'Information (SI) ou Électrotechnique / Réseaux électriques. Vos qualités : Vous justifiez d’un intérêt marqué pour la découverte du secteur de l'énergie, de la gestion de projets et des outils informatiques/SI industriels. Vous êtes autonome dans la conduite de vos missions et savez avancer de manière structurée sur un sujet technique. Vous êtes force de proposition et savez prendre des initiatives pour explorer de nouvelles pistes ou solutions. Vous êtes organisé(e) et faites preuve de rigueur dans votre travail, notamment dans la gestion et l'analyse de données. Vous avez un bon esprit de synthèse et savez prendre du recul sur vos travaux afin d’analyser les résultats et proposer des axes d’amélioration. Vous êtes doté(e) d’une aisance relationnelle, d'une bonne communication orale et d'une intelligence situationnelle vous permettant d'échanger efficacement avec des interlocuteurs variés (équipes SI, fournisseurs, utilisateurs). Vous êtes curieux(se) et aimez approfondir un sujet, tester de nouvelles approches et rechercher des solutions à des problématiques complexes. Vos compétences : Maîtrise du Pack Office.\n\nEn nous rejoignant, vous intégrez une entreprise engagée dans votre réussite et tournée vers l’avenir : L'opportunité de contribuer à des projets concrets, innovants et à fort impact Une gratification mensuelle attractive, déterminée en fonction de votre niveau d'études Un accompagnement par un tuteur dédié tout au long de votre stage pour favoriser votre montée en compétences Jusqu'à 5 jours de congés rémunérés, selon la durée de votre stage Des avantages complémentaires : prise en charge des frais de transport, indemnité repas et aide au logement (sous conditions). De réelles perspectives d’avenir : possibilité de poursuivre votre parcours chez RTE (embauche ou poursuite en alternance)… …Si le courant passe, ça peut durer longtemps ! Dans le cadre des activités relatives à l’emploi proposé, vous pouvez être amené(e) à accéder à un (ou des) site(s) relevant de la responsabilité de RTE. A cette fin et dans le respect des articles R1332-22-1 et suivants du Code de la Défense, nous vous informons qu’une enquête administrative est susceptible d’être réalisée à notre demande par l’autorité administrative, afin de vérifier qu’aucun fait vous concernant n’est incompatible avec l’accès envisagé.",
+      "applicationUrl": "https://jobs.smartrecruiters.com/RTE1/744000155284773-stage-pfe-chef-de-projet-controle-commande-f-h?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/RTE1/744000155284773",
+      "sourceCheckedAt": "2026-10-15T17:53:41.439Z",
+      "sixMonthsConfirmed": false,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:rte1:744000154663349",
+      "source": "smartrecruiters",
+      "sourceCompany": "RTE1",
+      "sourceId": "744000154663349",
+      "title": "Stage PFE - Appui élaboration des offres de raccordement et planification du réseau électrique F/H",
+      "company": "RTE",
+      "location": "Villers-lès-Nancy, Grand Est, France",
+      "contract": "stage",
+      "durationMonths": 6,
+      "durationEvidence": "6 mois",
+      "startEvidence": null,
+      "technicalEvidence": [
+        "électrotechni",
+        "énergie",
+        "renouvelables"
+      ],
+      "description": "Lieu : 8 Rue de Versigny, Villiers lès Nancy Durée et/ou période du stage : 6 mois à partir de février/mars En tant que stagiaire, vous serez intégré au sein du Service Concertation Environnement Tiers de Villiers lès Nancy composé d'une trentaine de personnes, dont les missions sont de piloter les grands projets de développement / adaptation du réseau, d'assurer la concertation avec les parties prenantes locales, de veiller au respect des réglementations environnementales et d'élaborer les S3REnR (schémas régionaux de raccordement au réseau des énergies renouvelables et de concevoir les offres de raccordement pour les clients de RTE). Vos missions seront les suivantes : Participer à l’élaboration des offres techniques et financières de raccordement au réseau pour les clients de RTE (producteurs, industriels électro-intensifs, distributeurs, stockeurs, datacenters, …) : Analyser le besoin du client en lien avec les équipes commerciales. Collaborer avec les services internes pour proposer une étude technique et économique complète. Définir la cible technique et financière du projet de raccordement. Contribuer au portage du projet au niveau régional et national. Contribuer à la préparation des évolutions du réseau électrique dans le cadre de la transition énergétique : Élaborer les dossiers décisionnels des travaux inscrits dans les S3REnR Grand Est et Bourgogne-Franche-Comté. Participer à l’adaptation des schémas régionaux Grand Est et Bourgogne-Franche-Comté et au suivi des raccordements des énergies renouvelables. Contribuer à la rédaction du bilan annuel des S3REnR. Améliorer les outils et les méthodes de travail utilisés pour la conception, le suivi et la planification des projets. Proposer des pistes d’optimisation pour renforcer l’efficacité, la cohérence et la qualité des études techniques et financières.\n\nVous êtes actuellement étudiant en école d'ingénieur généraliste ou avec une spécialité en électrotechnique / transition énergétique. Vos qualités : Vous êtes de nature curieux(se), rigoureux(se) et proactif/proactive. Votre aisance relationnelle facilite votre intégration dans un groupe. Vous possédez de bonnes capacités d'analyse et de rédaction. Vous êtes sensibles à la protection et au respect de l'environnement. Vous maitrisez les fonctionnalités du Pack Office.\n\nEn nous rejoignant, vous intégrez une entreprise engagée dans votre réussite et tournée vers l’avenir : L'opportunité de contribuer à des projets concrets, innovants et à fort impact Une gratification mensuelle attractive, déterminée en fonction de votre niveau d'études Un accompagnement par un tuteur dédié tout au long de votre stage pour favoriser votre montée en compétences Jusqu'à 5 jours de congés rémunérés, selon la durée de votre stage Des avantages complémentaires : prise en charge des frais de transport, indemnité repas et aide au logement (sous conditions). De réelles perspectives d’avenir : possibilité de poursuivre votre parcours chez RTE (embauche ou poursuite en alternance)… …Si le courant passe, ça peut durer longtemps ! Dans le cadre des activités relatives à l’emploi proposé, vous pouvez être amené(e) à accéder à un (ou des) site(s) relevant de la responsabilité de RTE. A cette fin et dans le respect des articles R1332-22-1 et suivants du Code de la Défense, nous vous informons qu’une enquête administrative est susceptible d’être réalisée à notre demande par l’autorité administrative, afin de vérifier qu’aucun fait vous concernant n’est incompatible avec l’accès envisagé.",
+      "applicationUrl": "https://jobs.smartrecruiters.com/RTE1/744000154663349-stage-pfe-appui-elaboration-des-offres-de-raccordement-et-planification-du-reseau-electrique-f-h?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/RTE1/744000154663349",
+      "sourceCheckedAt": "2026-10-15T17:53:41.833Z",
+      "sixMonthsConfirmed": true,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:rte1:744000154122694",
+      "source": "smartrecruiters",
+      "sourceCompany": "RTE1",
+      "sourceId": "744000154122694",
+      "title": "STAGE PFE - R&D - Techniques de matrices creuses pour l’accélération de la simulation EMT des réseaux électriques F/H",
+      "company": "RTE",
+      "location": "Jonage, Auvergne-Rhône-Alpes, France",
+      "contract": "stage",
+      "durationMonths": null,
+      "durationEvidence": null,
+      "startEvidence": null,
+      "technicalEvidence": [
+        "Génie Electrique",
+        "électrotechni"
+      ],
+      "description": "En tant que stagiaire, vous intégrerez la Division Transitoire Électromagnétique et Électronique de Puissance (T2EP) de la Direction Technique (DT) de RTE. Cette division analyse le comportement de nouveaux équipements à l'aide de la simulation de transitoires électromagnétiques (EMT) d'événements. Le logiciel EMTP est utilisé pour réaliser ce type de simulation. Les simulations EMT reposent sur la résolution répétée de grands systèmes d’équations linéaires creux (Ax=b) par des méthodes directes de factorisation. Au cours de la simulation, les coefficients de la matrice évoluent, ce qui nécessite de recalculer régulièrement sa factorisation. L’objectif du stage est d’optimiser ces refactorisations afin d’accélérer les calculs successifs tout en maîtrisant l’utilisation de la mémoire. Vous étudierez et mettrez en œuvre des méthodes numériques avancées, notamment des solveurs directs pour matrices creuses. Le stage consistera à évaluer et à prototyper des algorithmes de résolution rapide et robuste des systèmes linéaires creux variant dans le temps. Il s'appuiera sur la méthodologie formalisée par l’équipe et dans une bibliothèque existante. Ce stage sera en collaboration avec le laboratoire LIP (UMR CNRS - ENS Lyon - UCB Lyon 1 - Inria) à l’ENS de Lyon. Au sein de l'équipe, vous contribuerez aux missions suivantes : - Exploiter et optimiser des méthodes d'ordonnancement et de scaling (mise à l’échelle) de la matrice pour améliorer la stabilité numérique et accélérer les différentes étapes de la résolution. - Mettre en place une factorisation partielle incrémentale pour éviter de recalculer entièrement la factorisation à chaque modification de la matrice. - Étudier une factorisation par blocs. - Développer des compétences en algorithmique de graphes et structures de données et en mathématiques appliquées pour la résolution parallèle de systèmes complexes, en développement informatique, et en simulation de réseaux électriques.\n\nVous êtes actuellement étudiant(e) en Master 2 ou dernière année d'ingénieur, dans le domaine de l’Informatique, des Mathématiques Appliquées ou du Génie Electrique et recherchez un stage de fin d'études. Vos qualités : - Vous justifiez d’un qu’un intérêt pour la conception d’algorithmes et la simulation numérique. Des connaissances en électrotechnique des réseaux et en simulation EMT sont un plus. - Vous êtes autonome dans la conduite de vos missions et savez avancer de manière structurée sur un sujet technique. - Vous êtes force de proposition et savez prendre des initiatives pour explorer de nouvelles pistes ou solutions. - Vous êtes organisé(e) et savez structurer votre travail, notamment dans le cadre d’un projet de recherche et de développement. - Vous savez prendre du recul sur vos travaux afin d’analyser les résultats, identifier les limites et proposer des axes d’amélioration. - Vous êtes capable de vulgariser des sujets techniques et de présenter vos travaux de manière claire et accessible à différents interlocuteurs. - Vous êtes curieux(se) et aimez approfondir un sujet, tester de nouvelles approches et rechercher des solutions à des problématiques complexes. Vos compétences : - Maîtrise ou forte appétence pour la programmation (C/C++) et les mathématiques appliquées - Bon niveau en Anglais\n\nEn nous rejoignant, vous intégrez une entreprise engagée dans votre réussite et tournée vers l’avenir : L'opportunité de contribuer à des projets concrets, innovants et à fort impact Une gratification mensuelle attractive, déterminée en fonction de votre niveau d'études Un accompagnement par un tuteur dédié tout au long de votre stage pour favoriser votre montée en compétences Jusqu'à 5 jours de congés rémunérés, selon la durée de votre stage Des avantages complémentaires : prise en charge des frais de transport, indemnité repas et aide au logement (sous conditions). De réelles perspectives d’avenir : possibilité de poursuivre votre parcours chez RTE (embauche ou poursuite en alternance)… …Si le courant passe, ça peut durer longtemps ! Dans le cadre des activités relatives à l’emploi proposé, vous pouvez être amené(e) à accéder à un (ou des) site(s) relevant de la responsabilité de RTE. A cette fin et dans le respect des articles R1332-22-1 et suivants du Code de la Défense, nous vous informons qu’une enquête administrative est susceptible d’être réalisée à notre demande par l’autorité administrative, afin de vérifier qu’aucun fait vous concernant n’est incompatible avec l’accès envisagé.",
+      "applicationUrl": "https://jobs.smartrecruiters.com/RTE1/744000154122694-stage-pfe-r-d-techniques-de-matrices-creuses-pour-l-acceleration-de-la-simulation-emt-des-reseaux-electriques-f-h?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/RTE1/744000154122694",
+      "sourceCheckedAt": "2026-10-15T17:53:42.020Z",
+      "sixMonthsConfirmed": false,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:rte1:744000145721979",
+      "source": "smartrecruiters",
+      "sourceCompany": "RTE1",
+      "sourceId": "744000145721979",
+      "title": "Stage - Affaires publiques/relations institutionnelles dans le domaine de l’énergie F/H",
+      "company": "RTE",
+      "location": "La Chapelle-sur-Erdre, Pays de la Loire, France",
+      "contract": "stage",
+      "durationMonths": null,
+      "durationEvidence": "3 à 6 mois",
+      "startEvidence": "à partir de septembre 2026",
+      "technicalEvidence": [
+        "énergie"
+      ],
+      "description": "Lieu : Délégation régionale Ouest - 6 Rue Kepler, 44240 La Chapelle-sur-Erdre Durée et/ou période du stage : 3 à 6 mois à partir de septembre 2026 En tant que stagiaire, vous intégrerez l'équipe Affaires Publiques de RTE Ouest, accueillante et dynamique (composée de 4 personnes), dont les principales missions sont d’éclairer les élus et les acteurs du monde socio-économique en région sur les enjeux et l’actualité de RTE, et d’accompagner la transition énergétique dans les territoires. Au sein de l'équipe, dans un environnement stimulant, vous contribuerez aux missions suivantes : La mise en œuvre et la réalisation d'une veille politique et institutionnelle pour les territoires couverts par la délégation Ouest (Bretagne, Centre-Val de Loire, Pays de la Loire, Poitou-Charentes) La contribution à l'activité Affaires Publiques, en appui des grands projets RTE dans la région Ouest, et qui concernent le renouvellement du réseau, son renforcement et le raccordement des industriels ou des producteurs d’électricité L'actualisation des plans de contacts régionaux La contribution à la prise de contact et à la préparation des RDV de la Déléguée et de l'équipe des Affaires publiques avec les élus et les parlementaires Vous serez associé aux événements (sur site ou à distance) associant RTE, les collectivités territoriales et partenaires institutionnels En bref, vous souhaitez vous investir dans la relation aux élus, l'aménagement du territoire, les domaines d'information, de consultation et de concertation avec les collectivités territoriales.\n\nVous préparez un diplôme de niveau Bac+3 à Bac+5, dans un institut, une université ou une école avec un cursus ou une option en lien avec les affaires publiques (action publique territoriale, relations institutionnelles, etc.) Ce stage est fait pour vous si : Vous disposez d'une bonne connaissance des institutions et du fonctionnement des collectivités territoriales, et vous restez en veille sur l'actualité politique et économique Vous faites preuve de capacités d'analyse, oratoire et d'un esprit de synthèse Vos qualités relationnelles vous permettent de vous adapter facilement à votre environnement et vos interlocuteurs La rigueur, l'autonomie et la réactivité seront de bons alliés dans l'exercice de vos missions Vous êtes force de proposition et vous saurez prendre des initiatives Vous souhaitez travailler pour une entreprise au cœur de la transition énergétiques, ayant des missions de service public\n\nPOURQUOI NOUS REJOINDRE ? En vous formant en stage à nos côtés, vous bénéficiez de plusieurs avantages : Accompagnement par un salarié tuteur formé à cette mission 35h hebdomadaires Jours de congés rémunérés selon la durée du stage Indemnités repas, aide au logement et au transport (sous conditions) Mise à disposition de tout le matériel nécessaire pour remplir vos missions (équipement de protection de qualité, matériel informatique, équipement bureautique) La Politique diversité de RTE a pour ambition d’ouvrir l’entreprise à toutes les compétences et de garantir l’équité, en termes d’égalité des chances, d’inclusion et de lutte contre toutes formes de discrimination. Selon ces principes, nous conduisons une politique active en faveur de l’inclusion des personnes en situation de handicap permettant à tous d’avoir un parcours professionnel équitable. Si vous êtes dans cette situation, faites-nous part de vos éventuels besoins spécifiques afin que nous puissions y apporter une réponse adaptée. Dans le cadre des activités relatives à l’emploi proposé, vous pouvez être amené(e) à accéder à un (ou des) site(s) relevant de la responsabilité de RTE. A cette fin et dans le respect des articles R1332-22-1 et suivants du Code de la Défense, nous vous informons qu’une enquête administrative est susceptible d’être réalisée à notre demande par l’autorité administrative, afin de vérifier qu’aucun fait vous concernant n’est incompatible avec l’accès envisagé.",
+      "applicationUrl": "https://jobs.smartrecruiters.com/RTE1/744000145721979-stage-affaires-publiques-relations-institutionnelles-dans-le-domaine-de-l-energie-f-h?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/RTE1/744000145721979",
+      "sourceCheckedAt": "2026-10-15T17:53:42.204Z",
+      "sixMonthsConfirmed": false,
+      "profileCompatible": false
+    },
+    {
+      "id": "web:smartrecruiters:egisgroup:744000149534329",
+      "source": "smartrecruiters",
+      "sourceCompany": "EgisGroup",
+      "sourceId": "744000149534329",
+      "title": "Stage 3A - Ingénieur Projet Energie et R&D - Transport H/F",
+      "company": "Egis Group",
+      "location": "Lyon, Auvergne-Rhône-Alpes, France",
+      "contract": "stage",
+      "durationMonths": null,
+      "durationEvidence": "4 à 6 mois",
+      "startEvidence": null,
+      "technicalEvidence": [
+        "électrotechni",
+        "dimensionnement",
+        "Energie"
+      ],
+      "description": "La Business Line Transports et Territoires fait partie des trois grandes activités d'Egis avec un chiffre d'affaires supérieur à 600 M€ par an. Elle couvre l'ensemble des activités d'ingénierie visant à promouvoir, concevoir et mettre en œuvre des solutions de transport multimodal favorisant la mobilité ainsi que l'aménagement et la transformation durable des territoires. Imaginez, créez et réalisez les transports de demain ! Rejoignez nos équipes passionnées, expertes en ingénierie des systèmes de transport, de l'énergie et de la mobilité durable. Nous vous proposons d'intégrer des projets innovants en France et à l'international dans les domaines de l'électrification des transports, de la transition énergétique et des infrastructures intelligentes. Dans le cadre de l’accélération de la transition énergétique des transports et des infrastructures industrielles, Egis développe l’outil interne MOVE, dédié à la simulation énergétique des véhicules électriques, à l’analyse de leur autonomie et à l’optimisation des stratégies de recharge. Le stage s’inscrit au cœur de cette démarche d’innovation, avec un double objectif : renforcer les fonctionnalités de smart charging des flottes électriques en dépôt et accompagner l’extension de l’outil vers les applications portuaires. Vos missions Assistance ingénieur projets (50%) Participation aux études d’électrification et de systèmes énergétiques pour les transports et infrastructures. Utilisation de MOVE pour les études de faisabilité, dimensionnement et expertise. Réalisation de notes de calcul et analyses énergétiques. Contribution aux spécifications techniques et fonctionnelles. Participation aux réunions techniques et visites de sites. Recherche & Développement autour de MOVE (50%) Développement et amélioration des fonctionnalités de smart charging pour les recharges de bus électrique en dépôts ou en ligne Optimisation de la recharge selon les contraintes d’exploitation, de matériel roulant, de puissance réseau et de coût énergétique. Amélioration des algorithmes de simulation des états de charge (SOC) et des appels de puissance. Validation et tests des nouvelles fonctionnalités sur des cas réels. Contribution à la feuille de route produit de MOVE. Adaptation de MOVE aux applications portuaires : terminal tractors, RTG, straddle carriers et autres équipements électrifiés. Analyse des impacts sur les infrastructures électriques, postes de transformation et raccordements réseau.\n\nÉlève ingénieur en dernière année (énergie, électrotechnique, mobilité électrique, systèmes de transport ou génie industriel). Intérêt pour la modélisation énergétique, le smart charging et l’électrification des transports. Connaissances appréciées en Excel/VBA, Matlab ou Python. Rigueur, autonomie et esprit d’innovation. Stage de 4 à 6 mois\n\nNous vous offrons l'opportunité d'intégrer une société en croissance, reconnue pour la qualité de son expertise technique et de son engagement dans la transition énergétique, et d'évoluer dans un environnement dynamique et bienveillant. Indemnité et avantages sociaux grand groupe attractifs, EGIS s'engage pour la Qualité de Vie au Travail, notamment par le biais de son accord en faveur du télétravail signé en 2013, reconduit en 2019 et en 2024. Nous sommes labellisés dans le Top10 HappyTrainees, indice de référence indépendant concernant les entreprises où les stagiaires préfèrent travailler, consultez notre notation!",
+      "applicationUrl": "https://jobs.smartrecruiters.com/EgisGroup/744000149534329-stage-3a-ingenieur-projet-energie-et-r-d-transport-h-f?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/EgisGroup/744000149534329",
+      "sourceCheckedAt": "2026-10-15T17:53:45.858Z",
+      "sixMonthsConfirmed": false,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:enertrag:744000155287405",
+      "source": "smartrecruiters",
+      "sourceCompany": "ENERTRAG",
+      "sourceId": "744000155287405",
+      "title": "Stage Assistant(e) Chef(fe) de Projets Éoliens (H/F)",
+      "company": "ENERTRAG SE",
+      "location": "Neuville-sur-Oise, IDF, France",
+      "contract": "stage",
+      "durationMonths": 6,
+      "durationEvidence": "stage de 6 mois",
+      "startEvidence": null,
+      "technicalEvidence": [
+        "énergie",
+        "Éolien"
+      ],
+      "description": "Votre développement Ce stage de 6 mois a pour objectif d’offrir une compréhension concrète et complète du métier de Chef(fe) de Projets Éoliens en accompagnant des projets déjà identifiés, depuis le lancement des études jusqu’à la phase de transition vers la construction. Vous serez pleinement intégré(e) aux équipes projet et participerez activement aux différentes étapes du développement. Vos missions Encadré(e) par un(e) Chef(fe) de Projets, vous interviendrez progressivement sur les missions suivantes : 1. Appui au développement de projets éoliens Participation au pilotage et au suivi des études techniques : implantation, acoustique, raccordement, variantes. Participation au suivi des études environnementales : biodiversité, paysage, étude d’impact. Contribution à l’analyse des résultats d’études et à la préparation des arbitrages projet. Collaboration avec les bureaux d’études et experts internes. 2. Autorisations & cadre réglementaire Appui à la préparation des dossiers réglementaires (Autorisation Environnementale, Porter à Connaissance). Relecture de pièces des dossiers et participation au suivi de l’instruction administrative. Compréhension du rôle des services de l’État et des enjeux réglementaires. 3. Territoire & concertation Appui à la préparation des actions de concertation locale (réunions publiques, supports de présentation, communication projet). Participation ponctuelle aux démarches territoriales : rencontres élus, échanges avec acteurs locaux, permanences d’information. Contribution à l’analyse des enjeux d’acceptabilité locale. 4. Gestion de projet & outils Mise à jour de plannings, tableaux de suivi et outils internes. Production ou analyse de documents cartographiques et graphiques (SIG). Contribution à la capitalisation des retours d’expérience et à l’amélioration des méthodes internes. 5. Transition vers la construction Appui aux équipes développement dans le passage du projet vers la phase chantier. Participation au maintien du lien local en appui des chefs de projets, notamment auprès des élus et acteurs du territoire.\n\nVotre profil Formation Étudiant(e) en Bac +4 / Bac +5, université, école d’ingénieur ou équivalent. Formation en énergie, environnement, aménagement du territoire, géographie, urbanisme ou développement durable. Compétences & qualités Intérêt marqué pour les énergies renouvelables et la transition énergétique. Bonnes capacités d’analyse, de synthèse et de rédaction. Aisance relationnelle et goût pour le travail en équipe. Curiosité, rigueur et sens de l’organisation. Maîtrise du Pack Office ; une première familiarité avec les outils SIG est un plus. Permis B nécessaire.\n\nEtant une entreprise en forte croissance, nous vous proposons un travail varié dans un secteur en pointe et porteur d’avenir. La conscience professionnelle et la motivation sont liées chez ENERTRAG à l’autonomie de décision et l’esprit d’équipe. Cette ambiance de travail ouverte fait que votre travail au quotidien deviendra une véritable mission. Le stage est basé à Neuville-sur-Oise pour une durée de 6 mois à compter de septembre 2026. Tous nos postes sont ouverts en temps plein comme en temps partiel. Dis-nous simplement ce qui te convient le mieux – on a hâte de recevoir ta candidature! 🌍 Chez ENERTRAG, ce sont tes compétences et ta motivation à faire avancer les énergies renouvelables avec nous qui comptent - pas l'âge, le handicap, le sexe, la couleur de peau, l'origine, l'orientation sexuelle ou la religion.",
+      "applicationUrl": "https://jobs.smartrecruiters.com/ENERTRAG/744000155287405-stage-assistant-e-chef-fe-de-projets-eoliens-h-f-?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/ENERTRAG/744000155287405",
+      "sourceCheckedAt": "2026-10-15T17:53:47.692Z",
+      "sixMonthsConfirmed": true,
+      "profileCompatible": true
+    },
+    {
+      "id": "web:smartrecruiters:enertrag:744000147958259",
+      "source": "smartrecruiters",
+      "sourceCompany": "ENERTRAG",
+      "sourceId": "744000147958259",
+      "title": "Stagiaire Ingénieur Études – Productible éolien & solaire et analyse acoustique",
+      "company": "ENERTRAG SE",
+      "location": "Neuville-sur-Oise, IDF, France",
+      "contract": "stage",
+      "durationMonths": 6,
+      "durationEvidence": "stage de 6 mois",
+      "startEvidence": null,
+      "technicalEvidence": [
+        "dimensionnement",
+        "énergie",
+        "solaire",
+        "éolien"
+      ],
+      "description": "Ce stage de 6 mois a pour missions principales : Productible éolien Participer à la mise en place de campagnes de mesures météorologiques : Définition de la localisation d’un mât Définition du cahier des charges Supervision d’installation Collecte des données Participer aux études de ressource en vent : Analyser les données issues des mâts de mesure. Réaliser des calculs de productible (P50, P75, P90). Participer aux analyses de pertes (effets de sillage, disponibilité, pertes électriques, bridages, etc.). Contribuer à l'optimisation des implantations d'éoliennes. Études photovoltaïques Participer au dimensionnement préliminaire des centrales (implantation, GCR, configuration des tables, puissance installée). Participer aux études de faisabilité de centrales photovoltaïques au sol : Réaliser des calculs de productible et des analyses d'irradiation. Développer des outils d'aide à la conception sous Excel ou Python. Acoustique Participer à la préparation des études acoustiques. Compiler et analyser les données nécessaires aux simulations acoustiques. Contribuer à l'analyse des résultats et à la comparaison de différents scénarios d'implantation. Assurer le suivi technique avec les bureaux d'études spécialisés et les fabricants. Missions annexes : Participer à l'évaluation des projets d’énergie renouvelables en phase amont Accompagner les différents services de développement (Prospection, Avant Projet et Développement) dans la définition d’un projet le plus adapté possible (production, revenus, respect des contraintes) Participer à l’amélioration des outils internes\n\nVous préparez un diplôme de niveau Bac+3 à Bac+5 en énergie, environnement, aménagement du territoire, géographie, urbanisme ou développement durable, issu d'université, école d’ingénieur ou équivalent.\n\nStage de 6 mois basé à Neuville-sur-Oise (95) Tous nos postes sont ouverts en temps plein comme en temps partiel. Dis-nous simplement ce qui te convient le mieux – on a hâte de recevoir ta candidature! 🌍 Chez ENERTRAG, ce sont tes compétences et ta motivation à faire avancer les énergies renouvelables avec nous qui comptent - pas l'âge, le handicap, le sexe, la couleur de peau, l'origine, l'orientation sexuelle ou la religion.",
+      "applicationUrl": "https://jobs.smartrecruiters.com/ENERTRAG/744000147958259-stagiaire-ingenieur-etudes-productible-eolien-solaire-et-analyse-acoustique?oga=true",
+      "sourceUrl": "https://jobs.smartrecruiters.com/ENERTRAG/744000147958259",
+      "sourceCheckedAt": "2026-10-15T17:53:47.923Z",
+      "sixMonthsConfirmed": true,
+      "profileCompatible": true
+    }
+  ],
+  "failures": [
+    {
+      "company": "Ingrop",
+      "stage": "listing",
+      "reason": "recherche « toutes » : 97 annonces au-delà du premier lot"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000153221850",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000155788749",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000155773141",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000155718419",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000155713519",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000155706189",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000155705889",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000155678532",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Ingrop",
+      "stage": "validation",
+      "id": "744000155501709",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "RTE1",
+      "stage": "validation",
+      "id": "744000155778160",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "RTE1",
+      "stage": "validation",
+      "id": "744000155767502",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "RTE1",
+      "stage": "validation",
+      "id": "744000155687519",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "RTE1",
+      "stage": "validation",
+      "id": "744000155682790",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "RTE1",
+      "stage": "validation",
+      "id": "744000155493126",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "RTE1",
+      "stage": "validation",
+      "id": "744000155467989",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "RTE1",
+      "stage": "validation",
+      "id": "744000155425849",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "EgisGroup",
+      "stage": "listing",
+      "reason": "recherche « toutes » : 270 annonces au-delà du premier lot"
+    },
+    {
+      "company": "EgisGroup",
+      "stage": "validation",
+      "id": "744000155461009",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "EgisGroup",
+      "stage": "validation",
+      "id": "744000155451015",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "EgisGroup",
+      "stage": "validation",
+      "id": "744000154961927",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "EgisGroup",
+      "stage": "validation",
+      "id": "744000153766949",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "EgisGroup",
+      "stage": "validation",
+      "id": "744000153732193",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "EgisGroup",
+      "stage": "validation",
+      "id": "744000153133870",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "ENERTRAG",
+      "stage": "validation",
+      "id": "744000137829410",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Socotec",
+      "stage": "listing",
+      "reason": "recherche « toutes » : 358 annonces au-delà du premier lot"
+    },
+    {
+      "company": "Socotec",
+      "stage": "validation",
+      "id": "744000155314609",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Socotec",
+      "stage": "validation",
+      "id": "744000155211370",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Socotec",
+      "stage": "validation",
+      "id": "744000154627829",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Socotec",
+      "stage": "validation",
+      "id": "744000114664957",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Socotec",
+      "stage": "validation",
+      "id": "744000101558721",
+      "reason": "stage technique ou fiche complète non confirmé"
+    },
+    {
+      "company": "Talan",
+      "stage": "listing",
+      "reason": "recherche « toutes » : 218 annonces au-delà du premier lot"
+    },
+    {
+      "company": "Talan",
+      "stage": "validation",
+      "id": "744000155206991",
+      "reason": "stage technique ou fiche complète non confirmé"
+    }
+  ],
+  "note": "Les entreprises du registre et les recherches ATS sont deux voies distinctes. Aucun lien SIREN/ATS n’est affirmé sans preuve."
+}

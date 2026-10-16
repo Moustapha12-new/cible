@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import { emptyData, type DetectedOffer } from "./data";
+import { offerCvCoverage } from "./offer-cv-coverage";
+const data = emptyData("Test", "test@example.test");
+const offer: DetectedOffer = { id: "test", title: "Stage", company: "Test", location: "Paris", salary: "", match: 0, keywords: [], text: "Python et MATLAB", skills: ["Python", "MATLAB"] };
+assert.equal(offerCvCoverage(offer, data).score, null);
+data.originalCv = { name: "CV", text: "Python", importedAt: new Date().toISOString() } as NonNullable<typeof data.originalCv>;
+assert.equal(offerCvCoverage(offer, data).score, 50);
+data.originalCv.text = "Aucune de ces compétences";
+assert.equal(offerCvCoverage(offer, data).score, 0);
+data.originalCv.text = "Python et MATLAB";
+assert.equal(offerCvCoverage(offer, data).score, 100);
+assert.equal(offerCvCoverage({ ...offer, text: "", skills: [] }, data).score, null);
+console.log("Couverture CV : absence de CV, 0 %, 50 %, 100 %, annonce vide et actualisation vérifiés.");

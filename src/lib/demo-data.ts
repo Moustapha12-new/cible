@@ -23,7 +23,8 @@ export interface DemoTableOffer {
   tags: string[];
   date: string;
   /** Absent pour les offres réelles sans score calculé — jamais inventé. */
-  matchPercentage: number | null;
+    matchPercentage: number | null;
+    matchExplanation?: string;
   /** Date ISO réelle de réception (tri « Plus récentes »). */
   receivedAt?: string;
   status?: "nouvelle" | "a_traiter" | "postulee" | "favori" | "expiree";

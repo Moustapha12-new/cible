@@ -514,9 +514,11 @@ export default function OffresPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; text?: string; error?: string };
+      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; text?: string; error?: string; draft?: DetectedOffer };
       if (res.ok && json.ok && typeof json.text === "string" && json.text.trim().length > 50) {
         setPastedText(json.text.slice(0, 30_000));
+        setPastedTitle(json.draft?.title || "");
+        setPastedCompany(json.draft?.company || "");
         setPastedNotice("Annonce récupérée. Vérifie le titre et l'entreprise, puis enregistre.");
       } else {
         setPastedNotice(json.error || "Page illisible — colle le texte de l'annonce manuellement.");

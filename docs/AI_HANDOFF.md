@@ -371,3 +371,12 @@ Nouvelle page `/app/offers` (`src/components/offers/OffersQualificationCenter.ts
 - Candidatures : démonstration désactivée par défaut, valeurs fictives retirées du mapping réel ; téléchargement relié à l'API du PDF archivé avec contrôle serveur, notes reliées au PATCH persistant. Fichier : src/app/app/candidatures/page.tsx.
 - Cause du « Match non calculé » : aucun calcul des offres à l'affichage et CV serveur ignoré lors du chargement. src/app/app/offres/page.tsx reprend maintenant le dossier serveur et calcule une couverture textuelle via src/lib/offer-cv-coverage.ts. Le libellé précise couverture CV ; 0 % est distinct d'un calcul impossible. Les états sans CV ou annonce exploitable sont explicites. Types adaptés dans data.ts et demo-data.ts, affichage dans OffersTable.tsx. Test offer-cv-coverage réussi (absence de CV, 0/50/100 %, changement du CV, annonce vide).
 - Prochaine vérification : ouvrir une session navigateur fonctionnelle, comparer les trois pages aux références et vérifier une vraie offre → CV maître → adaptation → PDF archivé. Jalon 3 Discovery/Greenhouse reste inachevé ; ne pas le déclarer terminé. Aucun push ni déploiement.
+
+## 2026-10-17 — Ajout manuel par lien
+- `/api/scrape` renvoie le texte et un brouillon déterministe (champs JobPosting, compétences).
+- Le formulaire préremplit titre/entreprise ; confirmation nécessaire avant sauvegarde.
+- `/api/offres/manual` reconstruit les champs autorisés côté serveur, extrait compétences et durée explicite, reconnaît les URL canoniques et identifiants SmartRecruiters déjà présents dans les offres du dossier.
+- Le texte conservé alimente les mêmes fonctions de couverture et analyse CV que les offres Gmail. Cela ne remplace pas la file Gmail d'enrichissement.
+- Tests exécutés : manual-offer.test.ts réussi (métadonnées, inconnues, doublons distincts, transmission analyse CV), scrape.test.ts réussi (10 vérifications et deadline), tsc --noEmit réussi, npm run build réussi.
+- Serveur relancé localhost:3000. Test navigateur bloqué par la politique de sécurité de l'outil : acquisition d'autorité refusée sur l'onglet local. Aucun contournement. Enregistrement réel en session connectée et persistance Supabase non vérifiés dans ce jalon.
+- Aucun push ni déploiement.

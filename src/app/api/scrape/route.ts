@@ -1,12 +1,12 @@
 import { securedRoute } from "@/lib/auth-server";
 import { NextResponse } from "next/server";
 import { fetchOfferPage } from "@/lib/scrape";
+import { prepareManualOffer } from "@/lib/manual-offer";
 
 export const dynamic = "force-dynamic";
 
-/* Télécharge une annonce publique (LinkedIn job view, WTTJ, HelloWork…) et
-   renvoie son texte brut : le client l'enchaîne ensuite sur /api/ai tâche
-   « offer » pour le résumé, les compétences et le niveau attendu. */
+/* Récupère une fiche publique et prépare les champs déterministes.
+   L'utilisateur confirme les champs avant la sauvegarde de l'offre. */
 export const POST = securedRoute(async (req) => {
   let url = "";
   try {
@@ -24,10 +24,10 @@ export const POST = securedRoute(async (req) => {
 
   const r = await fetchOfferPage(url);
   if (!r.ok) {
-    return NextResponse.json({ ok: false, error: r.reason }, { status: 502 });
+    return NextResponse.json({ ok: false, error: r.reason, outcome: r.outcome?.kind }, { status: 502 });
   }
   return NextResponse.json(
-    { ok: true, url, text: r.text },
+    { ok: true, url, text: r.text, draft: prepareManualOffer({ text: r.text, url }, "manual-preview", new Date().toISOString()), outcome: r.outcome?.kind },
     { headers: { "Cache-Control": "no-store" } }
   );
 });

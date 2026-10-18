@@ -49,7 +49,12 @@ export type Body = {
   jobs?: { id: string; title: string; company: string; location: string; text?: string }[];
   keywords?: KwInput[];
   /** Mots-clés choisis par l'utilisateur (depuis Matching) à intégrer en priorité. */
-  forceKeywords?: string[];  orientation?: "electrical" | "energy";  /** Registre de preuves du candidat (candidate-dossier) — construit côté serveur. */  dossier?: string;  cv?: unknown;
+  forceKeywords?: string[];  orientation?: "electrical" | "energy";
+  /** Registre de preuves du candidat (candidate-dossier) — construit côté serveur. */
+  dossier?: string;
+  cv?: unknown;
+
+
   /** E-mails provenant du libellé Gmail « Stages – Alertes offres ». */
   emails?: AiEmailInput[];
   /** Offres candidates à l'enrichissement (texte de l'e-mail + page ouverte). */
@@ -260,6 +265,7 @@ B. COMPRENDRE LE VRAI TRAVAIL : extrais les exigences RÉELLES (unités de trava
 C. MATRICE EXIGENCE → PREUVE : "relation" = direct | transferable | partial | unsupported. Distinctions NON NÉGOCIABLES : AutoCAD Electrical ≠ Revit ; MATLAB ≠ RMS/EMT ; Python ≠ PyTorch ; audit énergétique ≠ supervision de chantier ; électronique de puissance (cours) ≠ convertisseur industriel conçu. Aucune preuve → "unsupported", JAMAIS inventé.
 D. STRATÉGIE : UN axe principal ("focus") + un complément, tous les deux appuyés sur "primary_evidence_ids" (IDs du registre). Exemple : axe = dimensionnement réseau industriel (prj_reseau_bt), complément = analyse et reporting EDD (exp_edd_2025).
 E. MODIFICATIONS LIMITÉES : tu ne modifies QUE le titre professionnel ("headline") et des phrases existantes ("changes"). Pour CHAQUE change : "original" = citation EXACTE du CV (mots consécutifs, une seule phrase), "rewritten" = la MÊME phrase avec le MINIMUM d'ajustements (structure, faits, chiffres, dates, entreprises, diplômes strictement identiques), "why" = justification courte, "requirement_ids" + "evidence_ids" = traçabilité. Classe chaque change : VARIANT_FIX (vocabulaire), KEYWORD_INSERT (mot-clé justifié), RETURN_UNCHANGED (déjà couvert).
+Le CV fourni peut être un dossier maître de plusieurs pages : ignore ses pieds de page et notes internes. Une réalisation marquée « à confirmer », « à vérifier » ou « évoquée dans les échanges » ne doit pas devenir une affirmation dans le CV de candidature. N'ajoute jamais « analyse de sensibilité », « théorie des graphes » ou une autre méthode absente du parcours en renommant une simple analyse d'écarts. L'application sélectionne ensuite les rubriques et condense la copie sur une page A4 ; privilégie le profil, l'expérience et les compétences utiles à cette offre.
 F. LANGAGE MÉTIER : verbes « analyser, réaliser, calculer, comparer, participer à ». Jamais « piloté », « encadré », « certifié », « expert », « hautement qualifié ». Un projet étudiant reste un projet étudiant ; une matière étudiée reste une connaissance, pas une maîtrise.
 G. HONNÊTETÉ STRUCTURÉE : "refused" = mots-clés de l'offre que tu REFUSES d'intégrer (mot-clé, raison : ce qui manque dans le dossier). "stillMissing" = exigences réellement absentes avec une ressource gratuite PRÉCISE et NOMMÉE (plateforme + intitulé), sans URL inventée. "tips" = 2-3 conseils de dépôt. Les compétences listées « à acquérir » dans le registre (PVsyst, DIgSILENT/PowerFactory, SCADA, pandapower, Ecodial, Power Query, IEC 60909) ne sont JAMAIS déclarables.
 H. DISPONIBILITÉ VERROUILLÉE : le candidat est « Stage de 6 mois · à partir de début 2027 ». Ne propose jamais une autre date, ni « dès », ni « PFE », ni « fin d'études ».

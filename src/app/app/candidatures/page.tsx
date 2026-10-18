@@ -69,6 +69,7 @@ export default function CandidaturesPage() {
   } | null>(null);
 
   const [viewCvModal, setViewCvModal] = useState(false);
+  const [viewCvVersion, setViewCvVersion] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -122,14 +123,14 @@ export default function CandidaturesPage() {
       tags: (offer?.skills || offer?.keywords || []).slice(0, 3),
       cvFileName: app.cvName || "CV non renseigné",
       cvFileSize: "Taille non renseignée",
-      cvSentDate: app.date ? new Date(app.date).toLocaleDateString("fr-FR") : "Date non renseignée",
+      cvSentDate: (app.sentDocumentVersions?.at(-1)?.sentAt || app.date) ? new Date(app.sentDocumentVersions?.at(-1)?.sentAt || app.date!).toLocaleDateString("fr-FR") : "Date non renseignée",
       offerSummary: offer?.description || offer?.text || "Description non enregistrée.",
       offerContract: [offer?.contract, offer?.duration].filter(Boolean).join(" · ") || "Contrat non renseigné",
       offerPostedDate: "Date de publication non renseignée",
       checklist: [],
       notes: app.notes || "",
       timeline: [
-        { step: "CV adapté", date: app.sentCvAdaptationId ? "Version archivée" : "À vérifier", active: false, completed: !!app.sentCvAdaptationId },
+        { step: "CV archivé", date: app.sentDocumentVersions?.length ? "Version archivée" : "À vérifier", active: false, completed: !!app.sentDocumentVersions?.length },
         { step: "Postulé", date: "Récent", active: app.status === "sent", completed: true },
         { step: "Entretien", date: "À venir", active: app.status === "interview", completed: app.status === "interview" || app.status === "offer" },
         { step: "Décision", date: "À venir", active: app.status === "offer" || app.status === "rejected", completed: app.status === "offer" },
@@ -189,80 +190,39 @@ export default function CandidaturesPage() {
     return { total, interviews, accepted, rejected };
   }, [applicationsPool]);
 
-  // Gemini Interview Prep
+  // Prépare l'entretien à partir du texte du CV réellement déclaré envoyé.
   const handleOpenInterviewPrep = async () => {
     if (!selectedApp) return;
+    const archived = data?.applications.find(app => app.id === selectedApp.id);
+    if (!archived?.cvText?.trim()) {
+      setToastMessage("Le texte du CV envoyé n'est pas disponible pour l'IA. Tu peux consulter son PDF exact dans Voir le CV.");
+      return;
+    }
     setInterviewModalOpen(true);
     setInterviewLoading(true);
+    setInterviewResult(null);
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: "entretien",
-          offerText: selectedApp.offerSummary + " " + selectedApp.title,
-          cvOriginal: "Moustapha Ibrahim, Ingénieur en génie électrique, spécialisé réseaux.",
-        }),
+        body: JSON.stringify({ task: "entretien", offerText: selectedApp.offerSummary + " " + selectedApp.title, cvOriginal: archived.cvText }),
       });
       const json = await res.json();
-      if (res.ok && json.result) {
-        setInterviewResult(json.result);
-      } else {
-        // Fallback structured interview coaching
-        setInterviewResult({
-          questions: [
-            {
-              q: "Comment avez-vous dimensionné le poste de distribution BT dans votre projet précédent ?",
-              tip: "Mettez en avant l'utilisation de DIgSILENT et la conformité aux normes C 13-100.",
-            },
-            {
-              q: "Quelles sont les problématiques majeures d'intégration des ENR sur le réseau très haute tension de RTE ?",
-              tip: "Parlez de l'intermittence, de la stabilité en fréquence et du transit de puissance.",
-            },
-            {
-              q: "Pourquoi ce stage de 6 mois chez nous en particulier ?",
-              tip: "Soulignez votre passion pour les grands réseaux électriques et l'impact sociétal de RTE.",
-            },
-          ],
-          strengths: [
-            "Maîtrise des logiciels de calcul de réseau (PSS/E, DIgSILENT)",
-            "Formation d'ingénieur en génie électrique (ECAM-EPMI)",
-            "Capacité d'analyse démontrée sur les bilans de puissance",
-          ],
-          technicalKeywords: [
-            "Stabilité réseau",
-            "Transit de puissance",
-            "Court-circuit",
-            "Régulation de tension",
-          ],
-        });
-      }
-    } catch {
-      setInterviewResult({
-        questions: [
-          {
-            q: "Présentez votre parcours et votre intérêt pour ce stage de 6 mois.",
-            tip: "Structurez en 3 minutes : formation, projets clés, motivation pour l'entreprise.",
-          },
-          {
-            q: "Quelles sont vos compétences sur les outils de modélisation électrique ?",
-            tip: "Citez des exemples concrets de simulations réalisées.",
-          },
-        ],
-        strengths: ["Ingénierie électrique", "Autonomie", "Rigueur d'analyse"],
-        technicalKeywords: ["Haute tension", "Modélisation", "Normes"],
-      });
-    } finally {
-      setInterviewLoading(false);
-    }
+      if (!res.ok || !json.result) throw new Error(json.error || "Préparation indisponible.");
+      const result = json.result as { questions?: { q: string; a?: string; insight?: string; tip?: string }[]; strengths?: string[] };
+      setInterviewResult({ questions: (result.questions || []).map(row => ({ q: row.q, tip: [row.a || row.tip, row.insight].filter(Boolean).join(" ") })), strengths: result.strengths || [], technicalKeywords: selectedApp.tags });
+    } catch (error) {
+      setInterviewModalOpen(false);
+      setToastMessage(error instanceof Error ? error.message : "Préparation indisponible.");
+    } finally { setInterviewLoading(false); }
   };
-
   // Download exact archived CV
-  const handleDownloadCv = async (app: DemoApplication) => {
+  const handleDownloadCv = async (app: DemoApplication, versionId?: string | null) => {
     if (demoMode) { setToastMessage("Exemple de démonstration : aucun PDF personnel archivé."); return; }
     try {
     setToastMessage(`Téléchargement de ${app.cvFileName}…`);
-    const response = await fetch(`/api/candidatures/${encodeURIComponent(app.id)}/document`, { cache: "no-store" });
+    const version = data?.applications.find(row => row.id === app.id)?.sentDocumentVersions?.find(row => row.versionId === versionId);
+    const response = await fetch(`/api/candidatures/${encodeURIComponent(app.id)}/document${versionId ? `?version=${encodeURIComponent(versionId)}` : ""}`, { cache: "no-store" });
     if (!response.ok) {
       const result = await response.json().catch(() => ({}));
       throw new Error(result.error || "CV archivé indisponible.");
@@ -272,7 +232,7 @@ export default function CandidaturesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = app.cvFileName;
+    a.download = version?.fileName || app.cvFileName;
     a.click();
     URL.revokeObjectURL(url);
     setToastMessage("CV téléchargé avec succès.");
@@ -852,13 +812,19 @@ export default function CandidaturesPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setViewCvModal(true)}
+                    onClick={() => { setViewCvVersion(null); setViewCvModal(true); }}
                     className="flex items-center justify-center gap-1.5 py-1.5 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
                   >
                     <Eye size={13} />
                     <span>Voir le CV</span>
                   </button>
                 </div>
+                {(data?.applications.find(app => app.id === selectedApp.id)?.sentDocumentVersions?.length || 0) > 1 && <div className="space-y-1 text-xs">
+                  <strong>Versions déclarées envoyées</strong>
+                  {data?.applications.find(app => app.id === selectedApp.id)?.sentDocumentVersions?.map((version, index) => <button key={version.versionId} type="button" className="block text-left text-blue-700 underline" onClick={() => { setViewCvVersion(version.versionId); setViewCvModal(true); }}>
+                    {version.fileName || `Version ${index + 1}`} {version.sentAt ? `— ${new Date(version.sentAt).toLocaleDateString("fr-FR")}` : ""}
+                  </button>)}
+                </div>}
               </div>
 
               {/* Section 3: Suivi de ma candidature (Timeline) */}
@@ -867,13 +833,7 @@ export default function CandidaturesPage() {
                   Suivi de ma candidature
                 </span>
                 <div className="flex items-center justify-between px-2 py-2">
-                  {[
-                    { step: "CV adapté", date: "03/01", state: "done" },
-                    { step: "Postulé", date: "05/01", state: "done" },
-                    { step: "Relance", date: "09/01", state: "done" },
-                    { step: "Entretien", date: "17/01", state: "active" },
-                    { step: "Décision", date: "À venir", state: "todo" },
-                  ].map((s, idx, arr) => (
+                  {selectedApp.timeline.map(item => ({ ...item, state: item.completed ? "done" : item.active ? "active" : "todo" })).map((s, idx, arr) => (
                     <div key={s.step} className="flex flex-col items-center relative flex-1">
                       {idx < arr.length - 1 && (
                         <div
@@ -1106,14 +1066,14 @@ export default function CandidaturesPage() {
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
                   CV envoyé pour {selectedApp?.company}
                 </h3>
                 <span className="text-[11px] text-slate-500">
-                  Version archivée du {selectedApp?.cvSentDate}
+                  {viewCvVersion ? "Version archivée sélectionnée" : `Version archivée du ${selectedApp?.cvSentDate}`}
                 </span>
               </div>
               <button
@@ -1125,23 +1085,7 @@ export default function CandidaturesPage() {
               </button>
             </div>
 
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">
-                  MOUSTAPHA IBRAHIM
-                </span>
-                <span className="text-emerald-700 font-semibold">
-                  Stage de 6 mois
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-600">
-                Spécialisation : Génie électrique, études réseaux et dimensionnement sous DIgSILENT / PSS/E.
-              </p>
-              <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
-                <span>Fichier : {selectedApp?.cvFileName}</span>
-                <span>Taille : {selectedApp?.cvFileSize}</span>
-              </div>
-            </div>
+            {!demoMode && selectedApp ? <iframe title="PDF exact déclaré envoyé" className="w-full h-[65vh] rounded-xl border" src={`/api/candidatures/${encodeURIComponent(selectedApp.id)}/document?inline=1${viewCvVersion ? `&version=${encodeURIComponent(viewCvVersion)}` : ""}`} /> : <p className="text-sm text-slate-500">Aucun PDF personnel dans cet exemple.</p>}
 
             <div className="flex justify-end gap-2 pt-2">
               <button
@@ -1154,7 +1098,7 @@ export default function CandidaturesPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (selectedApp) handleDownloadCv(selectedApp);
+                  if (selectedApp) handleDownloadCv(selectedApp, viewCvVersion);
                   setViewCvModal(false);
                 }}
                 className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs flex items-center gap-1.5"

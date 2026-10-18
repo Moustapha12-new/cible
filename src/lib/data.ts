@@ -12,6 +12,8 @@ export type CvVersion = {
   date: string;
 };
 
+export type OfferCvFile = { offerId: string; fileName: string; documentId: string; versionId: string; sha256: string; uploadedAt: string; text?: string };
+
 export type AppStatus = "sent" | "interview" | "offer" | "rejected";
 
 export type Application = {
@@ -34,7 +36,7 @@ export type Application = {
   /** Notes libres (relance, date d'entretien, contact…). */
   notes?: string;
   sentCvAdaptationId?: string;
-  sentDocumentVersions?: { documentId: string; versionId: string; sha256?: string }[];
+  sentDocumentVersions?: { documentId: string; versionId: string; sha256?: string; fileName?: string; sentAt?: string; source?: "personal" | "generated" }[];
   statusHistory?: { status: AppStatus; at: string }[];
 };
 
@@ -130,6 +132,7 @@ export type Profile = {
 };
 
 export type UserData = {
+  offerCvOverrides?: Record<string, OfferCvFile>;
   bulkCvQueue?: {
     offerId: string;
     status: "pending" | "running" | "ready" | "failed";
@@ -152,7 +155,7 @@ export type UserData = {
   offerQualifications?: Record<string, import("./offer-qualification").OfferQualification>;
   v?: number;
   /** Texte du vrai CV du candidat : source de vérité pour toutes les analyses IA. */
-  originalCv?: { name: string; text: string };
+  originalCv?: { name: string; text: string; pages?: number; sizeBytes?: number; importedAt?: string };
   /** CV structuré éditable (builder) : la source du rendu et du PDF. */
   cvData?: import("./cv").CvData;
   cvDesignVersion?: number;

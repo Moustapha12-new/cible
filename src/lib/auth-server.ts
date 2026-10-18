@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServerConfig } from "./supabase-server";
 import { withGmailAccount } from "./gmail-account";
+import { readApiBody, ApiBodyError, type ApiBodyOptions } from "./api-body";
 
 export const SESSION_COOKIE = "cible-access";
 export const REFRESH_COOKIE = "cible-refresh";
@@ -69,7 +70,7 @@ export function allowRequest(key: string, limit: number, now = Date.now()): bool
 }
 
 /** Run in the handler, before touching storage, OAuth, scraping or Gemini. */
-export async function authorizeApi(req: NextRequest): Promise<{ user: VerifiedUser; response?: never } | { user?: never; response: NextResponse }> {
+export async function authorizeApi(req: NextRequest, options: ApiBodyOptions = {}): Promise<{ user: VerifiedUser; response?: never } | { user?: never; response: NextResponse }> {
   const fail = (status: number, error: string) => ({ response: NextResponse.json({ ok: false, error }, { status, headers: { "Cache-Control": "no-store" } }) });
   if (req.headers.get("sec-fetch-site") === "cross-site" || (!['GET', 'HEAD'].includes(req.method) && !sameOrigin(req))) return fail(403, "Origine de la requête refusée.");
   let user: VerifiedUser | null;
@@ -79,13 +80,9 @@ export async function authorizeApi(req: NextRequest): Promise<{ user: VerifiedUs
   const url = new URL(req.url);
   let body: Record<string, unknown> = {};
   if (!['GET', 'HEAD'].includes(req.method)) {
-    if (Number(req.headers.get("content-length") || 0) > 2_000_000) return fail(413, "Requête trop volumineuse.");
     try {
-      const raw = await req.clone().text();
-      if (raw.length > 2_000_000) return fail(413, "Requête trop volumineuse.");
-      body = raw ? JSON.parse(raw) : {};
-      if (!body || typeof body !== "object" || Array.isArray(body)) return fail(400, "Requête invalide.");
-    } catch { return fail(400, "Requête invalide."); }
+      body = await readApiBody(req, options);
+    } catch (error) { return fail(error instanceof ApiBodyError ? error.status : 400, error instanceof ApiBodyError ? error.message : "Requête invalide."); }
   }
   const owners = [url.searchParams.get("email"), body.email].filter(v => v !== null && v !== undefined);
   if (owners.some(email => typeof email !== "string" || email.trim().toLowerCase() !== user.email)) return fail(403, "Ce compte ne t’appartient pas.");
@@ -106,9 +103,9 @@ export async function authorizeApi(req: NextRequest): Promise<{ user: VerifiedUs
   return { user };
 }
 
-export function securedRoute(handler: (req: NextRequest, auth: { user: VerifiedUser }) => Promise<NextResponse>) {
+export function securedRoute(handler: (req: NextRequest, auth: { user: VerifiedUser }) => Promise<NextResponse>, options: ApiBodyOptions = {}) {
   return async (req: NextRequest) => {
-    const auth = await authorizeApi(req);
+    const auth = await authorizeApi(req, options);
     if (auth.response) return auth.response;
     try { return await withGmailAccount(auth.user.email, () => handler(req, { user: auth.user })); }
     catch { return NextResponse.json({ ok: false, error: "Opération interrompue. Vérifie le stockage serveur puis réessaie ; les données enregistrées sont conservées." }, { status: 503 }); }

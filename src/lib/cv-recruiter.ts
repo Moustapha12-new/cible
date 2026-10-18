@@ -16,6 +16,7 @@ import type { DetectedOffer, UserData } from "./data";
 import type { OfferAnalysis, PlanOperation, ProofLink } from "./cv-engine";
 import { validatePlanOperation } from "./cv-engine";
 import { AVAILABILITY_LINE, FACT_IDS, findForbiddenClaims, resolveFactIds } from "./candidate-dossier";
+import { unprovenCvMethods } from "./cv-adaptation";
 
 /* ── Contrat IA ───────────────────────────────────────────────────────────── */
 
@@ -78,6 +79,7 @@ const TOOLS = /matlab|simulink|caneco|autocad|etap|scada|revit|dialux|pvsyst|pow
 export function unprovenHeadlineTerms(headline: string, masterText: string): string[] {
   const source = norm(masterText);
   const issues: string[] = [];
+  issues.push(...unprovenCvMethods(headline, masterText).map(term => `méthode non démontrée « ${term} »`));
   const tool = headline.match(new RegExp(TOOLS.source, "i"));
   if (tool && !norm(source).includes(norm(tool[0]))) issues.push(`outil non démontré « ${tool[0]} »`);
   if (/\b(senior|expert|chef de projet|responsable|encadrant)\b/i.test(headline)) issues.push("niveau sénior revendiqué");

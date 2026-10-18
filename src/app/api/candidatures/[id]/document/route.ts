@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       if (version.sha256 && await computeSha256(bytes) !== version.sha256) throw new Error("L'intégrité du PDF archivé a échoué.");
       return new NextResponse(bytes, { headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${(application?.cvName || "cv.pdf").replace(/[\r\n\"]/g, "")}"`,
+        "Content-Disposition": `${new URL(req.url).searchParams.has("inline") ? "inline" : "attachment"}; filename="${(version.fileName || application?.cvName || "cv.pdf").replace(/[\r\n\"]/g, "")}"`,
         "Cache-Control": "no-store", "X-Content-SHA256": version.sha256 || "",
       } });
     } catch (error) {

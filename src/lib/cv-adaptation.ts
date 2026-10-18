@@ -47,6 +47,11 @@ const capitalized = (text: string): string[] => text.match(/\b[A-ZÉÈÊÀÂÔÛ
 const STOP = new Set(["avec", "dans", "pour", "une", "des", "les", "sur", "aux", "par", "son", "ses", "leur", "leurs", "afin", "ainsi", "plus", "mes", "mon", "stage", "ingenieur"]);
 const TECHNICAL = /^(?:caneco|dialux|autocad|revit|etap|matlab|simulink|python|scada|gmao|plc|automate|automatismes?|electrotechnique|electrique|photovolta[iï]que|eolien|nucleaire|hydrogene|dimensionnement|certification|habilitation|caces)$/i;
 
+export function unprovenCvMethods(text: string, source: string): string[] {
+  return ["analyse de sensibilité", "théorie des graphes", "modélisation stochastique", "processus stochastiques"]
+    .filter(term => hasCvTerm(text, term) && !hasCvTerm(source, term));
+}
+
 export function cvMasterText(data: UserData): string {
   return data.originalCv?.text?.trim() || (data.cvData ? cvToText(data.cvData) : "") || "";
 }
@@ -86,6 +91,8 @@ export function validateCvChange(change: CvChange, master: string, proofText = "
   if (!original || !master.includes(original)) issues.push("L'extrait de départ n'existe pas dans le CV maître.");
   if (!proposed) issues.push("La proposition est vide.");
   const source = `${master}\n${proofText}`;
+  const methods = unprovenCvMethods(proposed, source);
+  if (methods.length) issues.push(`Méthodes absentes du parcours : ${methods.join(", ")}.`);
   const sourceWords = new Set(words(source));
   const newTerms = [...new Set(words(proposed).filter(term => !sourceWords.has(term) && TECHNICAL.test(term)))];
   if (newTerms.length) issues.push(`Compétences ou logiciels absents du CV et des preuves confirmées : ${newTerms.slice(0, 8).join(", ")}.`);

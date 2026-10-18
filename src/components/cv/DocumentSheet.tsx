@@ -1,169 +1,27 @@
 import React from "react";
+import type { CvData } from "@/lib/cv";
 
 export interface DocumentSheetProps {
-  name: string;
-  headline: string;
-  contact: {
-    location: string;
-    email: string;
-    phone: string;
-  };
-  experiences: {
-    title: string;
-    period: string;
-    bullets: string[];
-  }[];
-  education: {
-    degree: string;
-    school: string;
-    period: string;
-    detail?: string;
-  }[];
-  skills: { name: string; highlighted?: boolean }[];
-  projects: {
-    title: string;
-    period: string;
-    description: string;
-    highlighted?: boolean;
-  }[];
+  cv: CvData | null;
   isAdapted?: boolean;
 }
 
-export function DocumentSheet({
-  name,
-  headline,
-  contact,
-  experiences,
-  education,
-  skills,
-  projects,
-  isAdapted = false,
-}: DocumentSheetProps) {
-  return (
-    <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-3.5 text-[10.5px] text-slate-800 leading-snug flex flex-col gap-2 min-h-[350px] select-text">
-      {/* Header */}
-      <div className="text-center pb-2 border-b border-slate-100">
-        <h2 className="text-[12px] font-extrabold uppercase tracking-wide text-slate-900">
-          {name}
-        </h2>
-        <p className={`text-[9.5px] font-medium mt-0.5 ${isAdapted ? "text-emerald-700 font-semibold" : "text-slate-600"}`}>
-          {headline}
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-1.5 text-[8.5px] text-slate-400 mt-0.5">
-          <span>{contact.location}</span>
-          <span>•</span>
-          <span>{contact.email}</span>
-          <span>•</span>
-          <span>{contact.phone}</span>
-        </div>
-      </div>
-
-      {/* Expériences */}
-      <div>
-        <h3 className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-          Expériences
-        </h3>
-        <div className="flex flex-col gap-1.5">
-          {experiences.map((exp, idx) => (
-            <div key={idx} className="flex flex-col">
-              <div className="flex items-baseline justify-between">
-                <strong className="text-[10px] font-bold text-slate-800">
-                  {exp.title}
-                </strong>
-                <span className="text-[9px] text-slate-400 font-mono">
-                  {exp.period}
-                </span>
-              </div>
-              <ul className="text-[9.5px] text-slate-600 list-disc list-inside mt-0.5 space-y-0.5">
-                {exp.bullets.map((b, bIdx) => (
-                  <li key={bIdx} className="leading-tight">
-                    {b}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Formation */}
-      <div>
-        <h3 className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-          Formation
-        </h3>
-        <div className="flex flex-col gap-1">
-          {education.map((edu, idx) => (
-            <div key={idx} className="flex flex-col">
-              <div className="flex items-baseline justify-between">
-                <strong className="text-[10px] font-bold text-slate-800">
-                  {edu.degree}
-                </strong>
-                <span className="text-[9px] text-slate-400 font-mono">
-                  {edu.period}
-                </span>
-              </div>
-              <span className="text-[9.5px] text-slate-500">{edu.school}</span>
-              {edu.detail && (
-                <span className="text-[9px] text-slate-500 italic">
-                  {edu.detail}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Compétences */}
-      <div>
-        <h3 className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-          Compétences
-        </h3>
-        <div className="flex flex-wrap gap-1">
-          {skills.map((skill, idx) => (
-            <span
-              key={idx}
-              className={`text-[9px] px-1.5 py-0.5 rounded transition-colors ${
-                skill.highlighted
-                  ? "bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300/80"
-                  : "bg-slate-100 text-slate-700"
-              }`}
-            >
-              {skill.name}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Projets */}
-      {projects.length > 0 && (
-        <div>
-          <h3 className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-            Projets
-          </h3>
-          <div className="flex flex-col gap-1">
-            {projects.map((proj, idx) => (
-              <div
-                key={idx}
-                className={`p-1 rounded ${
-                  proj.highlighted ? "bg-emerald-50/80 border border-emerald-200/60" : ""
-                }`}
-              >
-                <div className="flex items-baseline justify-between">
-                  <strong className="text-[9.5px] font-bold text-slate-800">
-                    {proj.title}
-                  </strong>
-                  <span className="text-[9px] text-slate-400 font-mono">
-                    {proj.period}
-                  </span>
-                </div>
-                <p className="text-[9px] text-slate-600 mt-0.5 leading-tight">
-                  {proj.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+export function DocumentSheet({ cv, isAdapted = false }: DocumentSheetProps) {
+  if (!cv) return <div className="min-h-[350px] rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">Importe ton CV maître pour afficher son aperçu.</div>;
+  return <article className="max-h-[440px] overflow-auto bg-white border border-slate-200/90 rounded-xl shadow-xs p-4 text-[10.5px] text-slate-800 leading-snug select-text">
+    <header className="text-center border-b border-slate-100 pb-3 mb-3">
+      <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-900">{cv.basics.name || "Nom non détecté dans le CV"}</h2>
+      {cv.basics.headline && <p className={`mt-1 text-[11px] ${isAdapted ? "text-emerald-700 font-semibold" : "text-slate-600"}`}>{cv.basics.headline}</p>}
+      {cv.basics.target && <p className="mt-1 text-[10px] text-slate-600">{cv.basics.target}</p>}
+      {cv.basics.contact && <p className="mt-1 whitespace-pre-line text-[9px] text-slate-500">{cv.basics.contact}</p>}
+    </header>
+    {cv.summary && <section className="mb-3"><h3 className="mb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Profil</h3><p className="whitespace-pre-line">{cv.summary}</p></section>}
+    {cv.sections.map(section => <section key={section.key} className="mb-3">
+      <h3 className="mb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">{section.title}</h3>
+      {section.kind === "text" ? <p className="whitespace-pre-line">{section.text}</p> : <div className="space-y-2">{section.items.map(item => <div key={item.id}>
+        <div className="flex items-baseline justify-between gap-2"><strong>{item.title}</strong>{item.meta && <span className="shrink-0 whitespace-pre-line text-[9px] text-slate-400">{item.meta}</span>}</div>
+        {item.detail && <p className="mt-0.5 whitespace-pre-line text-slate-600">{item.detail}</p>}
+      </div>)}</div>}
+    </section>)}
+  </article>;
 }

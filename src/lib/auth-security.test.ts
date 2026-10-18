@@ -106,6 +106,15 @@ async function main() {
   delete process.env.GEMINI_API_KEY;
   const own = await authorizeApi(request("/api/gmail/progress", "GET", "alice"));
   assert.equal(own.user?.email, "alice@example.test");
+  const upload = new FormData();
+  upload.set("offerId", "offer-local-test");
+  upload.set("file", new File(["%PDF-test"], "mon-cv.pdf", { type: "application/pdf" }));
+  const multipart = new NextRequest(origin + "/api/cv/custom", { method: "POST", headers: { origin, cookie: `${SESSION_COOKIE}=alice` }, body: upload });
+  const uploadAuth = await authorizeApi(multipart, { bodyFormat: "multipart", maxBodyBytes: 8_100_000 });
+  assert.equal(uploadAuth.user?.email, "alice@example.test", "l'import multipart authentifié atteint le handler");
+  assert.equal(((await multipart.formData()).get("file") as File).name, "mon-cv.pdf", "le fichier reste lisible après autorisation");
+  assert.equal((await authorizeApi(new NextRequest(origin + "/api/cv/custom", { method: "POST", headers: { origin }, body: upload }), { bodyFormat: "multipart" })).response?.status, 401);
+  assert.equal((await authorizeApi(new NextRequest(origin + "/api/cv/custom", { method: "POST", headers: { origin: "https://foreign.invalid", cookie: `${SESSION_COOKIE}=alice` }, body: upload }), { bodyFormat: "multipart" })).response?.status, 403);
   const result = await disconnect(request("/api/gmail/disconnect", "DELETE", "alice"));
   assert.equal(result.status, 200, "empty DELETE uses session owner");
   assert.ok(!calls.some(url => url.includes("moustaled") || url.includes("bob@example")), "no default or foreign account read");

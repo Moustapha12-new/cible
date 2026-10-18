@@ -7,7 +7,7 @@ import type { Application, DetectedOffer, UserData } from "@/lib/data";
 import { cvToText } from "@/lib/cv";
 
 export const dynamic = "force-dynamic";
-type Body = { offer: DetectedOffer; documentId: string; versionId: string; sha256: string; fileName: string };
+type Body = { offer: DetectedOffer; documentId: string; versionId: string; sha256: string; fileName: string; cvText?: string };
 
 export const POST = securedRoute(async (req, { user }) => {
   let body: Body;
@@ -31,18 +31,20 @@ export const POST = securedRoute(async (req, { user }) => {
       return NextResponse.json({ ok: true, application: existing, alreadySaved: true }, { headers: { "Cache-Control": "no-store" } });
     }
     const prepared = record.data.bulkCvQueue?.find(q => q.offerId === offer.id && q.documentId === documentId && q.versionId === versionId && q.sha256 === sha256);
+    const override = record.data.offerCvOverrides?.[offer.id];
+    const personal = override?.documentId === documentId && override.versionId === versionId && override.sha256 === sha256 ? override : undefined;
     const now = new Date().toISOString();
     const application: Application = {
       ...(existing || {}), id: existing?.id || crypto.randomUUID(), offerId: offer.id,
       offerUrl: typeof offer.url === "string" && /^https?:\/\//.test(offer.url) ? offer.url.slice(0, 2000) : existing?.offerUrl,
       company: offer.company.slice(0, 200), role: offer.title.slice(0, 250),
-      source: offer.source || "cible", status: "sent", daysAgo: 0, date: now,
-      cvName: fileName, cvText: prepared?.cv ? cvToText(prepared.cv) : existing?.cvText,
-      sentCvAdaptationId: prepared?.key || existing?.sentCvAdaptationId,
+      source: offer.source || "cible", status: existing?.status || "sent", daysAgo: 0, date: existing?.date || now,
+      cvName: fileName, cvText: personal ? personal.text : prepared?.cv ? cvToText(prepared.cv) : typeof body.cvText === "string" ? body.cvText.slice(0, 100_000) : undefined,
+      sentCvAdaptationId: personal ? undefined : prepared?.key,
       sentDocumentVersions: [
-        ...(existing?.sentDocumentVersions || []), { documentId, versionId, sha256 },
+        ...(existing?.sentDocumentVersions || []), { documentId, versionId, sha256, fileName, sentAt: now, source: personal ? "personal" : "generated" },
       ],
-      statusHistory: [...(existing?.statusHistory || []), { status: "sent", at: now }],
+      statusHistory: existing ? existing.statusHistory : [{ status: "sent", at: now }],
     };
     const next: UserData = {
       ...record.data,

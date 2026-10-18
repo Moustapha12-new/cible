@@ -594,7 +594,7 @@ export function diffCvVersions(before: string, after: string): CvDiff {
 /* ── Entrée unique : analyse + plan (aucun appel IA) ────────────────────── */
 
 export function analyzeAndPlan(offer: DetectedOffer, data: UserData): { analysis: OfferAnalysis; strategy: CvStrategy; plan: CvPlan; masterText: string; cvData?: CvData } {
-  const masterText = (data.originalCv?.text?.trim() || "") || "";
+  const masterText = cvMasterText(data);
   const cvData = data.cvData ?? undefined;
   const analysis = analyzeOfferForCandidate(offer, data);
   const strategy = buildStrategy(analysis, data, masterText, cvData);

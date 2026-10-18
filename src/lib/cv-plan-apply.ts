@@ -19,9 +19,21 @@ export type ApplicableOperation = {
 export type ApplyPlanResult = { cv: CvData; applied: string[]; skipped: string[] };
 
 const replaceOnce = (value: string, before: string, after: string, counter: { done: boolean }): string => {
-  if (counter.done || !value.includes(before)) return value;
+  if (counter.done || !before.trim()) return value;
+  if (value.includes(before)) {
+    counter.done = true;
+    return value.replace(before, after);
+  }
+  /* L'extraction du PDF peut joindre ou couper une phrase différemment du
+     texte source envoyé à Gemini. Tolère seulement des espaces/newlines
+     différents ; les mots et la ponctuation de la citation restent exacts. */
+  const pattern = before.trim().split(/\s+/)
+    .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("\\s+");
+  const match = new RegExp(pattern, "i").exec(value);
+  if (!match || match.index === undefined) return value;
   counter.done = true;
-  return value.replace(before, after);
+  return value.slice(0, match.index) + after + value.slice(match.index + match[0].length);
 };
 
 /** Applique les opérations acceptées, dans l'ordre, sans jamais créer de texte. */

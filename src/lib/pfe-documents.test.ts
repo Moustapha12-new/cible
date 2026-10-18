@@ -22,6 +22,7 @@ const first = addDocumentVersion(data, doc, v1);
 const application: Application = { id: "application-123", offerId: offer.id, company: offer.company, role: offer.title, status: "sent", daysAgo: 0, source: "test", date: "2026-10-10T11:00:00Z", cvText: "CV envoyé figé", sentDocumentVersions: [{ documentId: doc.id, versionId: v1.id }] };
 first.applications = [application];
 const second = addDocumentVersion(first, first.documents![0], v2);
+second.offerCvOverrides = { [offer.id]: { offerId: offer.id, fileName: "mon-cv.pdf", documentId: doc.id, versionId: v2.id, sha256: "a".repeat(64), uploadedAt: v2.createdAt } };
 assert.equal(second.documents?.[0].versions.length, 2);
 assert.equal(second.applications[0].sentDocumentVersions?.[0].versionId, v1.id, "new upload cannot rewrite the sent version");
 assert.equal(second.applications[0].cvText, "CV envoyé figé");
@@ -49,6 +50,9 @@ Object.defineProperty(globalThis, "window", { configurable: true, value: { local
 saveData(email, repeated);
 assert.equal(loadData(email)?.documents?.[0].versions.length, 2);
 assert.equal(loadData(email)?.gmailAssociations?.[0].gmailId, candidate.id);
+saveData(email, second);
+assert.equal(loadData(email)?.offerCvOverrides?.[offer.id].versionId, v2.id, "le PDF personnel choisi persiste après rechargement");
+assert.equal(loadData(email)?.applications[0].sentDocumentVersions?.[0].versionId, v1.id, "remplacer le brouillon ne remplace pas le CV déjà envoyé");
 
 const oldFetch = globalThis.fetch;
 const oldUrl = process.env.SUPABASE_URL, oldKey = process.env.SUPABASE_SECRET_KEY, oldRole = process.env.SUPABASE_SERVICE_ROLE_KEY, oldBucket = process.env.SUPABASE_BUCKET, oldDocumentBucket = process.env.SUPABASE_DOCUMENT_BUCKET;

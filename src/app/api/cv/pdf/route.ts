@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { securedRoute } from "@/lib/auth-server";
-import { cvDocumentHtml, type CvData, type CvDesign } from "@/lib/cv";
-import { generatePdfAndHash } from "@/lib/pdf-generator";
+import { DEFAULT_CV_DESIGN, type CvData, type CvDesign } from "@/lib/cv";
+import { applicationPdf } from "@/lib/cv-application-pdf";
 import { documentFileError, putDocument } from "@/lib/document-storage";
 
 export const dynamic = "force-dynamic";
 
 export const POST = securedRoute(async (req, { user }) => {
-  let body: { cv: CvData; design: CvDesign; offerId?: string };
+  let body: { cv: CvData; design: CvDesign; offerId?: string; offerText?: string };
   try { body = await req.json() as typeof body; }
   catch { return NextResponse.json({ ok: false, error: "Requête invalide." }, { status: 400 }); }
   if (!body.cv?.basics || !Array.isArray(body.cv.sections)) {
@@ -15,8 +15,7 @@ export const POST = securedRoute(async (req, { user }) => {
   }
   try {
     const fileName = "CV-cible.pdf";
-    const html = cvDocumentHtml(body.cv, body.design, "CV cible", false);
-    const { pdfBytes, sha256 } = await generatePdfAndHash(html, fileName);
+    const { pdfBytes, sha256 } = await applicationPdf(body.cv, body.design || DEFAULT_CV_DESIGN, body.offerText || "");
     const invalid = documentFileError(fileName, "application/pdf", pdfBytes);
     if (invalid) return NextResponse.json({ ok: false, error: invalid }, { status: 400 });
     const documentId = crypto.randomUUID();

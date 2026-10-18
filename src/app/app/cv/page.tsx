@@ -31,10 +31,12 @@ import { useAuth } from "@/lib/auth";
 import {
   getOrCreateData,
   saveData,
+  emptyData,
   type DetectedOffer,
   type UserData,
+  type OfferCvFile,
 } from "@/lib/data";
-import { DEFAULT_CV_DESIGN, parseCvText, cvToText } from "@/lib/cv";
+import { DEFAULT_CV_DESIGN, parseCvText, cvToText, type CvData } from "@/lib/cv";
 import { applyPlanToCv, type ApplicableOperation } from "@/lib/cv-plan-apply";
 import { CompanyLogo } from "@/components/app/CompanyLogo";
 import { DocumentSheet } from "@/components/cv/DocumentSheet";
@@ -47,10 +49,14 @@ type OfferRow = {
   title: string;
   location: string;
   tags: string[];
+  analysisKeywords: string[];
   date: string;
   matchPercentage: number | null;
   receivedAt?: string;
   url?: string;
+  duration: string;
+  description: string;
+  analysisText: string;
 };
 
 function offerRow(o: DetectedOffer): OfferRow {
@@ -60,10 +66,16 @@ function offerRow(o: DetectedOffer): OfferRow {
     title: o.title || "Offre sans titre",
     location: o.location || "",
     tags: (o.skills || o.keywords || []).slice(0, 3),
+    analysisKeywords: (o.skills || o.keywords || []).filter((item): item is string => typeof item === "string").slice(0, 40),
     date: "Récente",
     matchPercentage: typeof o.match === "number" && o.match > 0 ? o.match : null,
     receivedAt: o.receivedAt,
     url: o.url,
+    duration: o.duration || o.contract || "Durée inconnue",
+    description: (o.description || o.text || "").slice(0, 600),
+    analysisText: [...new Set([o.description, o.text, o.profile, o.missions?.join("\n"), o.prerequisites?.join("\n")]
+      .filter((value): value is string => typeof value === "string" && !!value.trim()))]
+      .join("\n").slice(0, 12_000),
   };
 }
 
@@ -80,18 +92,20 @@ export default function CvPage() {
     title: "Sélectionne une offre réelle",
     location: "",
     tags: [],
+    analysisKeywords: [],
     date: "",
     matchPercentage: null,
+    duration: "Durée inconnue",
+    description: "",
+    analysisText: "",
   });
   const [viewMode, setViewMode] = useState<"side" | "toggle">("side");
   const [toggleActive, setToggleActive] = useState<"before" | "after">("after");
 
   // CV data states
   const [candidateName, setCandidateName] = useState("");
-  const [candidateTitle, setCandidateTitle] = useState("Ingénieur en génie électrique");
-  const [adaptedTitle, setAdaptedTitle] = useState(
-    "Ingénieur en génie électrique spécialisé en réseaux et dimensionnement"
-  );
+  const [candidateTitle, setCandidateTitle] = useState("");
+  const [adaptedTitle, setAdaptedTitle] = useState("");
   const [isAdapting, setIsAdapting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -109,6 +123,49 @@ export default function CvPage() {
   };
   const [recruiter, setRecruiter] = useState<RecruiterPanel | null>(null);
   const [planOps, setPlanOps] = useState<ApplicableOperation[]>([]);
+  const [adaptationOfferId, setAdaptationOfferId] = useState<string | null>(null);
+  const [preparedCv, setPreparedCv] = useState<CvData | null>(null);
+  const [customCv, setCustomCv] = useState<OfferCvFile | null>(null);
+  const [generatedFile, setGeneratedFile] = useState<OfferCvFile | null>(null);
+  const [customBusy, setCustomBusy] = useState(false);
+  const customInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setCustomCv(null);
+    setGeneratedFile(null);
+    if (!selectedOffer.id) return;
+    let active = true;
+    fetch(`/api/cv/custom?offerId=${encodeURIComponent(selectedOffer.id)}`, { cache: "no-store" })
+      .then(res => res.json()).then(json => { if (active && json.ok) setCustomCv(json.file); }).catch(() => {});
+    return () => { active = false; };
+  }, [selectedOffer.id]);
+
+  const handleCustomUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !selectedOffer.id) return;
+    setCustomBusy(true);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      form.set("offerId", selectedOffer.id);
+      const res = await fetch("/api/cv/custom", { method: "POST", body: form });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "Import impossible.");
+      setCustomCv(json.file);
+      setToastMessage("Ton PDF est sélectionné pour cette offre. Après l'envoi, clique sur « J'ai envoyé ce CV » pour en archiver la version exacte.");
+    } catch (error) { setToastMessage(error instanceof Error ? error.message : "Import impossible."); }
+    finally { setCustomBusy(false); }
+  };
+
+  const useGeneratedCv = async () => {
+    try {
+      const res = await fetch("/api/cv/custom", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ offerId: selectedOffer.id }) });
+      if (!res.ok) throw new Error("Modification impossible.");
+      setCustomCv(null);
+      setToastMessage("Le CV généré est à nouveau sélectionné. Les CV déjà envoyés restent archivés.");
+    } catch { setToastMessage("Modification impossible. Réessaie."); }
+  };
 
   // Modals
   const [changeOfferModal, setChangeOfferModal] = useState(false);
@@ -116,9 +173,7 @@ export default function CvPage() {
   const [addSkillModal, setAddSkillModal] = useState(false);
   const [newSkillText, setNewSkillText] = useState("");
   const [editProfileModal, setEditProfileModal] = useState(false);
-  const [profileBio, setProfileBio] = useState(
-    "Ingénieur en génie électrique, spécialisé en automatisation et systèmes énergétiques."
-  );
+  const [profileBio, setProfileBio] = useState("");
 
   // Skills memory
   const [skillsMemory, setSkillsMemory] = useState<string[]>([
@@ -162,6 +217,32 @@ export default function CvPage() {
     const match = (offerParam ? rows.find((o) => o.id === offerParam) : undefined) || rows[0];
     if (match) {
       setSelectedOffer(match);
+      setPlanOps([]);
+      setRecruiter(null);
+      setAdaptationOfferId(null);
+      setPreparedCv(null);
+    }
+
+    // Restaure le CV maître du compte lorsque ce navigateur n'en a pas encore
+    // de copie locale. Ne remplace jamais un CV déjà présent sur cet appareil.
+    if (!local.originalCv?.text?.trim() && !local.cvData) {
+      let active = true;
+      fetch("/api/cv/reference", { cache: "no-store" })
+        .then(res => res.json())
+        .then((json: { ok?: boolean; originalCv?: UserData["originalCv"]; cvData?: UserData["cvData"] }) => {
+          if (!active || !json.ok || (!json.originalCv?.text?.trim() && !json.cvData)) return;
+          const latest = getOrCreateData(user.name, user.email);
+          if (latest.originalCv?.text?.trim() || latest.cvData) return;
+          const restored = {
+            ...latest,
+            originalCv: json.originalCv || { name: "CV maître", text: cvToText(json.cvData!) },
+            cvData: json.cvData || parseCvText(json.originalCv!.text),
+          };
+          setData(restored);
+          try { saveData(user.email, restored); } catch { /* Le compte reste la source de vérité si le cache local est plein. */ }
+        })
+        .catch(() => {});
+      return () => { active = false; };
     }
   }, [user, offerParam]);
 
@@ -169,6 +250,7 @@ export default function CvPage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!user) { setToastMessage("Connecte-toi avant d’importer ton CV maître."); e.target.value = ""; return; }
 
     if (!file.name.toLowerCase().endsWith(".pdf")) {
       setToastMessage("Seuls les fichiers PDF sont acceptés.");
@@ -189,14 +271,28 @@ export default function CvPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pdf: base64, name: file.name }),
       });
-      const json = await res.json();
-      if (res.ok && json.ok) {
-        setToastMessage(`CV « ${file.name} » importé avec succès (${json.pages} page(s)).`);
+      const json = await res.json() as { ok?: boolean; text?: string; pages?: number; name?: string; cvData?: UserData["cvData"]; error?: string };
+      if (res.ok && json.ok && json.text && json.cvData) {
+        const latest = data ?? emptyData(user.name, user.email);
+        const next = { ...latest, originalCv: { name: json.name || file.name, text: json.text, pages: json.pages, sizeBytes: file.size, importedAt: new Date().toISOString() }, cvData: json.cvData };
+        setData(next);
+        setPreparedCv(null);
+        setAdaptationOfferId(null);
+        setPlanOps([]);
+        try { saveData(user.email, next); } catch { /* Import déjà confirmé dans Supabase ; cache local facultatif. */ }
+        setCandidateName(json.cvData.basics.name || user!.name || "");
+        if (json.cvData.basics.headline) {
+          setCandidateTitle(json.cvData.basics.headline);
+          setAdaptedTitle(json.cvData.basics.headline);
+        }
+        setToastMessage(`CV maître « ${json.name || file.name} » enregistré sur ton compte (${json.pages} page(s)).`);
       } else {
-        setToastMessage("CV importé (texte extrait).");
+        setToastMessage(json.error || "Le CV n’a pas été enregistré. Réessaie l’import avant le téléchargement.");
       }
     } catch {
-      setToastMessage("CV importé en local.");
+      setToastMessage("Le CV n’a pas été enregistré. Vérifie ta connexion puis réessaie l’import.");
+    } finally {
+      e.target.value = "";
     }
   };
 
@@ -204,34 +300,46 @@ export default function CvPage() {
   // matrice exigence → preuve croisée avec le registre du dossier maître) puis
   // passe « recruteur » Gemini intégralement revalidée. Le CV maître n'est
   // jamais modifié ; seules les opérations acceptées sont appliquées à l'export.
-  const handleRegenerate = async () => {
+  const performAdaptation = async (): Promise<{ operations: ApplicableOperation[]; cv: CvData } | null> => {
     setIsAdapting(true);
-    setToastMessage("Analyse de l'offre et adaptation sous contrôle de preuves…");
+    setGeneratedFile(null);
+    setToastMessage("Analyse de l'offre, propositions Gemini si utiles, puis contrôle de chaque modification…");
     try {
-      const masterText = (data?.originalCv?.text?.trim() || (data?.cvData ? cvToText(data.cvData) : "")) || "";
-      if (!masterText) {
-        setToastMessage("Aucun CV maître confirmé — importe ton vrai CV avant d'adapter.");
-        return;
-      }
       if (!selectedOffer.id) {
         setToastMessage("Sélectionne d'abord une offre réelle.");
-        return;
+        return null;
       }
       const res = await fetch("/api/cv/adapt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ offerId: selectedOffer.id, rewrite: true }),
+        body: JSON.stringify({
+          offerId: selectedOffer.id,
+          rewrite: true,
+          offerSnapshot: {
+            id: selectedOffer.id,
+            title: selectedOffer.title,
+            company: selectedOffer.company,
+            location: selectedOffer.location,
+            keywords: selectedOffer.analysisKeywords,
+            text: selectedOffer.analysisText,
+            url: selectedOffer.url,
+            contract: selectedOffer.duration,
+            source: "Sélection Mon CV",
+          },
+        }),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) {
         setToastMessage(`Adaptation indisponible — ${json?.error || "CV maître conservé tel quel."}`);
-        return;
+        return null;
       }
       const accepted: ApplicableOperation[] = (json.plan?.operations ?? []).filter(
         (op: ApplicableOperation) => op.decision !== "rejected" && op.op !== "keep",
       );
       setPlanOps(accepted);
+      setPreparedCv(json.preparedCv);
       setRecruiter(json.recruiter ?? null);
+      setAdaptationOfferId(selectedOffer.id);
       if (json.recruiter?.headline && !json.recruiter.headlineIssues?.length) {
         setAdaptedTitle(json.recruiter.headline);
       } else if (json.strategy?.headline) {
@@ -240,16 +348,21 @@ export default function CvPage() {
       const rewrites = accepted.filter(op => op.op === "rephrase_fact" || op.op === "rewrite_profile").length;
       const refused = json.rejected?.length ?? 0;
       if (json.aiError) {
-        setToastMessage("Plan de preuves généré à partir du dossier maître (IA indisponible — analyse déterministe conservée).");
+        setToastMessage(`Gemini indisponible : ${json.aiError} Le plan déterministe reste consultable.`);
+      } else if (!accepted.length) {
+        setToastMessage("Copie de candidature composée et vérifiée sur une page A4. Aucune reformulation IA supplémentaire acceptée.");
       } else {
         setToastMessage(`Adaptation vérifiée : ${rewrites} reformulation(s) validée(s), ${refuséeOrRefused(refused)} refusée(s) pour non-preuve.`);
       }
+      return { operations: accepted, cv: json.preparedCv };
     } catch {
       setToastMessage("Adaptation indisponible — CV maître conservé tel quel.");
+      return null;
     } finally {
       setIsAdapting(false);
     }
   };
+  const handleRegenerate = async () => { await performAdaptation(); };
   const refuséeOrRefused = (count: number) => String(count);
 
   // Download PDF
@@ -257,23 +370,57 @@ export default function CvPage() {
     setIsDownloading(true);
     setToastMessage("Génération du PDF A4 en cours…");
     try {
+      if (type === "adapted" && customCv?.offerId === selectedOffer.id) {
+        const res = await fetch(`/api/cv/custom?offerId=${encodeURIComponent(selectedOffer.id)}&file=1`, { cache: "no-store" });
+        if (!res.ok) throw new Error("Ton PDF personnel est momentanément indisponible.");
+        const url = URL.createObjectURL(await res.blob());
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = customCv.fileName;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        setToastMessage("Ton PDF personnel a été téléchargé sans modification.");
+        return;
+      }
+      let currentPlan = planOps;
+      let currentPrepared = adaptationOfferId === selectedOffer.id ? preparedCv : null;
+      if (type === "adapted" && adaptationOfferId !== selectedOffer.id) {
+        const result = await performAdaptation();
+        if (result === null) return;
+        currentPlan = result.operations;
+        currentPrepared = result.cv;
+      }
       /* Vrai CV maître uniquement : structuré si présent, sinon parsé depuis
          le texte importé. Aucune expérience, coordonnée ou école de démonstration
          n'est jamais exportée (03_TESTS C.1/C.8). */
-      const master = data?.cvData
-        ?? (data?.originalCv?.text?.trim() ? parseCvText(data.originalCv.text) : null);
+      let sourceData = data;
+      if (!sourceData?.cvData && !sourceData?.originalCv?.text?.trim() && user) {
+        const refRes = await fetch("/api/cv/reference", { cache: "no-store" });
+        const ref = await refRes.json() as { ok?: boolean; originalCv?: UserData["originalCv"]; cvData?: UserData["cvData"] };
+        if (refRes.ok && ref.ok && (ref.originalCv?.text?.trim() || ref.cvData)) {
+          const latest = sourceData ?? emptyData(user.name, user.email);
+          sourceData = {
+            ...latest,
+            originalCv: ref.originalCv || { name: "CV maître", text: cvToText(ref.cvData!) },
+            cvData: ref.cvData || parseCvText(ref.originalCv!.text),
+          };
+          setData(sourceData);
+          try { saveData(user.email, sourceData); } catch { /* Le CV reste disponible depuis le compte pour le téléchargement. */ }
+        }
+      }
+      const master = sourceData?.originalCv?.text?.trim() ? parseCvText(sourceData.originalCv.text) : sourceData?.cvData;
       if (!master) {
         setToastMessage("Aucun CV maître confirmé — importe ton vrai CV (Mon CV) avant de télécharger.");
         return;
       }
-      if (!selectedOffer.id) {
+      if (type === "adapted" && !selectedOffer.id) {
         setToastMessage("Sélectionne d'abord une offre réelle.");
         return;
       }
       /* Le plan d'opérations acceptées (titre de disponibilité verrouillé,
          reformulations prouvées, réordonnancements) est appliqué au CV
          structuré avant export — aucune opération refusée n'y accède. */
-      const prepared = type === "adapted" && planOps.length ? applyPlanToCv(master, planOps).cv : master;
+      const prepared = type === "adapted" ? currentPrepared || applyPlanToCv(master, currentPlan).cv : master;
       const res = await fetch("/api/cv/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -282,16 +429,18 @@ export default function CvPage() {
             ...prepared,
             basics: {
               ...prepared.basics,
-              name: candidateName || prepared.basics.name,
-              headline: type === "adapted" ? adaptedTitle : (master.basics.headline || candidateTitle),
+              name: prepared.basics.name || candidateName,
+              headline: prepared.basics.headline || (type === "adapted" ? adaptedTitle : candidateTitle),
             },
           },
-          design: data?.cvDesign ?? DEFAULT_CV_DESIGN,
+          design: sourceData?.cvDesign ?? DEFAULT_CV_DESIGN,
           offerId: selectedOffer.id || undefined,
+          offerText: selectedOffer.analysisText,
         }),
       });
 
       if (res.ok) {
+        if (type === "adapted") setGeneratedFile({ offerId: selectedOffer.id, fileName: "CV-cible.pdf", documentId: res.headers.get("X-Document-Id") || "", versionId: res.headers.get("X-Version-Id") || "", sha256: res.headers.get("X-Content-SHA256") || "", uploadedAt: new Date().toISOString() });
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -302,7 +451,7 @@ export default function CvPage() {
         setToastMessage("Téléchargement du PDF réussi !");
 
         // Add to history
-        setCvHistory((prev) => [
+        if (selectedOffer.id) setCvHistory((prev) => [
           {
             id: `hist-${Date.now()}`,
             name: `CV - ${selectedOffer.company} - ${selectedOffer.tags[0] || "Adapté"}`,
@@ -317,8 +466,8 @@ export default function CvPage() {
         const detail = await res.json().catch(() => null);
         setToastMessage(`PDF indisponible : ${detail?.error || "erreur serveur"}`);
       }
-    } catch {
-      setToastMessage("Téléchargement du PDF indisponible — réessaie.");
+    } catch (error) {
+      setToastMessage(`Téléchargement du PDF indisponible — ${error instanceof Error ? error.message : "réessaie."}`);
     } finally {
       setIsDownloading(false);
     }
@@ -335,27 +484,31 @@ export default function CvPage() {
   };
 
   // Confirm application
-  const handleApplyWithCv = () => {
-    if (!user) return;
-    const local = getOrCreateData(user.name, user.email);
-    const newApp = {
-      id: `app-${Date.now()}`,
-      company: selectedOffer.company,
-      role: selectedOffer.title,
-      status: "sent" as const,
-      daysAgo: 0,
-      source: "Cible (Mon CV)",
-      cvName: `CV_${candidateName.replace(/\s+/g, "_")}_${selectedOffer.company}.pdf`,
-      date: new Date().toISOString(),
-      notes: "Candidature enregistrée suite à l'adaptation du CV.",
-    };
-    const next = { ...local, applications: [newApp, ...local.applications] };
-    saveData(user.email, next);
-    setToastMessage("Candidature enregistrée ! Redirection vers Mes candidatures…");
-    setTimeout(() => {
-      router.push("/app/candidatures");
-    }, 1200);
+  const handleApplyWithCv = async () => {
+    const file = customCv || generatedFile;
+    if (!file || file.offerId !== selectedOffer.id) { setToastMessage("Importe ton PDF personnel ou télécharge d'abord le PDF généré avant de confirmer l'envoi."); return; }
+    setCustomBusy(true);
+    try {
+      const offer: DetectedOffer = { id: selectedOffer.id, title: selectedOffer.title, company: selectedOffer.company, location: selectedOffer.location, salary: "", match: 0, keywords: selectedOffer.analysisKeywords, text: selectedOffer.analysisText, url: selectedOffer.url };
+      const res = await fetch("/api/candidatures/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ offer, ...file, cvText: customCv?.text || (preparedCv ? cvToText(preparedCv) : undefined) }) });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "Archivage impossible.");
+      router.push(`/app/candidatures?open=${encodeURIComponent(json.application.id)}`);
+    } catch (error) { setToastMessage(error instanceof Error ? error.message : "Archivage impossible."); }
+    finally { setCustomBusy(false); }
   };
+
+  const masterCv: CvData | null = data?.originalCv?.text?.trim() ? parseCvText(data.originalCv.text) : data?.cvData || null;
+  const adaptedCv = masterCv && adaptationOfferId === selectedOffer.id
+    ? preparedCv || applyPlanToCv(masterCv, planOps).cv
+    : masterCv;
+  const importedName = data?.originalCv?.name || (masterCv ? "CV maître structuré" : "Aucun CV maître importé");
+  const importedWhen = data?.originalCv?.importedAt
+    ? new Date(data.originalCv.importedAt).toLocaleDateString("fr-FR")
+    : null;
+  const importedSize = data?.originalCv?.sizeBytes
+    ? `${(data.originalCv.sizeBytes / 1024 / 1024).toFixed(2).replace(".", ",")} Mo`
+    : null;
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -375,6 +528,7 @@ export default function CvPage() {
       )}
 
       {/* Hidden file input for CV import */}
+      <input ref={customInput} type="file" accept="application/pdf,.pdf" className="hidden" onChange={handleCustomUpload} />
       <input
         ref={fileInputRef}
         type="file"
@@ -431,22 +585,16 @@ export default function CvPage() {
 
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="text-xs font-bold text-slate-900 truncate">
-                  CV - {candidateName}
-                </h3>
-                <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-200">
-                  Par défaut
-                </span>
+                <h3 className="text-xs font-bold text-slate-900 truncate" title={importedName}>{importedName}</h3>
+                {masterCv && <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-200">CV maître</span>}
               </div>
               <p className="text-[10px] text-slate-400 mb-1.5">
-                Dernière modification : 10 janv. 2025
+                {importedWhen ? `Importé le ${importedWhen}` : masterCv ? "CV chargé depuis ton compte" : "Importe ton vrai CV pour commencer"}
               </p>
               <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
-                <span>📄 2 pages</span>
-                <span>•</span>
-                <span>🇫🇷 Français</span>
-                <span>•</span>
-                <span>PDF (1,2 Mo)</span>
+                {data?.originalCv?.pages ? <span>📄 {data.originalCv.pages} pages</span> : null}
+                {data?.originalCv?.pages && importedSize ? <span>•</span> : null}
+                {importedSize ? <span>PDF ({importedSize})</span> : masterCv ? <span>Source du compte</span> : null}
               </div>
             </div>
           </div>
@@ -472,7 +620,7 @@ export default function CvPage() {
               </h3>
             </div>
             <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
-              {profileBio}
+              {profileBio || masterCv?.summary || data?.profile.title || "Aucun résumé de profil enregistré."}
             </p>
           </div>
           <button
@@ -497,20 +645,20 @@ export default function CvPage() {
               </h3>
             </div>
             <p className="text-[10px] text-slate-400 mb-3">
-              Un CV ciblé et optimisé en moins d&apos;une minute.
+              Le CV ne change qu&apos;après analyse et validation des preuves.
             </p>
           </div>
 
           <div className="grid grid-cols-4 gap-1 text-center">
             {[
-              { num: 1, label: "Sélectionne une offre" },
-              { num: 2, label: "Analyse par l'IA" },
-              { num: 3, label: "Adaptation de ton CV" },
-              { num: 4, label: "Télécharge et postule" },
+              { num: 1, label: "Offre sélectionnée", complete: !!selectedOffer.id },
+              { num: 2, label: "Analyse vérifiée", complete: adaptationOfferId === selectedOffer.id },
+              { num: 3, label: "Copie A4 préparée", complete: adaptationOfferId === selectedOffer.id },
+              { num: 4, label: "PDF à télécharger", complete: false },
             ].map((step) => (
-              <div key={step.num} className="flex flex-col items-center">
-                <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold flex items-center justify-center mb-1">
-                  {step.num}
+              <div key={step.num} className="flex flex-col items-center" title={step.complete ? "Terminé" : "À faire"}>
+                <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1 ${step.complete ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                  {step.complete ? "✓" : step.num}
                 </span>
                 <span className="text-[9px] text-slate-600 leading-tight line-clamp-2">
                   {step.label}
@@ -554,7 +702,7 @@ export default function CvPage() {
             <div className="flex items-center gap-2 text-[11px] text-slate-500">
               <span>📍 {selectedOffer.location}</span>
               <span>•</span>
-              <span>⏱ 6 mois</span>
+              <span>⏱ {selectedOffer.duration}</span>
             </div>
 
             <div className="flex flex-wrap gap-1 mt-1">
@@ -569,7 +717,7 @@ export default function CvPage() {
             </div>
 
             <p className="text-[11px] text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-xl p-2.5 mt-2">
-              Correspond parfaitement à ton projet de réseau BT et à ton expérience en analyse énergétique.
+              {selectedOffer.description || "Aucune description détaillée n’est disponible pour cette offre."}
             </p>
           </div>
         </div>
@@ -581,9 +729,9 @@ export default function CvPage() {
               <h3 className="text-xs font-bold text-slate-900">
                 Aperçu de l&apos;adaptation de ton CV
               </h3>
-              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                <Check size={11} strokeWidth={3} />
-                <span>Adaptation terminée</span>
+              <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${adaptationOfferId === selectedOffer.id ? "text-emerald-700 bg-emerald-50 border border-emerald-200" : "text-slate-600 bg-slate-100 border border-slate-200"}`}>
+                {adaptationOfferId === selectedOffer.id ? <Check size={11} strokeWidth={3} /> : null}
+                <span>{customCv ? "PDF personnel sélectionné" : adaptationOfferId === selectedOffer.id ? "Copie A4 vérifiée" : "Pas encore analysé"}</span>
               </span>
             </div>
 
@@ -621,6 +769,15 @@ export default function CvPage() {
           </div>
 
           {/* Side by side documents */}
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-slate-700 space-y-2">
+            <strong>{customCv ? `CV choisi : ${customCv.fileName}` : "Tu préfères utiliser ton propre CV ?"}</strong>
+            <p>Importe ton PDF pour cette offre. Il sera conservé exactement tel quel. Après l&apos;envoi, confirme la version pour la retrouver dans Mes candidatures.</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={!selectedOffer.id || customBusy} onClick={() => customInput.current?.click()} className="rounded-lg bg-blue-600 px-3 py-2 font-semibold text-white disabled:opacity-50">{customBusy ? "Enregistrement…" : customCv ? "Remplacer mon PDF" : "Utiliser mon propre CV"}</button>
+              {customCv && <button type="button" onClick={useGeneratedCv} className="rounded-lg border px-3 py-2">Revenir au CV généré</button>}
+              {(customCv || generatedFile) && <button type="button" disabled={customBusy} onClick={handleApplyWithCv} className="rounded-lg bg-emerald-700 px-3 py-2 font-semibold text-white">J&apos;ai envoyé ce CV</button>}
+            </div>
+          </div>
           {viewMode === "side" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative">
               {/* Left Document: Avant adaptation */}
@@ -632,48 +789,7 @@ export default function CvPage() {
                   </span>
                 </div>
 
-                <DocumentSheet
-                  name={candidateName}
-                  headline={candidateTitle}
-                  contact={{
-                    location: "Paris, France",
-                    email: user?.email || "moustapha.ibrahim@example.com",
-                    phone: "06 12 34 56 78",
-                  }}
-                  experiences={[
-                    {
-                      title: "Stage - TotalEnergies",
-                      period: "2024 - 2024",
-                      bullets: [
-                        "Analyse de performances énergétiques",
-                        "Étude de solutions techniques",
-                        "Participation au dimensionnement",
-                      ],
-                    },
-                  ]}
-                  education={[
-                    {
-                      degree: "ECAM-EPMI - Diplôme d'ingénieur",
-                      school: "Spécialité : Génie électrique",
-                      period: "2022 - 2025",
-                    },
-                  ]}
-                  skills={[
-                    { name: "Énergie" },
-                    { name: "Automatisation" },
-                    { name: "Analyse" },
-                    { name: "Excel" },
-                    { name: "Python" },
-                  ]}
-                  projects={[
-                    {
-                      title: "Projet de fin d'études",
-                      period: "2024 - 2025",
-                      description: "Optimisation d'un réseau électrique",
-                    },
-                  ]}
-                  isAdapted={false}
-                />
+                <DocumentSheet cv={masterCv} isAdapted={false} />
 
                 <button
                   type="button"
@@ -681,62 +797,20 @@ export default function CvPage() {
                   className="flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                 >
                   <Download size={13} />
-                  <span>Télécharger le CV d&apos;origine</span>
+                  <span>Exporter une synthèse A4</span>
                 </button>
               </div>
 
               {/* Right Document: Après adaptation */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-slate-700">Après adaptation</span>
+                  <span className="font-semibold text-slate-700">{customCv ? "Ton CV personnel" : "Après adaptation"}</span>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                    Optimisé pour l&apos;offre
+                    {customCv ? "Fichier original conservé" : "Optimisé pour l'offre"}
                   </span>
                 </div>
 
-                <DocumentSheet
-                  name={candidateName}
-                  headline={adaptedTitle}
-                  contact={{
-                    location: "Paris, France",
-                    email: user?.email || "moustapha.ibrahim@example.com",
-                    phone: "06 12 34 56 78",
-                  }}
-                  experiences={[
-                    {
-                      title: "Stage - Bureau d'études (Réseaux électriques)",
-                      period: "2024 - 2024",
-                      bullets: [
-                        "Analyse et dimensionnement de réseaux BT",
-                        "Étude des schémas unifilaires et bilans de puissance",
-                        "Utilisation de logiciels de simulation (DIgSILENT, PSS/E)",
-                      ],
-                    },
-                  ]}
-                  education={[
-                    {
-                      degree: "ECAM-EPMI - Diplôme d'ingénieur",
-                      school: "Spécialité : Génie électrique",
-                      period: "2022 - 2025",
-                    },
-                  ]}
-                  skills={[
-                    { name: "Réseaux électriques", highlighted: true },
-                    { name: "Dimensionnement", highlighted: true },
-                    { name: "DIgSILENT", highlighted: true },
-                    { name: "PSS/E", highlighted: true },
-                    { name: "Excel" },
-                  ]}
-                  projects={[
-                    {
-                      title: "Étude et dimensionnement d'un poste de distribution BT",
-                      period: "2024 - 2025",
-                      description: "Simulation sous DIgSILENT et validation technique",
-                      highlighted: true,
-                    },
-                  ]}
-                  isAdapted={true}
-                />
+                {customCv ? <iframe title="Mon PDF personnel pour cette offre" className="w-full h-[440px] rounded-xl border" src={`/api/cv/custom?offerId=${encodeURIComponent(selectedOffer.id)}&file=1&version=${customCv.versionId}`} /> : <DocumentSheet cv={adaptedCv} isAdapted={adaptationOfferId === selectedOffer.id} />}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
@@ -751,10 +825,11 @@ export default function CvPage() {
                   <button
                     type="button"
                     onClick={handleApplyWithCv}
+                    disabled={customBusy}
                     className="flex items-center justify-center gap-1.5 py-2 px-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
                   >
                     <CheckCircle2 size={13} />
-                    <span>J&apos;ai postulé</span>
+                    <span>J&apos;ai envoyé ce CV</span>
                   </button>
                 </div>
               </div>
@@ -788,83 +863,9 @@ export default function CvPage() {
               </div>
 
               {toggleActive === "after" ? (
-                <DocumentSheet
-                  name={candidateName}
-                  headline={adaptedTitle}
-                  contact={{
-                    location: "Paris, France",
-                    email: user?.email || "moustapha.ibrahim@example.com",
-                    phone: "06 12 34 56 78",
-                  }}
-                  experiences={[
-                    {
-                      title: "Stage - Bureau d'études (Réseaux électriques)",
-                      period: "2024 - 2024",
-                      bullets: [
-                        "Analyse et dimensionnement de réseaux BT",
-                        "Étude des schémas unifilaires et bilans de puissance",
-                        "Utilisation de logiciels de simulation (DIgSILENT, PSS/E)",
-                      ],
-                    },
-                  ]}
-                  education={[
-                    {
-                      degree: "ECAM-EPMI - Diplôme d'ingénieur",
-                      school: "Spécialité : Génie électrique",
-                      period: "2022 - 2025",
-                    },
-                  ]}
-                  skills={[
-                    { name: "Réseaux électriques", highlighted: true },
-                    { name: "Dimensionnement", highlighted: true },
-                    { name: "DIgSILENT", highlighted: true },
-                    { name: "PSS/E", highlighted: true },
-                    { name: "Excel" },
-                  ]}
-                  projects={[
-                    {
-                      title: "Étude et dimensionnement d'un poste de distribution BT",
-                      period: "2024 - 2025",
-                      description: "Simulation sous DIgSILENT et validation technique",
-                      highlighted: true,
-                    },
-                  ]}
-                  isAdapted={true}
-                />
+                customCv ? <iframe title="Mon PDF personnel pour cette offre" className="w-full h-[440px] rounded-xl border" src={`/api/cv/custom?offerId=${encodeURIComponent(selectedOffer.id)}&file=1&version=${customCv.versionId}`} /> : <DocumentSheet cv={adaptedCv} isAdapted={adaptationOfferId === selectedOffer.id} />
               ) : (
-                <DocumentSheet
-                  name={candidateName}
-                  headline={candidateTitle}
-                  contact={{
-                    location: "Paris, France",
-                    email: user?.email || "moustapha.ibrahim@example.com",
-                    phone: "06 12 34 56 78",
-                  }}
-                  experiences={[
-                    {
-                      title: "Stage - TotalEnergies",
-                      period: "2024 - 2024",
-                      bullets: [
-                        "Analyse de performances énergétiques",
-                        "Étude de solutions techniques",
-                      ],
-                    },
-                  ]}
-                  education={[
-                    {
-                      degree: "ECAM-EPMI - Diplôme d'ingénieur",
-                      school: "Spécialité : Génie électrique",
-                      period: "2022 - 2025",
-                    },
-                  ]}
-                  skills={[
-                    { name: "Énergie" },
-                    { name: "Automatisation" },
-                    { name: "Excel" },
-                  ]}
-                  projects={[]}
-                  isAdapted={false}
-                />
+                <DocumentSheet cv={masterCv} isAdapted={false} />
               )}
             </div>
           )}
@@ -877,7 +878,7 @@ export default function CvPage() {
               Audit de l&apos;adaptation
             </h3>
 
-            {!recruiter ? (
+            {customCv ? <p className="text-[11px] text-slate-600 leading-relaxed">Tu utilises ton PDF personnel pour cette offre. Son contenu et sa mise en page sont conservés. La confirmation d&apos;envoi archive ce fichier exact pour tes futurs entretiens.</p> : !recruiter ? (
               <p className="text-[11px] text-slate-500 leading-relaxed">
                 Lance l&apos;adaptation pour obtenir l&apos;éligibilité réelle de l&apos;offre, l&apos;axe retenu,
                 les reformulations validées avec leurs preuves, et les exigences que ton parcours ne couvre pas.
@@ -945,7 +946,7 @@ export default function CvPage() {
                       </ul>
                     ) : (
                       <p className="text-[10px] text-slate-500 leading-snug">
-                        Aucune réécriture nécessaire : ton CV maître couvre déjà les besoins obligatoires.
+                        La copie A4 sélectionne et condense le parcours. Aucune reformulation IA supplémentaire n&apos;a été acceptée.
                       </p>
                     )}
                   </div>

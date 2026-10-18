@@ -162,6 +162,14 @@ assert.ok(unprovenHeadlineTerms("Chef de projet électrique", MASTER_TEXT).lengt
   assert.ok(cv.sections[0].items[0].detail.includes("indicateurs de suivi"), "la reformulation validée figure dans le CV");
   assert.ok(!cv.sections[0].items[0].detail.includes("Maintenance"), "aucun contenu interdit n'apparaît");
   assert.ok(cvWordCount(cv) > 0);
+
+  const wrappedQuote = applyPlanToCv(cvData, [{
+    op: "rephrase_fact", zone: "Expérience : EDD",
+    before: "Analyse des écarts entre production prévue\net production réelle.",
+    after: "Analyse des écarts entre production prévue et production réelle, en comparant les résultats.",
+  }]);
+  assert.ok(wrappedQuote.applied.includes("Expérience : EDD"), "les citations Gemini restent applicables après les retours à la ligne du parseur PDF");
+  assert.ok(wrappedQuote.cv.sections[0].items[0].detail.includes("en comparant les résultats"));
 }
 
 console.log("Module recruteur validé sur 5 offres synthétiques : citations exigées, faits résolus, interdits bloqués, éligibilité fusionnée, plan applicable.");

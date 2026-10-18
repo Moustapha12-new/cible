@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { securedRoute } from "@/lib/auth-server";
+import { loadUserRecord, saveUserRecord } from "@/lib/candidature-server";
+import { parseCvText } from "@/lib/cv";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const MAX_PDF_BYTES = 1_400_000;
 
-/** Extraction locale au serveur ; le PDF n'est ni enregistré ni envoyé à l'IA. */
-export const POST = securedRoute(async (req) => {
+/** Le PDF est traité en mémoire ; seul le texte extrait et sa version structurée
+ * sont enregistrés comme CV maître du compte. Aucun appel IA n'est effectué. */
+export const POST = securedRoute(async (req, { user }) => {
   let body: { pdf?: string; name?: string };
   try { body = await req.json() as typeof body; }
   catch { return NextResponse.json({ ok: false, error: "Fichier invalide." }, { status: 400 }); }
@@ -37,7 +40,19 @@ export const POST = securedRoute(async (req) => {
     if (text.length < 150 || (text.match(/�/g) || []).length > 3) {
       return NextResponse.json({ ok: false, error: "Le texte de ce PDF n'est pas lisible. Colle le texte de ton CV dans le champ prévu." }, { status: 422 });
     }
-    return NextResponse.json({ ok: true, text, pages: document.numPages, name: typeof body.name === "string" ? body.name.slice(0, 120) : "CV original.pdf" }, { headers: { "Cache-Control": "no-store" } });
+    if (text.length > 100_000) return NextResponse.json({ ok: false, error: "Le texte extrait dépasse la taille maximale acceptée pour le CV maître." }, { status: 413 });
+    const name = typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 120) : "CV original.pdf";
+    const cvData = parseCvText(text);
+    try {
+      const record = await loadUserRecord(user);
+      await saveUserRecord(user, {
+        data: { ...record.data, originalCv: { name, text, pages: document.numPages, sizeBytes: bytes.length, importedAt: new Date().toISOString() }, cvData },
+        version: record.version,
+      });
+    } catch {
+      return NextResponse.json({ ok: false, error: "Le texte du CV a été extrait, mais sa sauvegarde sur ton compte a échoué. Réessaie avant de télécharger." }, { status: 503 });
+    }
+    return NextResponse.json({ ok: true, text, cvData, pages: document.numPages, name }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("CV PDF extraction failed:", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ ok: false, error: "Extraction du PDF impossible. Essaie un autre fichier ou colle son texte." }, { status: 422 });

@@ -75,7 +75,13 @@ function isAvailabilityLine(value: string): boolean {
 /* Convertit un CV collé en texte libre → données structurées éditables.
    Déterministe et local : l'utilisateur peut corriger chaque champ ensuite. */
 export function parseCvText(text: string): CvData {
-  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const dossierName = text.match(/^\s*(.+?)\s*\/\s*DOSSIER MA[ÎI]TRE\s*$/im)?.[1]?.trim();
+  const cleaned = text.split(/\r?\n/).map(line => line.trim()).filter(line =>
+    !/^CV ma[îi]tre\s*[•·].*R[ée]f[ée]rence interne/i.test(line)
+    && !/\/\s*DOSSIER MA[ÎI]TRE\s*$/i.test(line)
+    && !/^\d{1,2}$/.test(line));
+  if (dossierName && cleaned[0] !== dossierName) cleaned.unshift(dossierName);
+  const lines = cleaned;
   const nonEmpty = lines.filter(Boolean);
   const name = nonEmpty[0] ?? "";
   let idx = 1;
@@ -93,7 +99,7 @@ export function parseCvText(text: string): CvData {
 
   for (; idx < nonEmpty.length; idx++) {
     const l = nonEmpty[idx];
-    const projectMeta = current && /projet/i.test(current.title) && /^projet (personnel|d[’'])/i.test(l);
+    const projectMeta = current && /projet|travaux/i.test(current.title) && /^(?:projet (?:personnel|[ée]voqu[ée]|d[’'])|travaux acad[ée]miques)/i.test(l);
     if (isHeaderLine(l) && !projectMeta && !(current === null && /[ée]l[èe]ve|ing[ée]nieur/i.test(l))) {
       const title = l.replace(/:\s*$/, "");
       current = { key: uid(), title, kind: sectionKind(title), items: [], text: "" };
@@ -101,7 +107,7 @@ export function parseCvText(text: string): CvData {
       continue;
     }    if (!current) {
       if (isAvailabilityLine(l)) target = target || l;
-      else if (/@|(?:\+33|\(\+33\)|\b0[1-9])\s*\d|mobilité|permis|\(\d{2}\)|^portfolio\s*:/i.test(l)) contact += (contact ? "\n" : "") + l;
+      else if (/@|(?:\+33|\(\+33\)|\b0[1-9])\s*\d|mobilité|permis|\(\d{2}\)|^portfolio\s*:|^Val.d.Oise$/i.test(l)) contact += (contact ? "\n" : "") + l;
       else if (!headline && l.length < 140 && /ingénieur|étudiant|élève|commercial|développeur|technicien/i.test(l)) headline = l;
       else if (headline && l.length < 140 && /stage|alternance|disponib/i.test(l)) headline += " · " + l;
       else summaryLines.push(l);
@@ -121,7 +127,10 @@ export function parseCvText(text: string): CvData {
     /* Nouvel item : « Titre — Entreprise (Période) : détail » ou variantes. */
     const full = l.match(/^(.{3,90}?)\s+[—–-]\s+(.+?)\s*\(([^)]+)\)\s*:?\s*(.*)$/);
     const withParen = l.match(/^(.{3,90}?)\s*\(([^)]+)\)\s*:?\s*(.*)$/);
-    if (full) {
+    const dated = l.match(/^(.+?)\s+·\s+(.*\b(?:19|20)\d{2}.*)$/);
+    if (dated && !projectMeta) {
+      current.items.push({ id: uid(), title: dated[1].trim(), meta: dated[2].trim(), detail: "" });
+    } else if (full) {
       current.items.push({ id: uid(), title: full[1].trim(), meta: `${full[2]} (${full[3]})`, detail: full[4].trim() });
     } else if (withParen) {
       current.items.push({ id: uid(), title: withParen[1].trim(), meta: withParen[2], detail: withParen[3].trim() });

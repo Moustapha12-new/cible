@@ -49,7 +49,7 @@ const mbdaCv: CvData = { basics: { name: "Candidate Example", headline: "Élève
 ] };
 const mbda = applyGroundedChanges(mbdaCv, cvToText(mbdaCv), { changes: [] }, ["installations électriques", "génie électrique"], "Stage MBDA architecture des installations électriques de bâtiments de production");
 assert.match(mbda.cv.basics.headline, /INSTALLATIONS BT/);
-assert.equal(mbda.cv.basics.target, "Stage de 6 mois · Installations électriques BT · à partir de février 2027");
+assert.equal(mbda.cv.basics.target, "Stage de 6 mois · Installations électriques BT · à partir de début 2027");
 assert.match(mbda.cv.summary, /Projet personnel de dimensionnement/);
 assert.doesNotMatch(cvToText(mbda.cv), /Compétences et logiciels pertinents/);
 assert.equal(mbdaCv.basics.headline, "Élève-ingénieur | Énergie et systèmes électriques");

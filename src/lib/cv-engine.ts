@@ -20,10 +20,12 @@ import type { CvData } from "./cv";
 import { analyzePfeOffer, type PfeAnalysis, type PFERequirement } from "./pfe-matching";
 import { cvMasterText, sectionCanBeOmitted, validateCvChange, type CvChange } from "./cv-adaptation";
 import { hasCvTerm } from "./cv-keywords";
+import { AVAILABILITY_LINE, AVAILABILITY_PERIOD, dossierEvidenceFor, findForbiddenClaims, learnableOnly } from "./candidate-dossier";
 
 /* ── Titre de disponibilité verrouillé (conditions personnelles) ────────── */
 
-export const AVAILABILITY = "à partir de février 2027";
+export { AVAILABILITY_LINE };
+export const AVAILABILITY = AVAILABILITY_PERIOD;
 
 /** Titre unique de disponibilité — « dès », « PFE », « fin d'études » interdits. */
 export function stageHeadline(specialty?: string): string {
@@ -56,7 +58,49 @@ export type RequirementRow = {
   evidence: ProofRef[];
   /** NON_DÉMONTRÉE → « à confirmer », jamais ajoutée au CV. */
   guidance: "peut être affirmée" | "à confirmer";
+  /** Faits atomiques du dossier maître (candidate-dossier) qui fondent le lien. */
+  dossierFactIds?: string[];
+  /** Exigence qui n'existe que comme piste d'apprentissage : jamais affirmable. */
+  learnable?: string;
 };
+
+/* Croise un besoin de l'offre avec le REGISTRE DE PREUVES du dossier maître
+   (candidate-dossier) : rattache les faits atomiques et applique les interdits
+   du pack (mention_to_confirm, pistes d'apprentissage). Ne peut que RABAISser
+   une affirmation — jamais l'élever au-dessus de la preuve du parcours. */
+export function enrichFromDossier(row: RequirementRow, masterText: string): RequirementRow {
+  const hits = dossierEvidenceFor(row.term);
+  const learnable = learnableOnly(row.term);
+  const extraRefs: ProofRef[] = hits
+    .filter(hit => !row.evidenceIds.includes(`dossier:${hit.skill.id}`))
+    .map(hit => ({
+      id: `dossier:${hit.skill.id}`,
+      term: hit.skill.name,
+      kind: "dossier",
+      status: hit.skill.evidence_status,
+      excerpt: (hit.factText.split("\n")[0] || hit.skill.name).slice(0, 160),
+    }));
+  const dossierFactIds = hits.flatMap(hit => hit.factIds);
+  const evidence = [...row.evidence, ...extraRefs];
+  let link = row.link;
+  let guidance = row.guidance;
+  if (learnable) {
+    /* Compétence listée uniquement comme cible d'apprentissage : jamais déclarable. */
+    link = "NON_DÉMONTRÉE";
+    guidance = "à confirmer";
+  } else if (hits.some(hit => hit.skill.evidence_status === "mention_to_confirm")) {
+    guidance = "à confirmer";
+  } else if ((link === "NON_DÉMONTRÉE" || guidance === "à confirmer")
+    && hits.some(hit => hit.skill.evidence_status === "evidenced")) {
+    /* Preuve identifiée dans le dossier maître (projet ou mission réelle) :
+       le besoin devient transférable — jamais plus que la preuve. */
+    link = link === "NON_DÉMONTRÉE" ? "TRANSFÉRABLE" : link;
+    guidance = "peut être affirmée";
+  }
+  return { ...row, link, guidance, evidence, evidenceIds: evidence.map(ref => ref.id),
+    ...(dossierFactIds.length ? { dossierFactIds: [...new Set(dossierFactIds)] } : {}),
+    ...(learnable ? { learnable: learnable.label } : {}) };
+}
 
 const norm = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 const STOP = new Set(["stage", "alternance", "h/f", "ingenieur", "etude", "etudes", "entreprise", "poste", "equipe", "projet", "experience", "connaissance", "maitrise", "notion", "ans", "mois", "societe", "maitrise", "bonne", "bon", "niveau"]);
@@ -150,7 +194,7 @@ export function analyzeOfferForCandidate(offer: DetectedOffer, data: UserData, a
   const citedLines = [...(offer.prerequisites || []), ...(offer.skills || []), ...(offer.missions || []), offer.profile, offer.description, offer.text]
     .filter((line): line is string => typeof line === "string" && line.trim().length > 0);
 
-  const requirements: RequirementRow[] = analysis.requirements.map(requirement => {
+  const baseRequirements: RequirementRow[] = analysis.requirements.map(requirement => {
     const { link, evidence } = linkRequirement(requirement, profile, formationTexts);
     const isCitation = citedLines.some(line => hasCvTerm(line, requirement.term));
     return {
@@ -167,13 +211,15 @@ export function analyzeOfferForCandidate(offer: DetectedOffer, data: UserData, a
         ? "peut être affirmée" : "à confirmer",
     };
   });
+  const requirements: RequirementRow[] = baseRequirements.map(row => enrichFromDossier(row, masterText));
 
   /* Besoins supplémentaires déduits — toujours marqués « inférence ». */
   const ficheText = ficheLines.join("\n");
   for (const [pattern, term] of INFERENCE_RULES) {
     if (pattern.test(norm(ficheText)) && !requirements.some(row => norm(row.term) === norm(term))) {
       const { link, evidence } = linkRequirement({ term, priority: "à vérifier", source: term, match: "non documentée", evidenceIds: [] }, profile, formationTexts);
-      requirements.push({ term, priority: "à vérifier", origin: "inférence", link, evidenceIds: evidence.map(row => row.id), evidence, guidance: link === "DIRECTE" || link === "TRANSFÉRABLE" || (link === "PARTIELLE" && hasCvTerm(masterText, term)) ? "peut être affirmée" : "à confirmer" });
+      const inferred: RequirementRow = { term, priority: "à vérifier", origin: "inférence", link, evidenceIds: evidence.map(row => row.id), evidence, guidance: link === "DIRECTE" || link === "TRANSFÉRABLE" || (link === "PARTIELLE" && hasCvTerm(masterText, term)) ? "peut être affirmée" : "à confirmer" };
+      requirements.push(enrichFromDossier(inferred, masterText));
     }
   }
 
@@ -262,7 +308,9 @@ export function buildStrategy(analysis: OfferAnalysis, data: UserData, masterTex
 
   const gaps = analysis.requirements
     .filter(row => row.link === "NON_DÉMONTRÉE")
-    .map(row => `${row.term} — demandé dans l'offre, non confirmé par le parcours (à confirmer, jamais ajouté au CV)`);
+    .map(row => row.learnable
+      ? `${row.term} — demandé par l'offre mais listé uniquement comme piste d'apprentissage (${row.learnable}) : à acquérir, jamais déclarable`
+      : `${row.term} — demandé dans l'offre, non confirmé par le parcours (à confirmer, jamais ajouté au CV)`);
 
   return {
     headline: stageHeadline(domain),
@@ -449,8 +497,8 @@ export function validatePlanOperation(op: PlanOperation, masterText: string, ana
       return [];
     case "set_headline": {
       const after = (op.after || "").trim();
-      if (!/^Stage de 6 mois( · .+)? · à partir de février 2027$/.test(after)) {
-        issues.push("Titre de disponibilité non conforme (attendu « Stage de 6 mois · … · à partir de février 2027 »).");
+      if (!new RegExp(`^Stage de 6 mois( · .+)? · ${AVAILABILITY_PERIOD.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`).test(after)) {
+        issues.push(`Titre de disponibilité non conforme (attendu « ${AVAILABILITY_LINE} »).`);
       } else {
         const specialty = after.split(" · ")[1];
         if (specialty && !hasCvTerm(masterText, specialty)
@@ -467,6 +515,9 @@ export function validatePlanOperation(op: PlanOperation, masterText: string, ana
         reason: op.justification, source: op.before || "", decision: "pending",
       };
       const unverified = analysis.requirements.filter(row => row.link === "NON_DÉMONTRÉE").map(row => row.term);
+      /* Interdits du dossier maître : toute affirmation non démontrée est rejetée. */
+      const forbidden = findForbiddenClaims(`${op.before || ""} ${op.after || ""}`.trim(), masterText);
+      if (forbidden.length) issues.push(`Affirmation interdite par le dossier (non démontrée) : ${forbidden.join(", ")}.`);
       issues.push(...validateCvChange(change, masterText, masterText, unverified));
       return issues;
     }

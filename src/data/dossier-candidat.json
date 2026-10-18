@@ -1,0 +1,1724 @@
+{
+  "schema_version": "1.0.0",
+  "data_date": "2026-10-17",
+  "usage": "Canonical candidate evidence registry. Generated resumes cannot overwrite this dataset.",
+  "candidate": {
+    "name": "Moustapha Ibrahim Djama",
+    "headline": "Élève-ingénieur | Énergie & systèmes électriques",
+    "phone": "+33 7 45 31 88 16",
+    "email": "moustaphaibrahim206@gmail.com",
+    "location": "Val-d’Oise (95)",
+    "mobility": "France",
+    "portfolio_url": "https://portfolio-eta-ten-t34s52rvq8.vercel.app/",
+    "internship": {
+      "duration_months": 6,
+      "start_earliest": "2027-02",
+      "wording": "Stage de 6 mois · à partir de février 2027",
+      "fulltime": null
+    },
+    "professional_summary": "Élève-ingénieur à l’ECAM-EPMI en génie électrique, énergie et automatisation, avec une expérience chez EDD en analyse de données de production renouvelable et des projets techniques en dimensionnement électrique BT, efficacité énergétique et programmation.",
+    "education": [
+      {
+        "id": "edu_ecam",
+        "school": "ECAM-EPMI",
+        "title": "Cycle ingénieur, génie électrique, énergie et automatisation",
+        "city": "Cergy-Pontoise",
+        "start_year": 2024,
+        "end_year": 2027,
+        "graduation_status": "en cours",
+        "source": "cv_2026"
+      },
+      {
+        "id": "edu_cpge",
+        "school": "École d’Excellence",
+        "city": "Djibouti",
+        "title": "Classes préparatoires scientifiques MP, option informatique",
+        "start_year": 2022,
+        "end_year": 2024,
+        "source": "cv_2026"
+      }
+    ],
+    "languages": [
+      {
+        "name": "Français",
+        "level": "courant"
+      },
+      {
+        "name": "Anglais",
+        "level": "B2"
+      },
+      {
+        "name": "Arabe",
+        "level": "intermédiaire"
+      }
+    ],
+    "interests": [
+      "Football",
+      "Programmation",
+      "Énergies renouvelables"
+    ]
+  },
+  "sources": {
+    "cv_2026": "CV_PFE_2027_Moustapha_Ibrahim_Djama(1).pdf (CV de référence, octobre 2026)",
+    "historique_conversations": "Projets, TP et préférences explicitement discutés dans les échanges précédents ; documents complets à associer si disponibles.",
+    "declaration_powerbi": "Déclaration utilisateur : utilisation autonome de Power BI, 08/10/2026."
+  },
+  "experience": [
+    {
+      "id": "exp_edd_2025",
+      "employer": "EDD",
+      "title": "Stagiaire en analyse de données énergétiques",
+      "period": "Novembre 2025 – février 2026",
+      "evidence_status": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ],
+      "facts": [
+        {
+          "id": "edd_01",
+          "text": "Analyse de données de production éolienne et photovoltaïque à l’aide de Python."
+        },
+        {
+          "id": "edd_02",
+          "text": "Nettoyage et consolidation de données avec Python, SQL et Excel."
+        },
+        {
+          "id": "edd_03",
+          "text": "Création d’indicateurs de suivi de production et de tableaux de synthèse."
+        },
+        {
+          "id": "edd_04",
+          "text": "Analyse des écarts entre production prévue et production réelle."
+        },
+        {
+          "id": "edd_05",
+          "text": "Participation à la rédaction de synthèses de suivi des performances."
+        }
+      ],
+      "demonstrated_tools": [
+        "Python",
+        "SQL",
+        "Excel"
+      ],
+      "related_libs_listed_in_cv": [
+        "pandas",
+        "NumPy",
+        "Matplotlib"
+      ],
+      "skill_tags": [
+        "python",
+        "sql",
+        "excel",
+        "data_analysis",
+        "kpi",
+        "renewables",
+        "wind",
+        "solar",
+        "reporting"
+      ],
+      "forbidden_inferences": [
+        "Audit de sécurité HSE",
+        "Expérience de maintenance industrielle",
+        "Gestion d’un BESS",
+        "Réduction chiffrée des pertes sans justificatif"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "prj_reseau_bt",
+      "title": "Calcul et dimensionnement d’un réseau électrique industriel",
+      "category": "Génie électrique",
+      "evidence_status": "cv_confirmed",
+      "period": null,
+      "description": "Étude personnelle d’une installation électrique basse tension : calculs de dimensionnement, protections et représentation schématique.",
+      "facts": [
+        "Dimensionnement de câbles selon le courant admissible.",
+        "Vérification des chutes de tension.",
+        "Calculs de courants de court-circuit.",
+        "Choix des protections et étude de sélectivité.",
+        "Réalisation d’un schéma unifilaire."
+      ],
+      "skill_tags": [
+        "bt",
+        "sizing",
+        "voltage_drop",
+        "short_circuit",
+        "protection",
+        "selectivity",
+        "single_line"
+      ],
+      "source_refs": [
+        "cv_2026"
+      ],
+      "proof_location": "CV maître récent",
+      "do_not_claim": [
+        "Conception de réseau HTA complète",
+        "Validation réglementaire certifiée",
+        "Chantier réel livré"
+      ]
+    },
+    {
+      "id": "prj_audit",
+      "title": "Audit énergétique d’un bâtiment",
+      "category": "Énergie & efficacité",
+      "evidence_status": "cv_confirmed",
+      "period": null,
+      "description": "Projet personnel d’analyse des consommations et des pistes d’amélioration de la performance énergétique d’un bâtiment.",
+      "facts": [
+        "Analyse des consommations d’un bâtiment.",
+        "Identification des principaux postes consommateurs.",
+        "Construction d’indicateurs de performance.",
+        "Comparaison de plusieurs scénarios d’amélioration.",
+        "Propositions de solutions de réduction des consommations."
+      ],
+      "skill_tags": [
+        "building_energy",
+        "consumption",
+        "kpi",
+        "scenarios",
+        "efficiency"
+      ],
+      "source_refs": [
+        "cv_2026"
+      ],
+      "proof_location": "CV maître récent",
+      "do_not_claim": [
+        "Audit réglementaire certifié",
+        "Maîtrise d’œuvre de rénovation",
+        "Économies chiffrées sans source"
+      ]
+    },
+    {
+      "id": "prj_stockage",
+      "title": "Simulation de stockage d’énergie renouvelable",
+      "category": "Énergie & simulation",
+      "evidence_status": "historical_user_project",
+      "period": null,
+      "description": "Projet de simulation/étude de stockage et flux d’énergie renouvelable évoqué dans les travaux de portfolio ; périmètre, outils et résultats exacts à associer au dépôt.",
+      "facts": [
+        "Étude de scénarios liés au stockage d’énergie et aux énergies renouvelables, selon les éléments antérieurs.",
+        "Existence d’un travail de simulation rapportée ; modèle, plateforme et résultats à vérifier avant diffusion externe."
+      ],
+      "skill_tags": [
+        "storage",
+        "renewables",
+        "simulation"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "EMS entièrement développé",
+        "MPPT MATLAB/Simulink confirmé",
+        "Optimisation numérique chiffrée validée"
+      ]
+    },
+    {
+      "id": "prj_pv_psim",
+      "title": "Travaux pratiques photovoltaïque sous PSIM",
+      "category": "Énergie / électronique de puissance",
+      "evidence_status": "historical_coursework",
+      "period": null,
+      "description": "Travaux de simulation de modules photovoltaïques et d’observation des courbes électriques sur PSIM.",
+      "facts": [
+        "Étude d’un panneau photovoltaïque et de configurations en série/parallèle.",
+        "Tracé et interprétation de courbes courant-tension.",
+        "Travail sur les diodes de bypass et les conditions d’irradiation.",
+        "Exercices sur point de puissance maximale et variations de consigne."
+      ],
+      "skill_tags": [
+        "solar",
+        "psim",
+        "iv_curve",
+        "power_electronics",
+        "simulation"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Prototype photovoltaïque physique construit",
+        "Développement MPPT industriel validé"
+      ]
+    },
+    {
+      "id": "prj_eolien",
+      "title": "Étude de productible éolien avec loi de Weibull",
+      "category": "Énergies renouvelables / données",
+      "evidence_status": "historical_coursework",
+      "period": null,
+      "description": "Étude pédagogique d’estimation de la production éolienne à partir de la distribution de Weibull et d’informations de ressource éolienne.",
+      "facts": [
+        "Construction de classes de vitesse de vent et calcul des probabilités/densités de Weibull.",
+        "Estimation de la production énergétique annuelle par plages de vitesse.",
+        "Comparaison méthodologique avec données constructeur ou outil de simulation lorsque disponibles."
+      ],
+      "skill_tags": [
+        "wind",
+        "weibull",
+        "excel",
+        "statistics",
+        "energy_yield"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Production réellement mesurée et validée par opérateur",
+        "Parc réellement exploité"
+      ]
+    },
+    {
+      "id": "prj_pacman",
+      "title": "Jeu vidéo Pacman en C",
+      "category": "Développement logiciel",
+      "evidence_status": "historical_user_project",
+      "period": null,
+      "description": "Projet académique de programmation d’un jeu en langage C.",
+      "facts": [
+        "Programmation de la logique du jeu en C.",
+        "Gestion des déplacements, interactions ou collisions et éléments de gameplay dans le projet présenté."
+      ],
+      "skill_tags": [
+        "c",
+        "algorithms",
+        "programming"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Développement de moteur graphique industriel"
+      ]
+    },
+    {
+      "id": "prj_snake",
+      "title": "Jeu Snake en C++ / SFML",
+      "category": "Développement logiciel",
+      "evidence_status": "historical_user_project",
+      "period": null,
+      "description": "Projet de jeu Snake réalisé en C++ avec la bibliothèque SFML.",
+      "facts": [
+        "Développement de la logique du jeu.",
+        "Utilisation de SFML pour l’interface graphique et les interactions.",
+        "Travail sur les règles de déplacement et les événements du jeu."
+      ],
+      "skill_tags": [
+        "cpp",
+        "sfml",
+        "algorithms",
+        "ui"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Expérience en C++ embarqué temps réel"
+      ]
+    },
+    {
+      "id": "prj_micro",
+      "title": "Travaux pratiques de microcontrôleurs",
+      "category": "Automatisation / embarqué",
+      "evidence_status": "historical_coursework",
+      "period": null,
+      "description": "Exercices de configuration de temporisations et de séquences de LEDs sur microcontrôleur, notamment STM32.",
+      "facts": [
+        "Exercices de timer et calcul des paramètres PSC/ARR.",
+        "Travail sur des séquences de LED (« chenillard ») et logique de commande."
+      ],
+      "skill_tags": [
+        "stm32",
+        "embedded",
+        "timers",
+        "microcontrollers"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Carte électronique conçue et routée",
+        "FPGA VHDL programmé et validé"
+      ]
+    },
+    {
+      "id": "prj_reseaux_info",
+      "title": "Projet réseaux informatiques",
+      "category": "Réseaux / informatique",
+      "evidence_status": "historical_user_project",
+      "period": null,
+      "description": "Projet académique de réseaux informatiques et concepts de communications.",
+      "facts": [
+        "Étude de notions d’adressage IP, routage ou communication client-serveur selon le projet décrit."
+      ],
+      "skill_tags": [
+        "networks_it",
+        "ip",
+        "routing"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Administration de réseau de production"
+      ]
+    },
+    {
+      "id": "prj_web",
+      "title": "Sites web académiques : énergie durable, OldDating et vente automobile",
+      "category": "Développement web",
+      "evidence_status": "historical_user_project",
+      "period": null,
+      "description": "Projets web réalisés dans le cadre du cursus, incluant un site de rencontres pour seniors et des sites thématiques.",
+      "facts": [
+        "Conception de pages web et de la navigation.",
+        "Utilisation d’HTML et CSS ; autres technologies seulement si confirmées par les dépôts.",
+        "Site OldDating avec pages calendrier, événements, agenda, inscription et administration."
+      ],
+      "skill_tags": [
+        "web",
+        "html",
+        "css",
+        "ui"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Application de production sécurisée auditée",
+        "Statistiques d’utilisateurs réels"
+      ]
+    },
+    {
+      "id": "prj_voile",
+      "title": "Optimisation de performance sportive : étude de la voile",
+      "category": "Physique appliquée / modélisation",
+      "evidence_status": "historical_user_project",
+      "period": "2023",
+      "description": "Projet scientifique de préparation portant sur l’influence des forces, courants et trajectoires sur la pratique de la voile.",
+      "facts": [
+        "Étude de forces et de trajectoires.",
+        "Mobilisation de notions de mécanique et de modélisation physique."
+      ],
+      "skill_tags": [
+        "mechanics",
+        "physics",
+        "modeling"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Optimisation démontrée sur campagne d’essais grandeur nature"
+      ]
+    },
+    {
+      "id": "prj_cible",
+      "title": "cible. — application web personnelle de suivi des offres et candidatures",
+      "category": "Développement produit / IA",
+      "evidence_status": "historical_user_project",
+      "period": null,
+      "description": "Application personnelle de découverte et de suivi d’offres de stage, intégrant Gmail et une assistance IA.",
+      "facts": [
+        "Travail sur une application web de suivi des offres, CV et candidatures.",
+        "Intégrations Gmail, Gemini et stockage/application web décrites dans le projet.",
+        "Architecture mentionnée : Next.js, React, TypeScript, Supabase et Vercel ; vérifier les contributions exactes sur le dépôt avant de présenter comme maîtrise indépendante de chaque composant."
+      ],
+      "skill_tags": [
+        "web",
+        "typescript",
+        "ai_integration",
+        "gmail",
+        "supabase",
+        "nextjs"
+      ],
+      "source_refs": [
+        "historique_conversations"
+      ],
+      "proof_location": "Compte rendu / code / rapport à rattacher",
+      "do_not_claim": [
+        "Produit utilisé par des milliers de candidats",
+        "Infrastructure haute disponibilité validée"
+      ]
+    }
+  ],
+  "academic_knowledge": [
+    {
+      "id": "course_1",
+      "name": "Électrotechnique",
+      "domain": "électricité",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_2",
+      "name": "Réseaux électriques et distribution",
+      "domain": "électricité",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_3",
+      "name": "Machines électriques (moteurs, alternateurs, transformateurs)",
+      "domain": "électricité",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_4",
+      "name": "Électronique de puissance",
+      "domain": "électronique",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_5",
+      "name": "Électronique analogique et numérique",
+      "domain": "électronique",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_6",
+      "name": "Automatique des systèmes linéaires",
+      "domain": "automatique",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_7",
+      "name": "Systèmes embarqués et microcontrôleurs",
+      "domain": "embarqué",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_8",
+      "name": "Traitement du signal",
+      "domain": "signal",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_9",
+      "name": "Énergies renouvelables (PV, éolien, hydraulique)",
+      "domain": "énergie",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_10",
+      "name": "Analyse numérique",
+      "domain": "mathématiques",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_11",
+      "name": "Probabilités et statistiques",
+      "domain": "mathématiques",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_12",
+      "name": "Algorithmique et programmation",
+      "domain": "informatique",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_13",
+      "name": "Mathématiques approfondies (analyse, algèbre)",
+      "domain": "mathématiques",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    },
+    {
+      "id": "course_14",
+      "name": "Physique (mécanique, électromagnétisme, thermodynamique)",
+      "domain": "physique",
+      "source": "Cours du cursus / échanges antérieurs",
+      "evidence_status": "coursework",
+      "level": "enseigné, maîtrise opérationnelle non mesurée"
+    }
+  ],
+  "skills": [
+    {
+      "id": "bt",
+      "name": "Réseaux basse tension et installations BT",
+      "category": "electricity",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_reseau_bt"
+      ],
+      "keywords": [
+        "réseaux BT",
+        "distribution BT",
+        "low-voltage distribution"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "sizing",
+      "name": "Dimensionnement de câbles",
+      "category": "electricity",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_reseau_bt"
+      ],
+      "keywords": [
+        "dimensionnement",
+        "câbles BT",
+        "current carrying capacity"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "voltage_drop",
+      "name": "Chutes de tension",
+      "category": "electricity",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_reseau_bt"
+      ],
+      "keywords": [
+        "chute de tension",
+        "voltage drop"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "short_circuit",
+      "name": "Courants de court-circuit",
+      "category": "electricity",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_reseau_bt"
+      ],
+      "keywords": [
+        "court-circuit",
+        "short-circuit calculations"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "protection",
+      "name": "Choix des protections électriques",
+      "category": "electricity",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_reseau_bt"
+      ],
+      "keywords": [
+        "protection électrique",
+        "disjoncteurs"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "selectivity",
+      "name": "Sélectivité des protections",
+      "category": "electricity",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_reseau_bt"
+      ],
+      "keywords": [
+        "sélectivité",
+        "protection coordination"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "single_line",
+      "name": "Schéma unifilaire",
+      "category": "electricity",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_reseau_bt"
+      ],
+      "keywords": [
+        "schéma unifilaire",
+        "single-line diagram"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "machines",
+      "name": "Machines électriques",
+      "category": "electricity",
+      "evidence_status": "coursework",
+      "evidence_ids": [],
+      "keywords": [
+        "moteur",
+        "alternateur",
+        "machines électriques"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "transformers",
+      "name": "Transformateurs",
+      "category": "electricity",
+      "evidence_status": "coursework",
+      "evidence_ids": [],
+      "keywords": [
+        "transformateur",
+        "transformers"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "renewables",
+      "name": "Énergies renouvelables",
+      "category": "energy",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "exp_edd_2025",
+        "prj_pv_psim"
+      ],
+      "keywords": [
+        "ENR",
+        "énergies renouvelables"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "wind",
+      "name": "Production éolienne",
+      "category": "energy",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "exp_edd_2025",
+        "prj_eolien"
+      ],
+      "keywords": [
+        "éolien",
+        "wind production"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "solar",
+      "name": "Photovoltaïque",
+      "category": "energy",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "exp_edd_2025",
+        "prj_pv_psim"
+      ],
+      "keywords": [
+        "photovoltaïque",
+        "PV"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "storage",
+      "name": "Stockage d’énergie",
+      "category": "energy",
+      "evidence_status": "coursework",
+      "evidence_ids": [
+        "prj_stockage"
+      ],
+      "keywords": [
+        "batteries",
+        "stockage énergétique",
+        "BESS (notions uniquement)"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "building_energy",
+      "name": "Audit énergétique de bâtiment (projet)",
+      "category": "energy",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_audit"
+      ],
+      "keywords": [
+        "audit énergétique",
+        "efficacité énergétique"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "consumption",
+      "name": "Analyse de consommations énergétiques",
+      "category": "energy",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_audit"
+      ],
+      "keywords": [
+        "analyse consommation",
+        "suivi énergétique"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "data_analysis",
+      "name": "Analyse de données",
+      "category": "data",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "exp_edd_2025"
+      ],
+      "keywords": [
+        "analyse de données",
+        "data analysis"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "kpi",
+      "name": "Indicateurs et reporting",
+      "category": "data",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "exp_edd_2025",
+        "prj_audit"
+      ],
+      "keywords": [
+        "KPI",
+        "reporting",
+        "indicateurs de performance"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "category": "programming",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "exp_edd_2025"
+      ],
+      "keywords": [
+        "Python"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "sql",
+      "name": "SQL",
+      "category": "programming",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "exp_edd_2025"
+      ],
+      "keywords": [
+        "SQL"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "excel",
+      "name": "Excel",
+      "category": "data",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "exp_edd_2025"
+      ],
+      "keywords": [
+        "Excel",
+        "Microsoft Excel"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "powerbi",
+      "name": "Power BI",
+      "category": "data",
+      "evidence_status": "declared",
+      "evidence_ids": [],
+      "keywords": [
+        "Power BI",
+        "tableaux de bord"
+      ],
+      "claimed_level": "autonome",
+      "notes": "Autonome selon déclaration personnelle; ne pas attribuer à EDD."
+    },
+    {
+      "id": "pandas",
+      "name": "pandas",
+      "category": "programming",
+      "evidence_status": "declared",
+      "evidence_ids": [
+        "exp_edd_2025"
+      ],
+      "keywords": [
+        "pandas"
+      ],
+      "claimed_level": null,
+      "notes": "Présent dans compétences du CV; rôle exact par tâche à préciser."
+    },
+    {
+      "id": "numpy",
+      "name": "NumPy",
+      "category": "programming",
+      "evidence_status": "declared",
+      "evidence_ids": [
+        "exp_edd_2025"
+      ],
+      "keywords": [
+        "NumPy"
+      ],
+      "claimed_level": null,
+      "notes": "Présent dans compétences du CV; rôle exact par tâche à préciser."
+    },
+    {
+      "id": "matplotlib",
+      "name": "Matplotlib",
+      "category": "programming",
+      "evidence_status": "declared",
+      "evidence_ids": [
+        "exp_edd_2025"
+      ],
+      "keywords": [
+        "Matplotlib"
+      ],
+      "claimed_level": null,
+      "notes": "Présent dans compétences du CV; rôle exact par tâche à préciser."
+    },
+    {
+      "id": "c",
+      "name": "C",
+      "category": "programming",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_pacman"
+      ],
+      "keywords": [
+        "C",
+        "langage C"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "cpp",
+      "name": "C++",
+      "category": "programming",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_snake"
+      ],
+      "keywords": [
+        "C++"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "sfml",
+      "name": "SFML",
+      "category": "programming",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_snake"
+      ],
+      "keywords": [
+        "SFML"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "html",
+      "name": "HTML",
+      "category": "programming",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_web"
+      ],
+      "keywords": [
+        "HTML"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "css",
+      "name": "CSS",
+      "category": "programming",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_web"
+      ],
+      "keywords": [
+        "CSS"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "autocad",
+      "name": "AutoCAD Electrical",
+      "category": "simulation_cad",
+      "evidence_status": "declared",
+      "evidence_ids": [],
+      "keywords": [
+        "AutoCAD Electrical",
+        "DAO électrique"
+      ],
+      "claimed_level": null,
+      "notes": "Cité dans le CV; projet d’application détaillé non documenté."
+    },
+    {
+      "id": "caneco",
+      "name": "Caneco BT",
+      "category": "simulation_cad",
+      "evidence_status": "declared",
+      "evidence_ids": [],
+      "keywords": [
+        "Caneco BT"
+      ],
+      "claimed_level": null,
+      "notes": "Cité dans le CV; étude précise menée avec l’outil à confirmer."
+    },
+    {
+      "id": "matlab",
+      "name": "MATLAB/Simulink",
+      "category": "simulation_cad",
+      "evidence_status": "declared",
+      "evidence_ids": [],
+      "keywords": [
+        "MATLAB",
+        "Simulink"
+      ],
+      "claimed_level": null,
+      "notes": "Ne pas déduire RMS/EMT, GFM ou EMS réalisé."
+    },
+    {
+      "id": "psim",
+      "name": "PSIM",
+      "category": "simulation_cad",
+      "evidence_status": "evidenced",
+      "evidence_ids": [
+        "prj_pv_psim"
+      ],
+      "keywords": [
+        "PSIM",
+        "simulation électronique de puissance"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "pspice",
+      "name": "PSpice",
+      "category": "simulation_cad",
+      "evidence_status": "declared",
+      "evidence_ids": [],
+      "keywords": [
+        "PSpice"
+      ],
+      "claimed_level": null,
+      "notes": "Mentionné dans compétences du CV, preuve détaillée à joindre."
+    },
+    {
+      "id": "stm32",
+      "name": "STM32 / timers",
+      "category": "embedded",
+      "evidence_status": "coursework",
+      "evidence_ids": [
+        "prj_micro"
+      ],
+      "keywords": [
+        "STM32",
+        "TIM",
+        "microcontrôleurs"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "vhdl",
+      "name": "VHDL / FPGA",
+      "category": "embedded",
+      "evidence_status": "mention_to_confirm",
+      "evidence_ids": [],
+      "keywords": [
+        "VHDL",
+        "FPGA"
+      ],
+      "claimed_level": null,
+      "notes": "Cours/mentions historiques ; ne pas inscrire comme maîtrise tant que projet précis non confirmé."
+    },
+    {
+      "id": "probability",
+      "name": "Probabilités et statistiques",
+      "category": "math",
+      "evidence_status": "coursework",
+      "evidence_ids": [],
+      "keywords": [
+        "probabilités",
+        "statistiques",
+        "stochastique (notions générales uniquement)"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "numerical",
+      "name": "Analyse numérique",
+      "category": "math",
+      "evidence_status": "coursework",
+      "evidence_ids": [],
+      "keywords": [
+        "analyse numérique",
+        "calcul numérique"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "network_it",
+      "name": "Réseaux informatiques",
+      "category": "it",
+      "evidence_status": "coursework",
+      "evidence_ids": [
+        "prj_reseaux_info"
+      ],
+      "keywords": [
+        "TCP/IP",
+        "IP",
+        "routage"
+      ],
+      "claimed_level": null,
+      "notes": ""
+    },
+    {
+      "id": "webstack",
+      "name": "Next.js / React / TypeScript",
+      "category": "programming",
+      "evidence_status": "declared",
+      "evidence_ids": [
+        "prj_cible"
+      ],
+      "keywords": [
+        "Next.js",
+        "React",
+        "TypeScript"
+      ],
+      "claimed_level": null,
+      "notes": "Stack évoquée pour cible., profondeur de contribution à vérifier."
+    }
+  ],
+  "personal_qualities": [
+    {
+      "id": "trait_rigor",
+      "name": "Rigueur",
+      "status": "self_reported",
+      "evidence": [
+        "analyse et rédaction EDD",
+        "projet de calcul BT"
+      ],
+      "usage": "Mentionner avec preuve si pertinent"
+    },
+    {
+      "id": "trait_autonomy",
+      "name": "Autonomie",
+      "status": "self_reported",
+      "evidence": [
+        "projets personnels"
+      ],
+      "usage": "Ne pas inventer un rôle de chef de projet"
+    },
+    {
+      "id": "trait_team",
+      "name": "Travail en équipe",
+      "status": "self_reported",
+      "evidence": [],
+      "usage": "Ne pas prétendre avoir coordonné une équipe"
+    },
+    {
+      "id": "trait_analysis",
+      "name": "Esprit d’analyse",
+      "status": "supported",
+      "evidence": [
+        "exp_edd_2025",
+        "prj_reseau_bt"
+      ],
+      "usage": "Favoriser la preuve plutôt que l’adjectif"
+    },
+    {
+      "id": "trait_organization",
+      "name": "Organisation",
+      "status": "self_reported",
+      "evidence": [],
+      "usage": "Mentionner avec sobriété"
+    },
+    {
+      "id": "trait_curiosity",
+      "name": "Curiosité technique",
+      "status": "self_reported",
+      "evidence": [
+        "projets pluridisciplinaires"
+      ],
+      "usage": "Qualité personnelle, pas compétence mesurée"
+    },
+    {
+      "id": "trait_writing",
+      "name": "Rédaction de synthèses techniques",
+      "status": "supported",
+      "evidence": [
+        "exp_edd_2025"
+      ],
+      "usage": "Peut figurer comme compétence transférable"
+    }
+  ],
+  "claims_to_verify": [
+    {
+      "claim": "Deuxième stage EDD en bureau d’études électriques, juin–août 2024",
+      "reason": "Présent dans un ancien CV plus ambitieux, absent du CV récent de référence et non corroboré.",
+      "action": "Ne pas importer tant que convention/attestation et missions non confirmées."
+    },
+    {
+      "claim": "ETAP, PSAF, COSMOS, SCADA, Revit, DIALux, NetworkX, PyTorch, Scikit-learn, logiciels de gestion de projet",
+      "reason": "Mentionnés par des offres ou certains brouillons ; non démontrés comme maîtrisés.",
+      "action": "Ne pas ajouter au CV sans confirmation."
+    },
+    {
+      "claim": "Micro-réseau PV-BESS avec MPPT, EMS, onduleur et simulation complète validée",
+      "reason": "Présent dans un ancien CV, niveau d’achèvement et plateforme incertains.",
+      "action": "Ne décrire que la simulation de stockage dont le contenu est effectivement démontré."
+    },
+    {
+      "claim": "Expérience chantier, maintenance préventive, HSE et projet FPGA complet",
+      "reason": "Non démontrée ; HSE explicitement absent.",
+      "action": "Interdit d’en faire une expérience."
+    },
+    {
+      "claim": "Chiffres de gains, productibilité mesurée, économies réalisées, normes certifiées",
+      "reason": "Résultats et certifications non documentés.",
+      "action": "Jamais inventer de chiffres ou validations."
+    },
+    {
+      "claim": "Compétences précises de VHDL, Java, développement web avancé, STM32",
+      "reason": "Enseignements/TP/projets évoqués, niveau autonome pas établi.",
+      "action": "Niveau « notions / TP » ou demander preuve."
+    }
+  ],
+  "adaptation_policy": {
+    "source_of_truth": "candidate + experience + projects + academic_knowledge + skills",
+    "do_not_promote_generated_cv_to_source": true,
+    "default_output_pages": 1,
+    "master_cv_can_be_multipage": true,
+    "preferred_date_label": "Stage de 6 mois · à partir de février 2027",
+    "automatic_export_requires_review": true
+  },
+  "fact_registry": [
+    {
+      "fact_id": "edd_01",
+      "owner_id": "exp_edd_2025",
+      "text": "Analyse de données de production éolienne et photovoltaïque à l’aide de Python.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "edd_02",
+      "owner_id": "exp_edd_2025",
+      "text": "Nettoyage et consolidation de données avec Python, SQL et Excel.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "edd_03",
+      "owner_id": "exp_edd_2025",
+      "text": "Création d’indicateurs de suivi de production et de tableaux de synthèse.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "edd_04",
+      "owner_id": "exp_edd_2025",
+      "text": "Analyse des écarts entre production prévue et production réelle.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "edd_05",
+      "owner_id": "exp_edd_2025",
+      "text": "Participation à la rédaction de synthèses de suivi des performances.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_reseau_bt_f01",
+      "owner_id": "prj_reseau_bt",
+      "text": "Dimensionnement de câbles selon le courant admissible.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_reseau_bt_f02",
+      "owner_id": "prj_reseau_bt",
+      "text": "Vérification des chutes de tension.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_reseau_bt_f03",
+      "owner_id": "prj_reseau_bt",
+      "text": "Calculs de courants de court-circuit.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_reseau_bt_f04",
+      "owner_id": "prj_reseau_bt",
+      "text": "Choix des protections et étude de sélectivité.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_reseau_bt_f05",
+      "owner_id": "prj_reseau_bt",
+      "text": "Réalisation d’un schéma unifilaire.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_audit_f01",
+      "owner_id": "prj_audit",
+      "text": "Analyse des consommations d’un bâtiment.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_audit_f02",
+      "owner_id": "prj_audit",
+      "text": "Identification des principaux postes consommateurs.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_audit_f03",
+      "owner_id": "prj_audit",
+      "text": "Construction d’indicateurs de performance.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_audit_f04",
+      "owner_id": "prj_audit",
+      "text": "Comparaison de plusieurs scénarios d’amélioration.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_audit_f05",
+      "owner_id": "prj_audit",
+      "text": "Propositions de solutions de réduction des consommations.",
+      "verification": "cv_confirmed",
+      "source_refs": [
+        "cv_2026"
+      ]
+    },
+    {
+      "fact_id": "prj_stockage_f01",
+      "owner_id": "prj_stockage",
+      "text": "Étude de scénarios liés au stockage d’énergie et aux énergies renouvelables, selon les éléments antérieurs.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_stockage_f02",
+      "owner_id": "prj_stockage",
+      "text": "Existence d’un travail de simulation rapportée ; modèle, plateforme et résultats à vérifier avant diffusion externe.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_pv_psim_f01",
+      "owner_id": "prj_pv_psim",
+      "text": "Étude d’un panneau photovoltaïque et de configurations en série/parallèle.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_pv_psim_f02",
+      "owner_id": "prj_pv_psim",
+      "text": "Tracé et interprétation de courbes courant-tension.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_pv_psim_f03",
+      "owner_id": "prj_pv_psim",
+      "text": "Travail sur les diodes de bypass et les conditions d’irradiation.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_pv_psim_f04",
+      "owner_id": "prj_pv_psim",
+      "text": "Exercices sur point de puissance maximale et variations de consigne.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_eolien_f01",
+      "owner_id": "prj_eolien",
+      "text": "Construction de classes de vitesse de vent et calcul des probabilités/densités de Weibull.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_eolien_f02",
+      "owner_id": "prj_eolien",
+      "text": "Estimation de la production énergétique annuelle par plages de vitesse.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_eolien_f03",
+      "owner_id": "prj_eolien",
+      "text": "Comparaison méthodologique avec données constructeur ou outil de simulation lorsque disponibles.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_pacman_f01",
+      "owner_id": "prj_pacman",
+      "text": "Programmation de la logique du jeu en C.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_pacman_f02",
+      "owner_id": "prj_pacman",
+      "text": "Gestion des déplacements, interactions ou collisions et éléments de gameplay dans le projet présenté.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_snake_f01",
+      "owner_id": "prj_snake",
+      "text": "Développement de la logique du jeu.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_snake_f02",
+      "owner_id": "prj_snake",
+      "text": "Utilisation de SFML pour l’interface graphique et les interactions.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_snake_f03",
+      "owner_id": "prj_snake",
+      "text": "Travail sur les règles de déplacement et les événements du jeu.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_micro_f01",
+      "owner_id": "prj_micro",
+      "text": "Exercices de timer et calcul des paramètres PSC/ARR.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_micro_f02",
+      "owner_id": "prj_micro",
+      "text": "Travail sur des séquences de LED (« chenillard ») et logique de commande.",
+      "verification": "historical_coursework",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_reseaux_info_f01",
+      "owner_id": "prj_reseaux_info",
+      "text": "Étude de notions d’adressage IP, routage ou communication client-serveur selon le projet décrit.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_web_f01",
+      "owner_id": "prj_web",
+      "text": "Conception de pages web et de la navigation.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_web_f02",
+      "owner_id": "prj_web",
+      "text": "Utilisation d’HTML et CSS ; autres technologies seulement si confirmées par les dépôts.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_web_f03",
+      "owner_id": "prj_web",
+      "text": "Site OldDating avec pages calendrier, événements, agenda, inscription et administration.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_voile_f01",
+      "owner_id": "prj_voile",
+      "text": "Étude de forces et de trajectoires.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_voile_f02",
+      "owner_id": "prj_voile",
+      "text": "Mobilisation de notions de mécanique et de modélisation physique.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_cible_f01",
+      "owner_id": "prj_cible",
+      "text": "Travail sur une application web de suivi des offres, CV et candidatures.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_cible_f02",
+      "owner_id": "prj_cible",
+      "text": "Intégrations Gmail, Gemini et stockage/application web décrites dans le projet.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    },
+    {
+      "fact_id": "prj_cible_f03",
+      "owner_id": "prj_cible",
+      "text": "Architecture mentionnée : Next.js, React, TypeScript, Supabase et Vercel ; vérifier les contributions exactes sur le dépôt avant de présenter comme maîtrise indépendante de chaque composant.",
+      "verification": "historical_user_project",
+      "source_refs": [
+        "historique_conversations"
+      ]
+    }
+  ],
+  "career_objective": {
+    "principal": "Stage ingénieur de 6 mois à partir de février 2027 dans les métiers de l’électricité et de l’énergie",
+    "primary_domains": [
+      "production électrique",
+      "transport électrique",
+      "distribution HTA/BT",
+      "études électriques",
+      "production renouvelable",
+      "stockage et intégration ENR"
+    ],
+    "secondary_domains": [
+      "efficacité énergétique",
+      "exploitation",
+      "essais électriques",
+      "automatisation de systèmes énergétiques"
+    ],
+    "avoid_as_primary": [
+      "développement web pur",
+      "marketing",
+      "conseil non technique",
+      "HSE spécialisé sans expérience",
+      "data science sans lien électrique ou énergétique"
+    ],
+    "wording": "Stage de 6 mois · à partir de février 2027",
+    "governance": "Le ciblage d’une nouvelle offre ne modifie jamais le parcours factuel ni le niveau réel des logiciels."
+  },
+  "future_learning_targets": [
+    {
+      "id": "learn_pandapower",
+      "label": "pandapower",
+      "priority": "P1",
+      "status": "suggestion_only",
+      "domain": [
+        "transport",
+        "distribution"
+      ],
+      "evidence_required": "Notebook de calcul de flux de puissance sur réseau test et rapport de validation",
+      "documentation": "https://pandapower.readthedocs.io/en/stable/powerflow.html"
+    },
+    {
+      "id": "learn_ecodial",
+      "label": "EcoStruxure Power Design - Ecodial",
+      "priority": "P1",
+      "status": "suggestion_only",
+      "domain": [
+        "distribution",
+        "bureau_etudes_bt"
+      ],
+      "evidence_required": "Schéma unifilaire et note de calcul BT réalisés personnellement",
+      "documentation": "https://www.se.com/fr/fr/product-range/61013-ecostruxure-power-design-ecodial/"
+    },
+    {
+      "id": "learn_power_query",
+      "label": "Excel Power Query",
+      "priority": "P1",
+      "status": "suggestion_only",
+      "domain": [
+        "production",
+        "performance"
+      ],
+      "evidence_required": "Fichier source, étapes de nettoyage, tableau de bord et explication des KPI"
+    },
+    {
+      "id": "learn_powerfactory",
+      "label": "DIgSILENT PowerFactory ou ETAP",
+      "priority": "P2",
+      "status": "suggestion_only",
+      "domain": [
+        "transport",
+        "distribution"
+      ],
+      "evidence_required": "TP vérifié et simulations réellement effectuées avec une licence autorisée"
+    },
+    {
+      "id": "learn_pvsyst",
+      "label": "PVsyst",
+      "priority": "P2",
+      "status": "suggestion_only",
+      "domain": [
+        "production_pv"
+      ],
+      "evidence_required": "Rapport de simulation PV et hypothèses de pertes"
+    },
+    {
+      "id": "learn_iec60909",
+      "label": "Méthodologie IEC 60909 et schémas de liaison à la terre",
+      "priority": "P2",
+      "status": "suggestion_only",
+      "domain": [
+        "distribution"
+      ],
+      "evidence_required": "Exercice normatif sourcé et expliqué"
+    },
+    {
+      "id": "learn_scada",
+      "label": "Initiation à la supervision SCADA",
+      "priority": "P3",
+      "status": "suggestion_only",
+      "domain": [
+        "production",
+        "exploitation"
+      ],
+      "evidence_required": "Démonstrateur de supervision avec traçage des données et alarmes"
+    }
+  ],
+  "job_family_guide_file": "STRATEGIE_PRODUCTION_TRANSPORT_DISTRIBUTION.md"
+}

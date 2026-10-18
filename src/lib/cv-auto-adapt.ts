@@ -1,5 +1,6 @@
 import type { CvData } from "./cv";
 import { cvToText, numbersSafe } from "./cv";
+import { findForbiddenClaims } from "./candidate-dossier";
 
 type AiChange = { original?: string; rewritten?: string; section?: string; method?: string };
 const namedTools = ["matlab", "python", "c++", "autocad", "digSILENT", "powerfactory", "psse", "excel", "vhdl", "simulink", "plc", "arduino"];
@@ -32,6 +33,8 @@ export function applyGroundedChanges(source: CvData, originalText: string, resul
     if (rewritten.length > original.length + Math.max(25, Math.round(original.length * .2))) continue;
     if (!originalText.includes(original) || !sourceStructured.includes(original)) continue;
     if (!numbersSafe(original, rewritten, originalText) || unsupportedClaim(original, rewritten, originalText) || addsUnverifiedWords(original, rewritten, originalText)) continue;
+    /* Interdits du dossier maître (pack CV) : HSE, chantier, SCADA, ETAP… */
+    if (findForbiddenClaims(rewritten, originalText).length) continue;
     let replacements = 0;
     const replaceOnce = (value: string) => {
       if (replacements || !value.includes(original)) return value;
@@ -75,8 +78,8 @@ export function applyGroundedChanges(source: CvData, originalText: string, resul
         descriptions.push("Profil recentré sur le projet BT et l'expérience EDD, sans expérience de chantier ajoutée");
       }
     }
-    if (/6\s*mois/i.test(source.basics.target || "") && /f[ée]vrier\s+2027/i.test(source.basics.target || "")) {
-      cv.basics.target = "Stage de 6 mois · Installations électriques BT · à partir de février 2027";
+    if (/6\s*mois/i.test(source.basics.target || "") && /(?:f[ée]vrier|d[ée]but)\s+2027/i.test(source.basics.target || "")) {
+      cv.basics.target = "Stage de 6 mois · Installations électriques BT · à partir de début 2027";
       descriptions.push("Disponibilité reformulée sans changer la durée ni la date");
     }
   }

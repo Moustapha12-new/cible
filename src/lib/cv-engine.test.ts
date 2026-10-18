@@ -195,8 +195,8 @@ const requirement = (analysis: OfferAnalysis, term: string) => {
 }
 
 /* ── Titre de disponibilité verrouillé ───────────────────────────────────── */
-assert.equal(stageHeadline(), "Stage de 6 mois · à partir de février 2027");
-assert.equal(stageHeadline("Génie électrique"), "Stage de 6 mois · Génie électrique · à partir de février 2027");
+assert.equal(stageHeadline(), "Stage de 6 mois · à partir de début 2027");
+assert.equal(stageHeadline("Génie électrique"), "Stage de 6 mois · Génie électrique · à partir de début 2027");
 
 /* ── Analyse des 4 offres métier + cas sans-modification ─────────────────── */
 
@@ -241,7 +241,12 @@ assert.equal(uniqueSelections.size, Object.keys(OFFERS).length,
   assert.equal(requirement(analysis, "stockage d'énergie").link, "PARTIELLE", "TotalEnergies : stockage au niveau cours → PARTIELLE");
   assert.equal(requirement(analysis, "stockage d'énergie").guidance, "à confirmer", "TotalEnergies : stockage à confirmer, pas affirmé");
   assert.equal(requirement(analysis, "simulation").link, "DIRECTE", "TotalEnergies : simulation MATLAB démontrée");
-  assert.equal(requirement(analysis, "éolien").link, "NON_DÉMONTRÉE", "TotalEnergies : éolien non démontré");
+  /* L'éolien n'est PAS démontré par le profil synthétique, mais le registre du
+     dossier maître réel (expérience EDD : analyse de production éolienne sous
+     Python + projet Weibull) fonde un lien TRANSFÉRABLE — jamais DIRECTE. */
+  const wind = requirement(analysis, "éolien");
+  assert.equal(wind.link, "TRANSFÉRABLE", "TotalEnergies : éolien fondé sur l'expérience EDD du dossier");
+  assert.ok(wind.evidence.some(ref => ref.kind === "dossier"), "TotalEnergies : la preuve éolien cite une source du dossier maître");
   const stockProof = requirement(analysis, "stockage d'énergie").evidence[0];
   assert.ok(stockProof && stockProof.status === "declared", "TotalEnergies : preuve de stockage = niveau déclaré/cours");
 }
@@ -283,7 +288,7 @@ for (const [key, value] of Object.entries(results)) {
 {
   const headlineOp = results.mbda.plan.operations.find(op => op.op === "set_headline");
   assert.ok(headlineOp, "MBDA : opération set_headline présente");
-  assert.equal(headlineOp.after, "Stage de 6 mois · Génie électrique · à partir de février 2027",
+  assert.equal(headlineOp.after, "Stage de 6 mois · Génie électrique · à partir de début 2027",
     "titre conforme à la disponibilité du candidat");
   assert.ok(results.mbda.strategy.flagship, "MBDA : principale réalisation repérée");
   assert.deepEqual(results.mbda.strategy.reorderSections, [], "MBDA : réalisation déjà en tête de rubrique — rien à remonter");
@@ -303,7 +308,7 @@ for (const [key, value] of Object.entries(results)) {
     "réordonnement avec ligne inédite REJETÉ");
   assert.ok(validatePlanOperation({ ...reorderOk, op: "set_headline", after: "Dès février 2027" }, MASTER_TEXT, analysis, cvData).length > 0,
     "titre non conforme REJETÉ");
-  assert.ok(validatePlanOperation({ ...reorderOk, op: "set_headline", after: "Stage de 6 mois · Astronautique · à partir de février 2027" }, MASTER_TEXT, analysis, cvData).length > 0,
+  assert.ok(validatePlanOperation({ ...reorderOk, op: "set_headline", after: "Stage de 6 mois · Astronautique · à partir de début 2027" }, MASTER_TEXT, analysis, cvData).length > 0,
     "spécialité hors CV et hors offre REJETÉE");
   assert.ok(validatePlanOperation({ ...reorderOk, op: "omit_optional_fact", zone: "Expériences" }, MASTER_TEXT, analysis, cvData).length > 0,
     "suppression d'une rubrique porteuse de faits REJETÉE");

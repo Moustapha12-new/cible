@@ -49,9 +49,7 @@ export type Body = {
   jobs?: { id: string; title: string; company: string; location: string; text?: string }[];
   keywords?: KwInput[];
   /** Mots-clés choisis par l'utilisateur (depuis Matching) à intégrer en priorité. */
-  forceKeywords?: string[];
-  orientation?: "electrical" | "energy";
-  cv?: unknown;
+  forceKeywords?: string[];  orientation?: "electrical" | "energy";  /** Registre de preuves du candidat (candidate-dossier) — construit côté serveur. */  dossier?: string;  cv?: unknown;
   /** E-mails provenant du libellé Gmail « Stages – Alertes offres ». */
   emails?: AiEmailInput[];
   /** Offres candidates à l'enrichissement (texte de l'e-mail + page ouverte). */
@@ -239,37 +237,49 @@ Compare ce CV à cette offre. Réponds avec ce JSON exact :
  "considerations": [{"title": "<point de vigilance>", "detail": "<détail>"}]}
 Sois strict : ne gonfle pas le score, un CV non fourni = score bas. Ne propose que des modifications honnêtes.`;
     case "adapt":
-      return `Voici le CV ORIGINAL du candidat, texte intégral :
+      return `Tu es un recruteur technique senior en génie électrique et énergie : tu annonces des stages d'élève-ingénieur en production, transport, distribution, bureau d'études, photovoltaïque et stockage. Tu analyses comme un auditeur — AUCUNE affirmation sans preuve du dossier.
+
+═══ REGISTRE DE PREUVES DU CANDIDAT (source de vérité — ne jamais le modifier ni le compléter) ═══
+"""${b.dossier || "(dossier absent — n'affirme rien qui ne soit dans le CV)"}"""
+
+═══ CV ORIGINAL DU CANDIDAT, texte intégral ═══
 """${cv}"""
 
-Orientation éditoriale choisie : ${b.orientation === "energy" ? "énergie, performance énergétique et renouvelables" : b.orientation === "electrical" ? "génie électrique, électrotechnique et bureau d'études" : "les missions réelles de l'offre, uniquement lorsqu'elles correspondent à un fait explicite du CV"}. Ce cadrage sert uniquement à hiérarchiser les faits déjà présents dans le CV. Il ne constitue aucune preuve de compétence et ne doit ajouter aucun logiciel, projet ou résultat.
-
-Voici l'offre visée :
+═══ OFFRE VISÉE ═══
 """${b.offerText}"""
 
-Voici les mots-clés décisifs de l'offre déjà audités :
+Mots-clés décisifs de l'offre déjà audités :
 ${JSON.stringify(b.keywords ?? [], null, 1)}
-${(b.forceKeywords ?? []).filter(Boolean).length ? `Mots-clés QUE LE CANDIDAT A CHOISI de faire ajouter (il les a sélectionnés dans Matching) :
+${(b.forceKeywords ?? []).filter(Boolean).length ? `Mots-clés QUE LE CANDIDAT A CHOISI de faire ajouter :
 ${(b.forceKeywords ?? []).filter(Boolean).join(", ")}
-Intègre CHACUN d'eux dès qu'il est justifiable par UN fait réel du CV (cherche notamment dans les projets, certifications, langues, centres d'intérêt) ; sinon liste-le dans "refused" avec la raison précise.` : ""}
+Intègre CHACUN d'eux dès qu'il est justifiable par UN fait réel du dossier ; sinon liste-le dans "refused" avec la raison précise.` : ""}
 
-MISSION DE RÉÉCRITURE CHIRURGICALE — pas une régénération :
-1. Pour CHAQUE modification, "original" doit être une citation EXACTE copiée du CV (mots consécutifs, UNE proposition maximum). "rewritten" est la MÊME phrase avec le MINIMUM de changements pour intégrer un mot-clé accepté : la structure, les faits, les chiffres, les dates, les noms d'entreprises et de diplômes restent strictement identiques. Interdiction absolue d'introduire un chiffre, une date ou un nom absent du CV original.
-2. Vise 4 à 8 modifications qui font VRAIMENT avancer le CV : le titre professionnel, les phrases d'expérience les plus pertinentes pour l'offre (réoriente leur accent vers ce que cherche le recruteur), ET la section Compétences : si des mots-clés intégrés sont prouvés ailleurs dans le CV (projets, certifications, expériences) mais absents de la ligne compétences du CV, propose une modification de cette ligne qui les ajoute.
-3. Le titre proposé doit rester PROUVÉ par les expériences : jamais de titre plus senior ou d'un autre métier que ce que le CV démontre.
-4. N'intègre que les mots-clés JUSTIFIÉS par le CV — cherche dans TOUT le CV : expériences, projets, certifications, langues, centres d'intérêt (un fait pertinent peut être caché ailleurs). Liste explicitement ceux que tu REFUSES et pourquoi.
-5. Liste ce qui manque VRAIMENT pour le poste (absent du CV) avec une ressource gratuite PRÉCISE et NOMMÉE pour l'acquérir (plateforme réelle + intitulé de formation, ex : « OpenClassrooms — parcours Python »). N'invente jamais d'URL.
+═══ MÉTHODE (phases A→H, dans l'ordre) ═══
+A. ÉLIGIBILITÉ (bloquante) : stage de 6 mois, début 2027, niveau ingénieur, domaine électrique/énergie, mobilité. État : "eligible" | "needs_confirmation" | "ineligible" + raison courte. Si la date ne correspond pas, dis-le avant toute adaptation.
+B. COMPRENDRE LE VRAI TRAVAIL : extrais les exigences RÉELLES (unités de travail, pas la répétition de mots-clés). Pour chacune : "quote" = citation EXACTE et verbatim de l'offre (sinon ne la mets pas), "priority" = obligatoire | souhaitée | à vérifier, "facts" = IDs du registre qui l'appuient (ex. "prj_reseau_bt", "edd_03"). « Dimensionner l'installation électrique » = câbles + chutes de tension + protections + notes de calcul, pas la liste des logiciels.
+C. MATRICE EXIGENCE → PREUVE : "relation" = direct | transferable | partial | unsupported. Distinctions NON NÉGOCIABLES : AutoCAD Electrical ≠ Revit ; MATLAB ≠ RMS/EMT ; Python ≠ PyTorch ; audit énergétique ≠ supervision de chantier ; électronique de puissance (cours) ≠ convertisseur industriel conçu. Aucune preuve → "unsupported", JAMAIS inventé.
+D. STRATÉGIE : UN axe principal ("focus") + un complément, tous les deux appuyés sur "primary_evidence_ids" (IDs du registre). Exemple : axe = dimensionnement réseau industriel (prj_reseau_bt), complément = analyse et reporting EDD (exp_edd_2025).
+E. MODIFICATIONS LIMITÉES : tu ne modifies QUE le titre professionnel ("headline") et des phrases existantes ("changes"). Pour CHAQUE change : "original" = citation EXACTE du CV (mots consécutifs, une seule phrase), "rewritten" = la MÊME phrase avec le MINIMUM d'ajustements (structure, faits, chiffres, dates, entreprises, diplômes strictement identiques), "why" = justification courte, "requirement_ids" + "evidence_ids" = traçabilité. Classe chaque change : VARIANT_FIX (vocabulaire), KEYWORD_INSERT (mot-clé justifié), RETURN_UNCHANGED (déjà couvert).
+F. LANGAGE MÉTIER : verbes « analyser, réaliser, calculer, comparer, participer à ». Jamais « piloté », « encadré », « certifié », « expert », « hautement qualifié ». Un projet étudiant reste un projet étudiant ; une matière étudiée reste une connaissance, pas une maîtrise.
+G. HONNÊTETÉ STRUCTURÉE : "refused" = mots-clés de l'offre que tu REFUSES d'intégrer (mot-clé, raison : ce qui manque dans le dossier). "stillMissing" = exigences réellement absentes avec une ressource gratuite PRÉCISE et NOMMÉE (plateforme + intitulé), sans URL inventée. "tips" = 2-3 conseils de dépôt. Les compétences listées « à acquérir » dans le registre (PVsyst, DIgSILENT/PowerFactory, SCADA, pandapower, Ecodial, Power Query, IEC 60909) ne sont JAMAIS déclarables.
+H. DISPONIBILITÉ VERROUILLÉE : le candidat est « Stage de 6 mois · à partir de début 2027 ». Ne propose jamais une autre date, ni « dès », ni « PFE », ni « fin d'études ».
 
-Réponds avec ce JSON exact :
-{"headline": "<nouveau titre professionnel orienté offre, une ligne>",
- "changes": [{"section": "<Titre | Compétences | Expérience : <intitulé> | Formation : <intitulé>>", "original": "<citation exacte du CV>", "rewritten": "<même phrase, ajustement minimal>", "method": "RETURN_UNCHANGED|VARIANT_FIX|KEYWORD_INSERT"}],
- "integrated": [{"keyword": "<mot-clé>", "where": "<section où il apparaît maintenant>", "reason": "<pourquoi c'est légitime : fait réel du CV>"}],
- "refused": [{"keyword": "<mot-clé non intégré>", "reason": "<ce qui manque dans le CV pour le justifier>"}],
- "stillMissing": [{"item": "<exigence du poste absente du CV>", "howToGet": "<action concrète : tuto, projet, certification…>"}],
- "tips": ["2 à 3 conseils courts pour le dépôt ou l'entretien"],
- "atsScore": {"score": <entier 0-100>, "hardSkills": {"covered": <nb>, "total": <nb>, "pts": <nb>}, "titleKeywords": {"covered": <nb>, "total": <nb>, "pts": <nb>}, "businessContext": {"covered": <nb>, "total": <nb>, "pts": <nb>}}}
+═══ INTERDITS ABSOLUS ═══
+· Tout fait marqué interdit au registre (HSE, maintenance, chantier, BESS, EMS, MPPT, micro-réseau, grid-forming, black-start, RMS/EMT, ETAP, PSAF, COSMOS, SCADA, Revit, DIALux, NetworkX, PyTorch, Scikit-learn, Java, VHDL/FPGA, DIgSILENT, PSS/E, PVsyst…) ne doit SURVENIR dans aucun "rewritten" ni "headline".
+· Jamais de chiffre, date, entreprise, diplôme, certification ou habilitation absent du CV.
+· Jamais de niveau plus senior que ce que le parcours démontre.
 
-RAPPEL CRITIQUE : le CV final sera construit par le programme en remplaçant dans le texte original chaque "original" par "rewritten". Tu ne réécris JAMAIS le CV toi-même : tes "original" doivent être des citations mot pour mot, et tout ce que tu ne cites pas restera inchangé.`;
+═══ RÉPONSE (JSON unique, sans texte autour) ═══
+{"eligibility": {"status": "eligible|needs_confirmation|ineligible", "reason": "<raison courte>"},
+ "strategy": {"focus": "<axe principal>", "primary_evidence_ids": ["<ids du registre>"]},
+ "requirements": [{"id": "req_01", "text": "<exigence réelle>", "quote": "<citation exacte de l'offre>", "priority": "obligatoire|souhaitée|à vérifier", "facts": ["<ids du registre>"], "relation": "direct|transferable|partial|unsupported"}],
+ "headline": "<titre professionnel prouvé par le parcours>",
+ "changes": [{"section": "<Titre | Compétences | Expérience : <intitulé>>", "original": "<citation exacte du CV>", "rewritten": "<même phrase ajustée>", "why": "<justification>", "requirement_ids": ["req_01"], "evidence_ids": ["<ids du registre>"], "method": "RETURN_UNCHANGED|VARIANT_FIX|KEYWORD_INSERT"}],
+ "refused": [{"keyword": "<mot-clé refusé>", "reason": "<ce qui manque>"}],
+ "stillMissing": [{"item": "<exigence absente>", "howToGet": "<action concrète nommée>"}],
+ "tips": ["<conseil de dépôt>"]}
+
+RAPPEL : le programme reconstruit le CV en remplaçant chaque "original" par "rewritten" après validation ; tout ce que tu ne cites pas restera inchangé. 4 à 8 modifications suffisent — la qualité de la traçabilité prime sur la quantité.`;
     case "keywords":
       return `Voici une offre d'emploi :
 """${b.offerText}"""

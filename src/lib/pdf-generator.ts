@@ -17,7 +17,12 @@ async function getBrowser() {
   ].filter((path): path is string => Boolean(path));
   const executablePath = process.platform === "win32"
     ? windowsCandidates.find(path => existsSync(path))
-    : await chromium.executablePath();
+    : await chromium.executablePath().catch((error: unknown) => {
+        /* Message d'erreur actionnable : sur un hébergement serverless, ce
+           message signale presque toujours des binaires absents du bundle. */
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`Chromium de rendu PDF indisponible sur ce serveur (${detail}). Vérifie que node_modules/@sparticuz/chromium/bin est inclus dans le déploiement (outputFileTracingIncludes dans next.config.ts).`);
+      });
   if (!executablePath) throw new Error("Aucun navigateur compatible pour générer le PDF.");
   browserInstance = await puppeteer.launch({
     args: process.platform === "win32" ? ["--no-sandbox", "--disable-gpu"] : chromium.args,
@@ -60,6 +65,12 @@ export async function generatePdfFromHtml(html: string): Promise<Uint8Array> {
       if (Math.abs(size.width - 595.28) > 2 || Math.abs(size.height - 841.89) > 2) throw new Error("Le PDF généré n'est pas au format A4.");
       const contents = await printed.getTextContent();
       if (contents.items.length < 5) throw new Error("Le texte du PDF généré est incomplet.");
+      /* La ligne de disponibilité verrouillée doit réellement figurer dans le
+         PDF rendu (contrôle texte, indépendant du rendu visuel). */
+      const printedText = contents.items.map(item => "str" in item ? item.str : "").join(" ").replace(/\s+/g, " ");
+      if (html.includes("Stage de 6 mois") && !printedText.includes("Stage de 6 mois")) {
+        throw new Error("La ligne de disponibilité « Stage de 6 mois » est absente du PDF généré.");
+      }
       const links = await printed.getAnnotations();
       if (html.includes('href="mailto:') && !links.some(link => link.subtype === "Link" && link.url?.startsWith("mailto:"))) throw new Error("Le lien e-mail du PDF n'est pas actif.");
       if (html.includes('href="https://') && !links.some(link => link.subtype === "Link" && link.url?.startsWith("https://"))) throw new Error("Le lien portfolio du PDF n'est pas actif.");

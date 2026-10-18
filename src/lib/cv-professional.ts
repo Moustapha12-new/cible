@@ -4,9 +4,11 @@ const esc = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;"
 
 function stageLine(value?: string): string {
   const target = (value || "").replace(/\s+/g, " ").trim();
-  if (/\b6\s*mois\b/i.test(target) && /\bf[ée]vrier\s+2027\b/i.test(target)) {
-    const specialty = target.match(/^Stage de 6 mois\s*[·|]\s*(.+?)\s*[·|]\s*à partir de f[ée]vrier 2027/i)?.[1];
-    return `Stage de 6 mois${specialty ? ` · ${specialty}` : ""} · à partir de février 2027`;
+  /* Verrou unique de disponibilité : toute variante « 6 mois + début/février
+     2027 » est normalisée vers la formulation officielle du candidat. */
+  if (/\b6\s*mois\b/i.test(target) && /\b(?:f[ée]vrier|d[ée]but)\s+2027\b/i.test(target)) {
+    const specialty = target.match(/^Stage de 6 mois\s*[·|]\s*(.+?)\s*[·|]\s*à partir de (?:f[ée]vrier|d[ée]but) 2027/i)?.[1];
+    return `Stage de 6 mois${specialty ? ` · ${specialty}` : ""} · à partir de début 2027`;
   }
   return target;
 }

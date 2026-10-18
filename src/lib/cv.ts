@@ -61,6 +61,17 @@ function sectionKind(title: string): "list" | "text" {
   return TEXT_SECTIONS.some((w) => low.startsWith(w.replace(/s$/, ""))) ? "text" : "list";
 }
 
+/* Ligne de disponibilité / candidature : elle porte la formulation verrouillée
+   « Stage de 6 mois · à partir de début 2027 » et ne doit jamais être avalée
+   par le contact ni fusionnée dans le titre. */
+function isAvailabilityLine(value: string): boolean {
+  if (/^candidature\s*[—:–-]/i.test(value)) return true;
+  return /\b6\s*mois\b/i.test(value)
+    && /\b(?:d[ée]but|f[ée]vrier|à partir de|disponib|dès|debut)\b/i.test(value)
+    && /\b20\d{2}\b/.test(value)
+    && !/^[ée]l[èe]ve|ing[ée]nieur|étudiant/i.test(value);
+}
+
 /* Convertit un CV collé en texte libre → données structurées éditables.
    Déterministe et local : l'utilisateur peut corriger chaque champ ensuite. */
 export function parseCvText(text: string): CvData {
@@ -88,11 +99,9 @@ export function parseCvText(text: string): CvData {
       current = { key: uid(), title, kind: sectionKind(title), items: [], text: "" };
       sections.push(current);
       continue;
-    }
-    if (!current) {
-      if (/^stage\s+(?:ing[ée]nieur|de\s+fin\s+d[’']études)/i.test(l)) target = l;
+    }    if (!current) {
+      if (isAvailabilityLine(l)) target = target || l;
       else if (/@|(?:\+33|\(\+33\)|\b0[1-9])\s*\d|mobilité|permis|\(\d{2}\)|^portfolio\s*:/i.test(l)) contact += (contact ? "\n" : "") + l;
-      else if (/^candidature\s*[—:–-]/i.test(l)) target = l;
       else if (!headline && l.length < 140 && /ingénieur|étudiant|élève|commercial|développeur|technicien/i.test(l)) headline = l;
       else if (headline && l.length < 140 && /stage|alternance|disponib/i.test(l)) headline += " · " + l;
       else summaryLines.push(l);
@@ -144,7 +153,7 @@ export function parseCvText(text: string): CvData {
 export function normalizeCvData(input: CvData): CvData {
   const data: CvData = structuredClone(input);
   const contactLines = data.basics.contact.split("\n");
-  const targetLine = contactLines.find(line => /^stage\s+.*\b6\s*mois\b.*f[ée]vrier\s+2027/i.test(line.trim()));
+  const targetLine = contactLines.find(line => /^stage\s+.*\b6\s*mois\b.*(?:f[ée]vrier|d[ée]but)\s+2027/i.test(line.trim()));
   if (targetLine) {
     if (!data.basics.target) data.basics.target = targetLine.trim();
     data.basics.contact = contactLines.filter(line => line !== targetLine).join("\n");

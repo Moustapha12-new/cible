@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { GET as userDataGet, POST as userDataPost } from "../app/api/user-data/route";
+import { GET as careerGet, POST as careerPost } from "../app/api/offres/evaluate/route";
 import { createHash } from "node:crypto";
 import { NextRequest } from "next/server";
 import { authorizeApi, cookieOptions, SESSION_COOKIE } from "./auth-server";
@@ -69,6 +70,7 @@ async function main() {
     ["/api/gmail/disconnect", "DELETE", disconnect], ["/api/ai", "POST", ai],
     ["/api/scrape", "POST", scrape], ["/api/jobs", "GET", jobs],
     ["/api/user-data", "GET", userDataGet], ["/api/user-data", "POST", userDataPost],
+    ["/api/offres/evaluate", "GET", careerGet], ["/api/offres/evaluate", "POST", careerPost],
   ];
   for (const [path, method, handler] of routes) {
     assert.equal((await handler(request(path, method, "", method === "POST" ? {} : undefined))).status, 401, `anonymous ${path}`);
@@ -143,6 +145,6 @@ async function main() {
   const aliceCache = withGmailAccount("alice@example.test", () => enrichCacheKey("https://job.invalid/one"));
   const bobCache = withGmailAccount("bob@example.test", () => enrichCacheKey("https://job.invalid/one"));
   assert.notEqual(aliceCache, bobCache, "enrichment caches cannot share personal email-derived data");
-  console.log("Security batch: anonymous access on 12 endpoints, 12 cross-account checks, forged/unconfirmed session, CSRF, checkpoint ownership, OAuth state and quota failures passed. No external access.");
+  console.log(`Security batch: anonymous access on ${routes.length} routes, ${routes.length} cross-account checks, forged/unconfirmed session, CSRF, checkpoint ownership, OAuth state and quota failures passed. No external access.`);
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

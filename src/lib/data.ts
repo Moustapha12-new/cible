@@ -132,6 +132,8 @@ export type Profile = {
 };
 
 export type UserData = {
+  careerReports?: Record<string, import("./career-evaluation").CareerReport>;
+  careerRequirementCache?: Record<string, { requirements: import("./career-evaluation").CareerRequirement[]; createdAt: string }>;
   offerCvOverrides?: Record<string, OfferCvFile>;
   bulkCvQueue?: {
     offerId: string;

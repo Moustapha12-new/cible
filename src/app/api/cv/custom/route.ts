@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { securedRoute } from "@/lib/auth-server";
 import { loadUserRecord, saveUserRecord } from "@/lib/candidature-server";
 import { documentFileError, putDocument, getDocument } from "@/lib/document-storage";
-import { computeSha256 } from "@/lib/pdf-generator";
+import { createHash } from "node:crypto";
+const computeSha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 import type { OfferCvFile } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 export const POST = securedRoute(async (req, { user }) => {
   try {
     const form = await req.formData();
@@ -16,19 +18,10 @@ export const POST = securedRoute(async (req, { user }) => {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const invalid = documentFileError(file.name, "application/pdf", bytes);
     if (invalid) return NextResponse.json({ ok: false, error: invalid }, { status: 400 });
-    const pdf = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const document = await pdf.getDocument({ data: bytes.slice(), useSystemFonts: true }).promise;
-    let text = "";
-    try {
-      if (document.numPages > 20) throw new Error("Choisis un CV de vingt pages maximum.");
-      for (let i = 1; i <= document.numPages && text.length < 100_000; i++) {
-        const content = await (await document.getPage(i)).getTextContent();
-        text += content.items.map(item => "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "").join("") + "\n";
-      }
-    } finally { document.cleanup(); }
+    // Le PDF personnel est une archive binaire exacte : aucune extraction ni worker requis.
     const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9_.-]/g, "_").slice(-180).replace(/\.pdf$/i, ".pdf");
     const fileName = safeName === ".pdf" ? "CV-personnel.pdf" : safeName;
-    const metadata: OfferCvFile = { offerId, fileName, documentId: crypto.randomUUID(), versionId: crypto.randomUUID(), sha256: await computeSha256(bytes), uploadedAt: new Date().toISOString(), text: text.slice(0, 100_000) };
+    const metadata: OfferCvFile = { offerId, fileName, documentId: crypto.randomUUID(), versionId: crypto.randomUUID(), sha256: await computeSha256(bytes), uploadedAt: new Date().toISOString() };
     await putDocument(user.id, metadata.documentId, metadata.versionId, bytes, "application/pdf");
     const record = await loadUserRecord(user);
     await saveUserRecord(user, { ...record, data: { ...record.data, offerCvOverrides: { ...record.data.offerCvOverrides, [offerId]: metadata } } });

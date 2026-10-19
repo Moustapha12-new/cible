@@ -1,4 +1,5 @@
 "use client";
+import { currentCareerReport } from "@/lib/career-evaluation";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -101,7 +102,7 @@ const isExpiredOffer = (o: DetectedOffer) =>
   /^\d{4}-\d{2}-\d{2}$/.test(o.deadline) &&
   Date.parse(`${o.deadline}T23:59:59`) < Date.now();
 
-function toTableRow(o: DetectedOffer, applied: boolean): DemoTableOffer {
+function toTableRow(o: DetectedOffer, applied: boolean, report?: import("@/lib/career-evaluation").CareerReport | null): DemoTableOffer {
   const tags = (o.skills?.length ? o.skills : o.keywords || []).slice(0, 3);
   const expired = isExpiredOffer(o);
   return {
@@ -116,6 +117,8 @@ function toTableRow(o: DetectedOffer, applied: boolean): DemoTableOffer {
     receivedAt: o.receivedAt,
     /* Jamais de score inventé : « — » tant qu'aucun matching n'a été calculé. */
     matchPercentage: o.cvCoverage?.score ?? null,
+    careerScore: report?.score,
+    careerReason: report ? `${report.reason} · Confiance ${report.confidence}` : undefined,
     matchExplanation: o.cvCoverage?.reason,
     status: applied ? "postulee" : expired ? "expiree" : o.gmailStatus === "nouvelle" ? "nouvelle" : "a_traiter",
     url: o.url,
@@ -595,7 +598,7 @@ export default function OffresPage() {
     if (demoMode) return demoRows;
     if (!data) return [];
     return applyOfferFilters(data.offers, sideFilters).map((o) =>
-      toTableRow(o, appliedOfferIds.has(o.id))
+      toTableRow(o, appliedOfferIds.has(o.id), currentCareerReport(o, data))
     );
   }, [demoMode, demoRows, data, sideFilters, appliedOfferIds]);
 

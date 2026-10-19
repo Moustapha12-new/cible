@@ -12,6 +12,8 @@ import { discoveryToDetectedOffer } from "@/lib/discovery-view";
 import { parseCvText, DEFAULT_CV_DESIGN } from "@/lib/cv";
 import { applyPlanToCv } from "@/lib/cv-plan-apply";
 import { applicationPdf } from "@/lib/cv-application-pdf";
+import { evaluateAndSaveCareer } from "@/lib/career-evaluation-server";
+import { currentCareerReport } from "@/lib/career-evaluation";
 
 export const dynamic = "force-dynamic";
 
@@ -93,9 +95,13 @@ export const POST = securedRoute(async (req, { user }) => {
     let operations: PlanOperation[] = accepted;
     let recruiter: RecruiterReport | undefined;
     let aiError: string | undefined;
+    let careerReport = currentCareerReport(offer, data);
     if (body.rewrite === true && masterText && !plan.noChange) {
+      try { careerReport = await evaluateAndSaveCareer(user, offer, data); }
+      catch (error) { aiError = `Évaluation détaillée indisponible : ${error instanceof Error ? error.message : "erreur inconnue"}.`; }
       try {
         const aiBody: Body = {
+          careerContext: JSON.stringify(careerReport),
           cvOriginal: masterText,
           offerText,
           orientation: "electrical",
@@ -114,12 +120,14 @@ export const POST = securedRoute(async (req, { user }) => {
 
     const changed = applyPlanToCv(cvData || parseCvText(masterText), operations).cv;
     if (recruiter?.headline) changed.basics.headline = recruiter.headline;
-    const { cv: preparedCv } = await applicationPdf(changed, data.cvDesign || DEFAULT_CV_DESIGN, offerText);
+    const { cv: preparedCv, keywordAudit } = await applicationPdf(changed, data.cvDesign || DEFAULT_CV_DESIGN, offerText, careerReport?.requirements.map(r => r.term) || analysis.topNeeds, careerReport?.requirements.filter(r => r.importance === "critical" || r.importance === "high").map(r => r.term) || analysis.topNeeds);
     return NextResponse.json({
       ok: true,
       preparedCv,
       analysis,
       strategy,
+      careerReport,
+      keywordAudit,
       plan: { ...plan, operations },
       rejected,
       ...(recruiter ? { recruiter } : {}),

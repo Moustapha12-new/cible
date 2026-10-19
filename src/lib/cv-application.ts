@@ -1,4 +1,5 @@
 import type { CvData, CvItem, CvSection } from "./cv";
+import { chronologicalExperiences } from "./career-cv-checks";
 
 const tokens = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().match(/[a-z0-9+#]{3,}/g) || [];
 const uncertain = /[àa] confirmer|[àa] v[ée]rifier|[ée]voqu[ée]|selon les [ée]l[ée]ments ant[ée]rieurs|avant diffusion externe/i;
@@ -7,13 +8,14 @@ const categories = ["Génie électrique", "Énergies & performance", "Données, 
 
 /** Compose la copie de candidature depuis le dossier long, sans toucher au maître.
  * Les mentions internes ne sont pas des réalisations à envoyer au recruteur. */
-export function prepareApplicationCv(source: CvData, offerText: string): CvData {
-  const cv = structuredClone(source);
+export function prepareApplicationCv(source: CvData, offerText: string, priorityTerms: string[] = []): CvData {
+  const cv = chronologicalExperiences(source);
   const sourceText = JSON.stringify(source);
   if (!internal.test(sourceText) && !uncertain.test(sourceText)
     && sourceText.split(/\s+/).length < 480) return cv;
   const terms = new Set(tokens(offerText));
-  const rank = (value: string) => tokens(value).reduce((sum, token) => sum + (terms.has(token) ? 1 : 0), 0);
+  const priorities = new Set(tokens(priorityTerms.join(" ")));
+  const rank = (value: string) => tokens(value).reduce((sum, token) => sum + (terms.has(token) ? 1 : 0) + (priorities.has(token) ? 3 : 0), 0);
   const clean = (value: string) => value
     .replace(/\s*[·—–-]?\s*attest[ée] dans CV r[ée]cent/gi, "")
     .replace(/\s*\((?:pratiqu[ée]|d[ée]clar[ée])\)/gi, "")

@@ -87,7 +87,7 @@ export async function authorizeApi(req: NextRequest, options: ApiBodyOptions = {
   const owners = [url.searchParams.get("email"), body.email].filter(v => v !== null && v !== undefined);
   if (owners.some(email => typeof email !== "string" || email.trim().toLowerCase() !== user.email)) return fail(403, "Ce compte ne t’appartient pas.");
   if (!allowRequest(`${user.id}:${url.pathname}`, req.method === "GET" || url.pathname === "/api/catalog/import" ? 120 : 12)) return fail(429, "Trop de demandes. Réessaie dans une minute.");
-  if (["/api/ai", "/api/scrape", "/api/jobs", "/api/gmail/sync", "/api/gmail/enrich", "/api/gmail/deep-recheck"].includes(url.pathname) || (url.pathname === "/api/user-data" && req.method === "POST")) {
+  if (["/api/ai", "/api/scrape", "/api/jobs", "/api/gmail/sync", "/api/gmail/enrich", "/api/gmail/deep-recheck"].includes(url.pathname) || (["/api/user-data", "/api/offres/evaluate", "/api/cv/adapt"].includes(url.pathname) && req.method === "POST")) {
     try {
       const { consumeQuota } = await import("./security-quota");
       if (!await consumeQuota(user.id, url.pathname)) return fail(429, "Trop de demandes. Réessaie dans une minute.");

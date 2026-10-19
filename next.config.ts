@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
      explicit, la génération PDF échoue en production avec
      « The input directory .../@sparticuz/chromium/bin does not exist ». */
   outputFileTracingIncludes: {
+    // PDF.js charge ce module dynamiquement : le traceur ne le détecte pas.
+    // Nécessaire aux imports de CV maîtres et aux contrôles PDF en serverless.
+    "/api/**/*": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"],
     "/api/cv/pdf": ["./node_modules/@sparticuz/chromium/bin/**/*"],
     "/api/cv/bulk": ["./node_modules/@sparticuz/chromium/bin/**/*"],
   },

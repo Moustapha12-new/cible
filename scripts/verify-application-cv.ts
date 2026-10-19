@@ -17,7 +17,9 @@ async function main() {
   }
   const cv = parseCvText(pages.join("\n\n"));
   const before = JSON.stringify(cv);
-  const rendered = await applicationPdf(cv, DEFAULT_CV_DESIGN, "Stage R&D optimisation de réseaux, Python, théorie des graphes, analyse de sensibilité");
+  const rendered = await applicationPdf(cv, DEFAULT_CV_DESIGN, "Stage R&D optimisation de réseaux, Python, théorie des graphes, analyse de sensibilité", ["Python", "CompétenceInventéeXYZ"]);
+  assert.ok(rendered.keywordAudit.present.includes("Python"), "Python présent dans le texte du PDF rendu");
+  assert.ok(rendered.keywordAudit.missing.includes("CompétenceInventéeXYZ"), "Mot absent signalé sans l'injecter dans le CV");
   assert.equal(JSON.stringify(cv), before, "Le CV maître reste intact");
   const text = cvToText(rendered.cv);
   assert.ok(!/référence interne|dossier maître|à confirmer|avant diffusion externe|attesté dans CV récent/i.test(text));

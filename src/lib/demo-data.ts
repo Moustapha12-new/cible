@@ -16,6 +16,8 @@ export interface DemoRecommendedOffer {
 }
 
 export interface DemoTableOffer {
+  careerScore?: number;
+  careerReason?: string;
   id: string;
   company: string;
   title: string;

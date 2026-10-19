@@ -40,6 +40,8 @@ import { DEFAULT_CV_DESIGN, parseCvText, cvToText, type CvData } from "@/lib/cv"
 import { applyPlanToCv, type ApplicableOperation } from "@/lib/cv-plan-apply";
 import { CompanyLogo } from "@/components/app/CompanyLogo";
 import { DocumentSheet } from "@/components/cv/DocumentSheet";
+import { CareerEvaluationCard } from "@/components/cv/CareerEvaluationCard";
+import type { CareerReport } from "@/lib/career-evaluation";
 
 /* La page n'utilise AUCUNE donnée de démonstration : l'offre sélectionnée
    vient toujours des offres réelles du dossier (`data.offers`). */
@@ -122,6 +124,8 @@ export default function CvPage() {
     warnings: string[];
   };
   const [recruiter, setRecruiter] = useState<RecruiterPanel | null>(null);
+  const [careerReport, setCareerReport] = useState<CareerReport | null>(null);
+  const [keywordAudit, setKeywordAudit] = useState<{ present: string[]; missing: string[] } | null>(null);
   const [planOps, setPlanOps] = useState<ApplicableOperation[]>([]);
   const [adaptationOfferId, setAdaptationOfferId] = useState<string | null>(null);
   const [preparedCv, setPreparedCv] = useState<CvData | null>(null);
@@ -219,6 +223,8 @@ export default function CvPage() {
       setSelectedOffer(match);
       setPlanOps([]);
       setRecruiter(null);
+      setCareerReport(null);
+      setKeywordAudit(null);
       setAdaptationOfferId(null);
       setPreparedCv(null);
     }
@@ -279,6 +285,9 @@ export default function CvPage() {
         setPreparedCv(null);
         setAdaptationOfferId(null);
         setPlanOps([]);
+        setCareerReport(null);
+        setKeywordAudit(null);
+        setRecruiter(null);
         try { saveData(user.email, next); } catch { /* Import déjà confirmé dans Supabase ; cache local facultatif. */ }
         setCandidateName(json.cvData.basics.name || user!.name || "");
         if (json.cvData.basics.headline) {
@@ -339,6 +348,8 @@ export default function CvPage() {
       setPlanOps(accepted);
       setPreparedCv(json.preparedCv);
       setRecruiter(json.recruiter ?? null);
+      setCareerReport(json.careerReport ?? null);
+      setKeywordAudit(json.keywordAudit ?? null);
       setAdaptationOfferId(selectedOffer.id);
       if (json.recruiter?.headline && !json.recruiter.headlineIssues?.length) {
         setAdaptedTitle(json.recruiter.headline);
@@ -722,6 +733,9 @@ export default function CvPage() {
           </div>
         </div>
 
+        <div className="lg:col-span-12 lg:order-last"><CareerEvaluationCard offer={{ id: selectedOffer.id, title: selectedOffer.title, company: selectedOffer.company, location: selectedOffer.location, text: selectedOffer.analysisText }} report={careerReport?.offerId === selectedOffer.id ? careerReport : null} onReport={setCareerReport} />
+          {keywordAudit && !customCv && <p className="text-xs text-slate-600 mt-2">Contrôle du PDF final · Mots-clés présents : {keywordAudit.present.join(", ") || "aucun"}. Absents : {keywordAudit.missing.join(", ") || "aucun"}. Une présence textuelle ne prouve pas la maîtrise ; aucun mot-clé absent n&apos;est ajouté automatiquement.</p>}
+        </div>
         {/* Center Column (6 cols ~ 50%): Aperçu côte à côte */}
         <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
@@ -1153,6 +1167,12 @@ export default function CvPage() {
                   type="button"
                   onClick={() => {
                     setSelectedOffer(o);
+                    setCareerReport(null);
+                    setKeywordAudit(null);
+                    setRecruiter(null);
+                    setPreparedCv(null);
+                    setAdaptationOfferId(null);
+                    setPlanOps([]);
                     setChangeOfferModal(false);
                     setToastMessage(`Offre changée pour ${o.company}.`);
                   }}

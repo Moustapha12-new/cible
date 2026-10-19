@@ -47,7 +47,7 @@ import { DailyOfferCard } from "@/components/offers/DailyOfferCard";
 import { AssistantAiCard } from "@/components/offers/AssistantAiCard";
 import { OffersTable, type OffersTabCounts } from "@/components/offers/OffersTable";
 import { FiltersSidebar } from "@/components/offers/FiltersSidebar";
-import { BottomWidgets } from "@/components/offers/BottomWidgets";
+import { BottomWidgets, ManualOfferCard } from "@/components/offers/BottomWidgets";
 
 /* ── Aide à la fusion multi-sources (identité + dédup conservées) ── */
 
@@ -866,7 +866,8 @@ export default function OffresPage() {
                 onSelectOffer={handleSelectOffer}
               />
             ))}
-            <div className="md:col-span-2 lg:col-span-4 xl:col-span-1">
+            <div className="md:col-span-2 lg:col-span-4 xl:col-span-1 flex flex-col gap-3.5">
+              <ManualOfferCard onAnalyzeUrl={handleAnalyzeUrl} onPasteTextClick={() => { setPastedNotice(null); setPasteModalOpen(true); }} analyzeSuccessMessage="Annonce récupérée dans le formulaire — complète puis enregistre." />
               <AssistantAiCard />
             </div>
           </div>
@@ -881,15 +882,19 @@ export default function OffresPage() {
                 onSelectOffer={handleSelectOffer}
               />
             ))}
-            <div className="md:col-span-2 lg:col-span-4 xl:col-span-1">
+            <div className="md:col-span-2 lg:col-span-4 xl:col-span-1 flex flex-col gap-3.5">
+              <ManualOfferCard onAnalyzeUrl={handleAnalyzeUrl} onPasteTextClick={() => { setPastedNotice(null); setPasteModalOpen(true); }} analyzeSuccessMessage="Annonce récupérée dans le formulaire — complète puis enregistre." />
               <AssistantAiCard priorityCount={recommendationPriorities} />
             </div>
           </div>
         ) : (
+          <div className="flex flex-col gap-3.5">
           <div className="px-4 py-6 rounded-2xl border border-slate-200/90 bg-white text-xs text-slate-500">
             {loadState.loading
               ? "Calcul de vos recommandations…"
               : "Aucune recommandation calculée pour le moment : synchronise Gmail pour importer tes offres, puis complète ton CV principal pour affiner la sélection."}
+          </div>
+          <ManualOfferCard onAnalyzeUrl={handleAnalyzeUrl} onPasteTextClick={() => { setPastedNotice(null); setPasteModalOpen(true); }} analyzeSuccessMessage="Annonce récupérée dans le formulaire — complète puis enregistre." />
           </div>
         )}
       </section>
@@ -952,6 +957,7 @@ export default function OffresPage() {
       {/* ── Section 3: Bottom 3 widgets ── */}
       <section className="pt-2">
         <BottomWidgets
+          hideManual
           onAnalyzeUrl={handleAnalyzeUrl}
           onPasteTextClick={() => {
             setPastedNotice(null);

@@ -19,15 +19,14 @@ interface BottomWidgetsProps {
   queueItems?: PreparationQueueItem[];
   queueLabel?: string;
   analyzeSuccessMessage?: string;
+  hideManual?: boolean;
 }
 
-export function BottomWidgets({
+export function ManualOfferCard({
   onAnalyzeUrl,
   onPasteTextClick,
-  queueItems,
-  queueLabel,
   analyzeSuccessMessage,
-}: BottomWidgetsProps) {
+}: Pick<BottomWidgetsProps, "onAnalyzeUrl" | "onPasteTextClick" | "analyzeSuccessMessage">) {
   const [inputUrl, setInputUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [notice, setNotice] = useState("");
@@ -49,8 +48,6 @@ export function BottomWidgets({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-      {/* Widget 1: Ajouter une offre manuellement */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -62,13 +59,13 @@ export function BottomWidgets({
             </h3>
           </div>
 
-          <form onSubmit={handleAnalyze} className="flex gap-2 mb-2.5">
+          <form onSubmit={handleAnalyze} className="flex flex-col sm:flex-row xl:flex-col gap-2 mb-2.5">
             <input
               type="url"
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               placeholder="Colle l'URL de l'offre ici…"
-              className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="min-w-0 flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <button
               type="submit"
@@ -104,6 +101,13 @@ export function BottomWidgets({
           L&apos;IA récupère automatiquement les informations (entreprise, missions, compétences…).
         </p>
       </div>
+  );
+}
+
+export function BottomWidgets({ onAnalyzeUrl, onPasteTextClick, queueItems, queueLabel, analyzeSuccessMessage, hideManual = false }: BottomWidgetsProps) {
+  return (
+    <div className={`grid grid-cols-1 md:grid-cols-2 ${hideManual ? "" : "lg:grid-cols-3"} gap-5`}>
+      {!hideManual && <ManualOfferCard onAnalyzeUrl={onAnalyzeUrl} onPasteTextClick={onPasteTextClick} analyzeSuccessMessage={analyzeSuccessMessage} />}
 
       {/* Widget 2: File de préparation */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 flex flex-col">

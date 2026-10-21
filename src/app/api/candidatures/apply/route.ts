@@ -3,7 +3,7 @@ import { securedRoute } from "@/lib/auth-server";
 import { loadUserRecord, saveUserRecord } from "@/lib/candidature-server";
 import { getDocument, documentObjectPath } from "@/lib/document-storage";
 import { computeSha256 } from "@/lib/pdf-generator";
-import type { Application, DetectedOffer, UserData } from "@/lib/data";
+import { offerSnapshot, type Application, type DetectedOffer, type UserData } from "@/lib/data";
 import { cvToText } from "@/lib/cv";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +45,7 @@ export const POST = securedRoute(async (req, { user }) => {
         ...(existing?.sentDocumentVersions || []), { documentId, versionId, sha256, fileName, sentAt: now, source: personal ? "personal" : "generated" },
       ],
       statusHistory: existing ? existing.statusHistory : [{ status: "sent", at: now }],
+      offerSnapshot: offerSnapshot(offer),
     };
     const next: UserData = {
       ...record.data,

@@ -31,6 +31,7 @@ import { useAuth } from "@/lib/auth";
 import {
   getOrCreateData,
   saveData,
+  mergeUserData,
   type UserData,
   type Application,
   type AppStatus,
@@ -85,7 +86,12 @@ export default function CandidaturesPage() {
       .then((json) => {
         if (!json.ok || !json.record?.data) return;
         const remote = json.record.data as UserData;
-        setData(remote);
+        /* Fusion serveur (source de vérité) + apports de l'appareil, puis
+           mise en cache local : une candidature archivée depuis un autre
+           écran reste visible même hors ligne ensuite. */
+        const merged = mergeUserData(remote, local);
+        setData(merged);
+        try { saveData(user.email, merged); } catch { /* Cache local facultatif. */ }
       })
       .catch(() => {});
   }, [user]);
@@ -103,11 +109,18 @@ export default function CandidaturesPage() {
     if (!data || !data.applications.length) return [];
     return data.applications.map((app) => {
       const offer = data.offers.find(o => o.id === app.offerId);
+      const snap = app.offerSnapshot;
+      const contractLine = (snap?.contract || offer?.contract) || "";
+      const durationLine = (snap?.duration || offer?.duration) || "";
+      const summaryText = (snap?.summary || offer?.description || offer?.text || "").trim();
+      const locationText = (snap?.location || offer?.location || "").trim();
+      const skillsList = (snap?.skills || offer?.skills || offer?.keywords || []);
+      const postedAt = snap?.receivedAt || offer?.receivedAt || snap?.deadline || offer?.deadline;
       return ({
       id: app.id,
       company: app.company,
-      title: app.role || offer?.title || "Intitulé non renseigné",
-      location: offer?.location || "Lieu non renseigné",
+      title: app.role || snap?.title || offer?.title || "Intitulé non renseigné",
+      location: locationText || "Lieu non renseigné",
       date: app.date
         ? new Date(app.date).toLocaleDateString("fr-FR")
         : "Date non renseignée",
@@ -120,13 +133,13 @@ export default function CandidaturesPage() {
           : app.status === "rejected"
           ? "Refusé"
           : "Postulé",
-      tags: (offer?.skills || offer?.keywords || []).slice(0, 3),
+      tags: skillsList.slice(0, 3),
       cvFileName: app.cvName || "CV non renseigné",
       cvFileSize: "Taille non renseignée",
       cvSentDate: (app.sentDocumentVersions?.at(-1)?.sentAt || app.date) ? new Date(app.sentDocumentVersions?.at(-1)?.sentAt || app.date!).toLocaleDateString("fr-FR") : "Date non renseignée",
-      offerSummary: offer?.description || offer?.text || "Description non enregistrée.",
-      offerContract: [offer?.contract, offer?.duration].filter(Boolean).join(" · ") || "Contrat non renseigné",
-      offerPostedDate: "Date de publication non renseignée",
+      offerSummary: summaryText || "Description non enregistrée.",
+      offerContract: [contractLine, durationLine].filter(Boolean).join(" · ") || "Contrat non renseigné",
+      offerPostedDate: postedAt && !Number.isNaN(Date.parse(postedAt)) ? new Date(postedAt).toLocaleDateString("fr-FR") : "Date de publication non renseignée",
       checklist: [],
       notes: app.notes || "",
       timeline: [
@@ -323,7 +336,7 @@ export default function CandidaturesPage() {
             Mes candidatures
           </h1>
           <p className="text-xs md:text-sm text-slate-500 mt-1">
-            Retrouve toutes tes candidatures et le CV exact envoyé pour chaque offre de stage de 6 mois.
+            Retrouve toutes tes candidatures et le CV exact envoyé pour chaque offre.
           </p>
         </div>
 
@@ -350,9 +363,6 @@ export default function CandidaturesPage() {
                 <span className="text-2xl font-black text-slate-900 tracking-tight">
                   {kpis.total}
                 </span>
-                <span className="text-[11px] font-bold text-emerald-600">
-                  ↑ +5 ce mois
-                </span>
               </div>
               <span className="text-xs text-slate-500 font-medium">
                 Candidatures envoyées
@@ -371,9 +381,6 @@ export default function CandidaturesPage() {
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-black text-slate-900 tracking-tight">
                   {kpis.interviews}
-                </span>
-                <span className="text-[11px] font-bold text-emerald-600">
-                  ↑ +2 ce mois
                 </span>
               </div>
               <span className="text-xs text-slate-500 font-medium">
@@ -394,9 +401,6 @@ export default function CandidaturesPage() {
                 <span className="text-2xl font-black text-slate-900 tracking-tight">
                   {kpis.accepted}
                 </span>
-                <span className="text-[11px] font-bold text-emerald-600">
-                  ↑ +1 ce mois
-                </span>
               </div>
               <span className="text-xs text-slate-500 font-medium">
                 Offre acceptée
@@ -415,9 +419,6 @@ export default function CandidaturesPage() {
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-black text-slate-900 tracking-tight">
                   {kpis.rejected}
-                </span>
-                <span className="text-[11px] font-bold text-rose-600">
-                  ↑ +1 ce mois
                 </span>
               </div>
               <span className="text-xs text-slate-500 font-medium">Refusés</span>
@@ -739,7 +740,7 @@ export default function CandidaturesPage() {
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                 <span>📍 {selectedApp.location}</span>
                 <span>•</span>
-                <span>⏱ Stage • 6 mois</span>
+                <span>⏱ {demoMode ? "Stage • 6 mois" : data?.offers.find(o => o.id === data.applications.find(a => a.id === selectedApp.id)?.offerId)?.duration || "Durée non renseignée"}</span>
                 <span>•</span>
                 <span>📅 Posté le {selectedApp.offerPostedDate}</span>
               </div>

@@ -197,7 +197,19 @@ export function normalizeCvData(input: CvData): CvData {
 }
 
 /* Convertit les données structurées → texte brut (aperçu copiable, trace par candidature). */
+/* Cache par identité d'objet : le CV maître est souvent repris tel quel (analyse
+   d'offres, empreintes, couverture CV) — on ne reparse pas le même objet N fois. */
+const cvTextCache = new WeakMap<CvData, string>();
+
 export function cvToText(data: CvData): string {
+  const cached = cvTextCache.get(data);
+  if (cached !== undefined) return cached;
+  const text = cvToTextUncached(data);
+  cvTextCache.set(data, text);
+  return text;
+}
+
+function cvToTextUncached(data: CvData): string {
   return [
     data.basics.name,
     data.basics.headline,

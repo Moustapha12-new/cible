@@ -38,7 +38,44 @@ export type Application = {
   sentCvAdaptationId?: string;
   sentDocumentVersions?: { documentId: string; versionId: string; sha256?: string; fileName?: string; sentAt?: string; source?: "personal" | "generated" }[];
   statusHistory?: { status: AppStatus; at: string }[];
+  /** Instantané de l'offre au moment de la candidature : la fiche reste affichable
+   *  même si l'offre source disparaît du dossier ou n'a que titre/entreprise. */
+  offerSnapshot?: OfferSnapshot;
 };
+
+/** Champs d'affichage figés au moment où l'on postule (offre venue d'un lien
+ *  externe, Gmail ou ajout manuel) — pour ne jamais afficher « Lieu non renseigné »
+ *  alors que l'offre portait ces informations. */
+export type OfferSnapshot = {
+  title?: string;
+  location?: string;
+  /** Résumé lisible : description si présente, sinon texte brut de l'annonce. */
+  summary?: string;
+  contract?: string;
+  duration?: string;
+  deadline?: string;
+  receivedAt?: string;
+  skills?: string[];
+  salary?: string;
+  url?: string;
+};
+
+/** Extrait l'instantané d'affichage d'une offre au moment de la candidature. */
+export function offerSnapshot(offer: DetectedOffer): OfferSnapshot {
+  const summary = (offer.description || offer.text || offer.summary || "").trim();
+  return {
+    title: offer.title?.trim() || undefined,
+    location: offer.location?.trim() || undefined,
+    summary: summary ? summary.slice(0, 4000) : undefined,
+    contract: offer.contract?.trim() || undefined,
+    duration: offer.duration?.trim() || undefined,
+    deadline: offer.deadline?.trim() || undefined,
+    receivedAt: offer.receivedAt || undefined,
+    skills: (offer.skills?.length ? offer.skills : offer.keywords)?.slice(0, 8),
+    salary: offer.salary?.trim() || undefined,
+    url: offer.url || undefined,
+  };
+}
 
 export type Letter = {
   id: string;
@@ -418,6 +455,73 @@ export function resetData(name: string, email: string): UserData {
   const fresh = isDemo ? seedData(name, email) : emptyData(name, email);
   saveData(email, fresh);
   return fresh;
+}
+
+/* Fusion conservatrice entre le dossier serveur (base, source de vérité) et
+   les ajouts d'un appareil. On ne fait QUE l'addition : rien de ce qui
+   n'existe que côté serveur (candidatures archivées par /api/candidatures/apply,
+   CV importé, offres manuelles/Gmail…) n'est jamais écrasé par un état local
+   incomplet. */
+export function mergeUserData(base: UserData, addition: UserData): UserData {
+  const unionById = <T extends { id: string }>(first: T[] | undefined, second: T[] | undefined): T[] => {
+    const seen = new Set((first ?? []).map((row) => row.id));
+    return [...(first ?? []), ...(second ?? []).filter((row) => !seen.has(row.id))];
+  };
+  const unionBy = <T>(first: T[] | undefined, second: T[] | undefined, key: (row: T) => string): T[] => {
+    const seen = new Set((first ?? []).map(key));
+    return [...(first ?? []), ...(second ?? []).filter((row) => !seen.has(key(row)))];
+  };
+  const unionMaps = <T>(first: Record<string, T> | undefined, second: Record<string, T> | undefined): Record<string, T> | undefined =>
+    first || second ? { ...(second ?? {}), ...(first ?? {}) } : undefined;
+  const queue = [...(base.bulkCvQueue ?? [])];
+  for (const item of addition.bulkCvQueue ?? []) {
+    if (!queue.some((row) => row.offerId === item.offerId && row.key === item.key)) queue.push(item);
+  }
+  const mailKeys = new Set((base.gmailAssociations ?? []).map((row) => `${row.caseKey}:${row.gmailId}`));
+  return {
+    ...base,
+    v: APP_VERSION,
+    profile: base.profile || addition.profile,
+    cvDesign: base.cvDesign || addition.cvDesign,
+    cvDesignVersion: base.cvDesignVersion ?? addition.cvDesignVersion,
+    originalCv: base.originalCv?.text?.trim() ? base.originalCv : addition.originalCv || base.originalCv,
+    cvData: base.cvData || addition.cvData,
+    cvPreservedData: base.cvPreservedData || addition.cvPreservedData,
+    autopilot: base.autopilot || addition.autopilot,
+    cvs: unionById(base.cvs, addition.cvs),
+    /* Une seule candidature par offre : si deux appareils ont créé des entrées
+       distinctes pour la même offre (marquage manuel + envoi archivé), on
+       garde la plus informative (CV archivé > statut > la plus récente). */
+    applications: (() => {
+      const byOffer = new Map<string, Application>();
+      const withoutOffer: Application[] = [];
+      for (const row of [...(base.applications ?? []), ...(addition.applications ?? [])]) {
+        if (!row.offerId) { if (!withoutOffer.some((item) => item.id === row.id)) withoutOffer.push(row); continue; }
+        const kept = byOffer.get(row.offerId);
+        if (!kept) { byOffer.set(row.offerId, row); continue; }
+        const rank = (item: Application) => (item.sentDocumentVersions?.length ? 2 : item.status !== "sent" ? 1 : 0);
+        if (rank(row) > rank(kept) || (rank(row) === rank(kept) && (row.date || "") > (kept.date || ""))) byOffer.set(row.offerId, row);
+      }
+      return [...byOffer.values(), ...withoutOffer];
+    })(),
+    letters: unionById(base.letters, addition.letters),
+    offers: unionById(base.offers, addition.offers),
+    recruiters: unionBy(base.recruiters, addition.recruiters, (row) => row.email.toLowerCase() || `${row.name}|${row.company}`),
+    documents: unionById(base.documents, addition.documents),
+    gmailAssociations: [
+      ...(base.gmailAssociations ?? []),
+      ...(addition.gmailAssociations ?? []).filter((row) => !mailKeys.has(`${row.caseKey}:${row.gmailId}`)),
+    ],
+    bulkCvQueue: queue,
+    tailorings: [...(base.tailorings ?? []), ...(addition.tailorings ?? [])].slice(0, 8),
+    dossiers: unionMaps(base.dossiers, addition.dossiers),
+    offerCvOverrides: unionMaps(base.offerCvOverrides, addition.offerCvOverrides),
+    careerReports: unionMaps(base.careerReports, addition.careerReports),
+    careerRequirementCache: unionMaps(base.careerRequirementCache, addition.careerRequirementCache),
+    pfeAnalyses: unionMaps(base.pfeAnalyses, addition.pfeAnalyses),
+    cvAdaptations: unionMaps(base.cvAdaptations, addition.cvAdaptations),
+    offerQualifications: unionMaps(base.offerQualifications, addition.offerQualifications),
+  };
 }
 
 export const isEmptyData = (d: UserData) =>

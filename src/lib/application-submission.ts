@@ -1,4 +1,5 @@
 import type { UserData, Application, DetectedOffer, AppStatus } from "./data";
+import { offerSnapshot } from "./data";
 import { sentDocumentSnapshot } from "./pfe-documents";
 import { getApprovedCVText, cvMasterText } from "./cv-adaptation";
 import type { DocumentRecord } from "./pfe-documents";
@@ -122,6 +123,7 @@ export function confirmSubmission(
     sentCvAdaptationId: sentSnapshot.sentCvAdaptationId,
     sentDocumentVersions: sentSnapshot.sentDocumentVersions,
     statusHistory: [{ status: "sent", at: submission.sentAt }],
+    offerSnapshot: offerSnapshot(offer),
   };
 
   let nextApplications: Application[];

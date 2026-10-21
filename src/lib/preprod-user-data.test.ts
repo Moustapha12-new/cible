@@ -16,7 +16,7 @@ async function main() {
     alice: { id: "11111111-1111-4111-8111-111111111111", email: "alice@example.test" },
     bob: { id: "22222222-2222-4222-8222-222222222222", email: "bob@example.test" },
   };
-  process.env.SUPABASE_URL = "https://user-data-fixture.invalid"; process.env.SUPABASE_SECRET_KEY = "sb_secret_fixture";
+  process.env.SUPABASE_URL = "https://user-data-fixture.invalid"; process.env.SUPABASE_SECRET_KEY = "sb_secret_fixture"; process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_secret_fixture";
   const nativeFetch = globalThis.fetch;
   globalThis.fetch = async (input, init) => {
     const url = new URL(String(input)); assert.equal(url.hostname, "user-data-fixture.invalid");
@@ -42,7 +42,10 @@ async function main() {
     assert.equal((await POST(req("POST", "alice",{ version:0,data, email:users.bob.email }))).status,403);
     assert.equal((await POST(req("POST", "alice",{ version:0,data }))).status,200);
     const restored=await (await GET(req("GET","alice"))).json(); assert.deepEqual(restored.record.data,data);
-    assert.equal((await (await GET(req("GET","bob"))).json()).record,null);
+    const bobRecord = (await (await GET(req("GET","bob"))).json()).record;
+    assert.equal(bobRecord.version, 0);
+    assert.deepEqual(bobRecord.data.applications, []);
+    assert.deepEqual(bobRecord.data.offers, []);
     assert.equal((await GET(req("GET","bob",undefined,`?email=${users.alice.email}`))).status,403);
     const updated={...data,note:"Updated"};
     const writes=await Promise.all([POST(req("POST","alice",{version:1,data:updated})),POST(req("POST","alice",{version:1,data:{...data,note:"Other"}}))]);

@@ -1,4 +1,5 @@
 import type { DetectedOffer, UserData } from "./data";
+import { appliedOfferIds } from "./applied-offers";
 
 export type DailyPick = { id: string; reason: string; present: string[]; missing: string[]; priority: boolean };
 export type DailySelection = { date: string; signature: string; picks: DailyPick[]; usedAi: boolean };
@@ -18,7 +19,7 @@ export function selectionSignature(offers: DetectedOffer[], cv: string): string 
 }
 
 export function eligibleOffers(offers: DetectedOffer[], data: UserData): DetectedOffer[] {
-  const applied = new Set(data.applications.map(a => a.offerId));
+  const applied = appliedOfferIds(data);
   const seen = new Set<string>();
   return offers.filter(o => {
     if (applied.has(o.id)) return false;

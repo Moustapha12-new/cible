@@ -8,6 +8,8 @@ const runner = join(dir, "run.cjs");
 writeFileSync(runner, `const Module = require('module'); const path = require('path');
 const original = Module._resolveFilename;
 Module._resolveFilename = function(name, parent, ...args) { if(name.startsWith('@/')) name = path.join(${JSON.stringify(dir)}, 'src', name.slice(2)); return original.call(this, name, parent, ...args); };
+const originalLoad = Module._load;
+Module._load = function(request, parent, isMain) { if (request === 'server-only') return {}; return originalLoad.call(this, request, parent, isMain); };
 require(path.join(${JSON.stringify(dir)}, 'src/lib', process.argv[2] + '.test.js'));`);
 const suites = process.argv.slice(2);
 for (const suite of suites.length ? suites : ["auth-security"]) {

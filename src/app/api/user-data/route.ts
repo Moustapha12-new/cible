@@ -21,7 +21,12 @@ export const POST = securedRoute(async (req, auth) => {
   try {
     await saveUserRecord(auth.user, { data: body.data, version: body.version });
     return NextResponse.json({ ok: true, version: body.version + 1 }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (error) {
+    /* Conflit de version (écriture concurrente) : contrat 409 documenté —
+       le client recharge puis réessaie ; aucune donnée n'est perdue. */
+    if (error instanceof Error && error.message.startsWith("Le dossier a changé")) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 409, headers: { "Cache-Control": "no-store" } });
+    }
     return NextResponse.json({ ok: false, error: "Sauvegarde indisponible. Aucune donnée locale supprimée." }, { status: 503 });
   }
 });

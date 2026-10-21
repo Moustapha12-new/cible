@@ -1,5 +1,5 @@
 import { cvToText, parseCvText, type CvData } from "./cv";
-import type { DetectedOffer, UserData } from "./data";
+import { offerSnapshot, type DetectedOffer, type UserData } from "./data";
 
 export function hasCvTerm(text: string, term: string): boolean {
   const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -39,6 +39,6 @@ export function markOfferApplied(data: UserData, offer: DetectedOffer): UserData
   const applicationId = crypto.randomUUID();
   const cvText = doc?.cvText || (data.cvData ? cvToText(data.cvData) : data.originalCv?.text || "");
   return { ...data, offers: [offer, ...data.offers.filter(o => o.id !== offer.id)],
-    applications: [{ id: applicationId, offerId: offer.id, company: offer.company, role: offer.title, status: "sent", daysAgo: 0, source: offer.source || "Alertes Gmail", date: new Date().toISOString(), cvText, letterText: doc?.letterText, notes: doc?.notes }, ...data.applications],
+    applications: [{ id: applicationId, offerId: offer.id, company: offer.company, role: offer.title, status: "sent", daysAgo: 0, source: offer.source || "Alertes Gmail", date: new Date().toISOString(), cvText, letterText: doc?.letterText, notes: doc?.notes, offerSnapshot: offerSnapshot(offer) }, ...data.applications],
     dossiers: { ...data.dossiers, [offer.id]: { cvText, letterText: "", notes: "", ...doc, applicationId, updatedAt: new Date().toISOString() } } };
 }

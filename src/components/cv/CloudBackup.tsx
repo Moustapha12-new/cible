@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { getOrCreateData, saveData, type UserData } from "@/lib/data";
+import { getOrCreateData, saveData, mergeUserData, type UserData } from "@/lib/data";
 export default function CloudBackup() {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
@@ -19,7 +19,12 @@ export default function CloudBackup() {
       const response = await fetch("/api/user-data", { cache: "no-store" });
       const result = await response.json(); if (!result.ok) throw new Error(result.error);
       if (mode === "save") {
-        const saved = await fetch("/api/user-data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: local, version: result.record?.version || 0 }) });
+        /* Fusion avec le dossier serveur : sauvegarder cet appareil ne doit
+           jamais effacer ce qui n'existe que sur le compte (candidatures
+           archivées depuis un autre écran, CV importé…). */
+        const remote = result.record?.data as UserData | undefined;
+        const merged = remote ? mergeUserData(remote, local) : local;
+        const saved = await fetch("/api/user-data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: merged, version: result.record?.version || 0 }) });
         const r = await saved.json(); if (!r.ok) throw new Error(r.error);
         setMessage("Dossier sauvegardé sur ton compte. La version précédente reste conservée côté serveur.");
       } else {

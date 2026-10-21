@@ -504,6 +504,15 @@ export default function CvPage() {
       const res = await fetch("/api/candidatures/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ offer, ...file, cvText: customCv?.text || (preparedCv ? cvToText(preparedCv) : undefined) }) });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || "Archivage impossible.");
+      /* Mirror local : l'archivage est déjà côté serveur, mais l'appareil doit
+         le connaître pour que toute sauvegarde ultérieure (hors serveur) ne
+         l'écrase pas. */
+      if (user?.email && json.application?.id) {
+        const latest = getOrCreateData(user.name, user.email);
+        if (!latest.applications.some((row) => row.id === json.application.id)) {
+          try { saveData(user.email, { ...latest, applications: [json.application, ...latest.applications] }); } catch { /* Le dossier serveur reste la source de vérité. */ }
+        }
+      }
       router.push(`/app/candidatures?open=${encodeURIComponent(json.application.id)}`);
     } catch (error) { setToastMessage(error instanceof Error ? error.message : "Archivage impossible."); }
     finally { setCustomBusy(false); }
@@ -820,11 +829,11 @@ export default function CvPage() {
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-semibold text-slate-700">{customCv ? "Ton CV personnel" : "Après adaptation"}</span>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                    {customCv ? "Fichier original conservé" : "Optimisé pour l'offre"}
+                    {customCv ? "Fichier original conservé" : adaptationOfferId === selectedOffer.id ? "Adaptation vérifiée" : "En attente d’analyse"}
                   </span>
                 </div>
 
-                {customCv ? <iframe title="Mon PDF personnel pour cette offre" className="w-full h-[440px] rounded-xl border" src={`/api/cv/custom?offerId=${encodeURIComponent(selectedOffer.id)}&file=1&version=${customCv.versionId}`} /> : <DocumentSheet cv={adaptedCv} isAdapted={adaptationOfferId === selectedOffer.id} />}
+                {customCv ? <iframe title="Mon PDF personnel pour cette offre" className="w-full h-[440px] rounded-xl border" src={`/api/cv/custom?offerId=${encodeURIComponent(selectedOffer.id)}&file=1&version=${customCv.versionId}`} /> : adaptationOfferId === selectedOffer.id ? <DocumentSheet cv={adaptedCv} isAdapted /> : <div className="min-h-[440px] rounded-xl border border-dashed border-blue-200 bg-blue-50/40 p-6 flex flex-col justify-center text-center"><h3 className="text-sm font-semibold text-slate-900">Ton CV adapté apparaîtra ici</h3><p className="mt-2 text-xs text-slate-600">Lance l’analyse pour comparer les modifications avec ton CV maître. Aucune adaptation n’a encore été effectuée pour cette offre.</p></div>}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
@@ -877,7 +886,7 @@ export default function CvPage() {
               </div>
 
               {toggleActive === "after" ? (
-                customCv ? <iframe title="Mon PDF personnel pour cette offre" className="w-full h-[440px] rounded-xl border" src={`/api/cv/custom?offerId=${encodeURIComponent(selectedOffer.id)}&file=1&version=${customCv.versionId}`} /> : <DocumentSheet cv={adaptedCv} isAdapted={adaptationOfferId === selectedOffer.id} />
+                customCv ? <iframe title="Mon PDF personnel pour cette offre" className="w-full h-[440px] rounded-xl border" src={`/api/cv/custom?offerId=${encodeURIComponent(selectedOffer.id)}&file=1&version=${customCv.versionId}`} /> : adaptationOfferId === selectedOffer.id ? <DocumentSheet cv={adaptedCv} isAdapted /> : <div className="min-h-[440px] rounded-xl border border-dashed border-blue-200 bg-blue-50/40 p-6 flex flex-col justify-center text-center"><h3 className="text-sm font-semibold text-slate-900">Ton CV adapté apparaîtra ici</h3><p className="mt-2 text-xs text-slate-600">Lance l’analyse pour comparer les modifications avec ton CV maître. Aucune adaptation n’a encore été effectuée pour cette offre.</p></div>
               ) : (
                 <DocumentSheet cv={masterCv} isAdapted={false} />
               )}

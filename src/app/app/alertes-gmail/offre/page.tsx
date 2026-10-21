@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { getOrCreateData, saveData, type UserData } from "@/lib/data";
+import { getOrCreateData, saveData, offerSnapshot, type UserData } from "@/lib/data";
 import { AppPageHead } from "@/components/app/AppShell";
 import { AI_LABEL } from "@/lib/ai-labels";
 import { enrichBadge, isIndirectOfferUrl, stripHtml, type DashboardPayload, type ProcessedEmail, type RawOffer } from "@/lib/gmail-dashboard";
@@ -484,6 +484,7 @@ export default function OfferDetailPage() {
         {
           id: uid(),
           offerId: offerToDetectedOffer(offer).id,
+          offerSnapshot: offerSnapshot(offerToDetectedOffer(offer)),
           company: offer.company || "Entreprise non précisée",
           role: offer.title || "Offre Gmail",
           status: "sent",

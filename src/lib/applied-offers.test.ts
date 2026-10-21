@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import { emptyData, type DetectedOffer } from "./data";
+import { appliedOfferIds, visibleInOfferTab } from "./applied-offers";
+import { eligibleOffers } from "./daily-recommendations";
+
+const offer = (id: string, url: string): DetectedOffer => ({ id, url, title: "Stage génie électrique", company: "Test", location: "France", salary: "", match: 0, keywords: [], text: "Stage de six mois en génie électrique", duration: "6 mois" });
+const data = emptyData("Test", "test@example.test");
+data.offers = [offer("gmail", "https://jobs.smartrecruiters.com/Test/123456789012-stage"), offer("manual", "https://jobs.smartrecruiters.com/Test/123456789012-stage?utm_source=email"), offer("distinct", "https://jobs.smartrecruiters.com/Test/123456789013-stage")];
+data.applications = [{ id: "application", offerId: "old-source-id", offerUrl: data.offers[0].url, company: "Test", role: "Stage génie électrique", status: "interview", daysAgo: 0, source: "Test" }];
+const applied = appliedOfferIds(data);
+assert.ok(applied.has("gmail"));
+assert.ok(applied.has("manual"));
+assert.ok(!applied.has("distinct"), "Même titre, référence différente : reste visible");
+assert.deepEqual(eligibleOffers(data.offers, data).map(o => o.id), ["distinct"]);
+for (const tab of ["all", "new", "todo", "favorites", "expired"]) assert.equal(visibleInOfferTab("postulee", tab), false);
+assert.equal(visibleInOfferTab("postulee", "applied"), true);
+assert.equal(visibleInOfferTab("nouvelle", "applied"), false);
+assert.equal(visibleInOfferTab("nouvelle", "all"), true);
+const restored = JSON.parse(JSON.stringify(data));
+assert.deepEqual([...appliedOfferIds(restored)], [...applied], "Statut conservé après rechargement");
+data.applications[0].status = "rejected";
+assert.ok(appliedOfferIds(data).has("gmail"), "Un refus ne remet pas l'offre à traiter");
+console.log("Offres postulées : masquées du flux et des recommandations, conservées dans l'onglet dédié, doublons et rechargement vérifiés.");

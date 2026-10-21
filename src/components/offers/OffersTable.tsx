@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bookmark,
@@ -65,6 +65,11 @@ export function OffersTable({
   const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [sortOrder, setSortOrder] = useState<"recent" | "match" | "company" | "expert">("recent");
 
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [offers, sortOrder]);
+  const pageCount = Math.max(1, Math.ceil(offers.length / 25));
+  const currentPage = Math.min(page, pageCount);
+
   const tabs = [
     { id: "all", label: tabCounts ? `Toutes mes offres (${tabCounts.all})` : `Toutes mes offres (${totalOffersCount})` },
     { id: "new", label: tabCounts ? `Nouvelles (${tabCounts.new})` : "Nouvelles" },
@@ -96,6 +101,8 @@ export function OffersTable({
     return rows;
   }, [offers, sortOrder]);
 
+  const visibleOffers = sortedOffers.slice((currentPage - 1) * 25, currentPage * 25);
+
   return (
     <div className="flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
       {/* Tabs and View Switcher Header */}
@@ -108,7 +115,7 @@ export function OffersTable({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => onTabChange(tab.id)}
+                onClick={() => { setPage(1); onTabChange(tab.id); }}
                 className={`pb-3 px-3 text-xs font-semibold whitespace-nowrap transition-colors relative ${
                   isActive
                     ? "text-blue-600 border-b-2 border-blue-600"
@@ -181,7 +188,7 @@ export function OffersTable({
         </div>
       ) : viewMode === "list" ? (
         <div className="divide-y divide-slate-100">
-          {sortedOffers.map((offer) => {
+          {visibleOffers.map((offer) => {
             const isSelected = selectedIds.has(offer.id);
             const isFav = favorites.has(offer.id);
 
@@ -287,7 +294,7 @@ export function OffersTable({
       ) : (
         /* Card View */
         <div className="grid grid-cols-1 md:grid-cols-2 p-4 gap-3">
-          {sortedOffers.map((offer) => (
+          {visibleOffers.map((offer) => (
             <div
               key={offer.id}
               className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-300 transition-all flex flex-col gap-2"
@@ -344,7 +351,7 @@ export function OffersTable({
             <button
               type="button"
               onClick={() => {
-                selectedIds.forEach((id) => onToggleFavorite(id));
+                selectedIds.forEach((id) => { if (!favorites.has(id)) onToggleFavorite(id); });
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium rounded-lg transition-colors"
             >
@@ -374,6 +381,11 @@ export function OffersTable({
           </div>
         </div>
       )}
+      {pageCount > 1 && <nav aria-label="Pagination des offres" className="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-3 text-xs">
+        <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">Précédent</button>
+        <span aria-live="polite">Page {currentPage} / {pageCount} · {offers.length} offres</span>
+        <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">Suivant</button>
+      </nav>}
     </div>
   );
 }

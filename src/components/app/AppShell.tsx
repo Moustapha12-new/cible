@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
 import type { UserData } from "@/lib/data";
-import { DEMO_USER_PROFILE } from "@/lib/demo-data";
+import { EMPTY_FILTERS, type OfferListFilters } from "@/lib/offres-filters";
 import { MountainSidebarScene } from "./Scenery";
 import {
   BriefcaseBusiness,
@@ -21,10 +21,7 @@ import {
   Search,
   SlidersHorizontal,
   Bell,
-  Sun,
-  MoreVertical,
   Calendar,
-  ChevronDown,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -44,13 +41,23 @@ export default function AppShell({ children }: { children: ReactNode }) {
     applications: number;
     interviews: number;
   }>({ offers: 0, applications: 0, interviews: 0 });
-  const [filterTypeOpen, setFilterTypeOpen] = useState(false);
-  const [filterLocOpen, setFilterLocOpen] = useState(false);
-  const [filterDurationOpen, setFilterDurationOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState("Tous types");
-  const [selectedLoc, setSelectedLoc] = useState("Toutes localisations");
-  const [selectedDuration, setSelectedDuration] = useState("6 mois");
-  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const catalogRevision = useRef(0);
+  const [offerFilters, setOfferFilters] = useState<OfferListFilters>(EMPTY_FILTERS);
+  useEffect(() => {
+    const onFilters = (event: Event) => setOfferFilters((event as CustomEvent<OfferListFilters>).detail);
+    const onStats = (event: Event) => { catalogRevision.current += 1; setStats((event as CustomEvent<typeof stats>).detail); };
+    window.addEventListener("cible:offer-filters", onFilters);
+    window.addEventListener("cible:catalog-stats", onStats);
+    return () => {
+      window.removeEventListener("cible:offer-filters", onFilters);
+      window.removeEventListener("cible:catalog-stats", onStats);
+    };
+  }, []);
+  const changeFilter = (key: string, value: string) => {
+    const params = new URLSearchParams(pathname === "/app/offres" ? window.location.search : "");
+    if (value && value !== "all") params.set(key, value); else params.delete(key);
+    router.push(`/app/offres?${params.toString()}`, { scroll: false });
+  };
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -107,10 +114,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user?.email) return;
     let active = true;
+    const revision = catalogRevision.current;
     fetch("/api/user-data", { cache: "no-store" })
       .then((res) => res.json())
       .then((json) => {
-        if (!active || !json.ok || !json.record?.data) return;
+        if (!active || revision !== catalogRevision.current || !json.ok || !json.record?.data) return;
         const data = json.record.data as UserData;
         // Un dossier vide reste affiché à zéro : jamais de valeurs de démo.
         setStats({
@@ -123,10 +131,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [user?.email, pathname]);
+  }, [user?.email]);
 
-  const userName = user?.name || DEMO_USER_PROFILE.name;
-  const userSchool = DEMO_USER_PROFILE.school;
+  const userName = user?.name || "Mon compte";
+  const userSchool = user?.email || "";
   const userInitial = (userName[0] || "M").toUpperCase();
 
   const handleGlobalSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -144,13 +152,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             cible<span className="text-blue-500">.</span>
           </span>
         </Link>
-        <button
-          type="button"
-          aria-label="Options"
-          className="text-slate-400 hover:text-white p-1 rounded-md transition-colors"
-        >
-          <MoreVertical size={16} />
-        </button>
+
       </div>
 
       {/* Main Navigation */}
@@ -322,7 +324,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex">
+    <div className="cible-app min-h-screen bg-[#f8fafc] text-slate-900 flex">
       {/* Skip to content link */}
       <a
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg shadow-lg"
@@ -399,138 +401,23 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </kbd>
           </form>
 
-          {/* Quick Filters in Topbar (matching reference) */}
           <div className="hidden xl:flex items-center gap-2">
-            {/* Filter 1: Type */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterTypeOpen(!filterTypeOpen);
-                  setFilterLocOpen(false);
-                  setFilterDurationOpen(false);
-                }}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs text-slate-700 hover:text-slate-900 rounded-md border border-slate-200 hover:bg-slate-50 bg-white transition-colors"
-              >
-                <span>{selectedType}</span>
-                <ChevronDown size={13} className="text-slate-400" />
-              </button>
-              {filterTypeOpen && (
-                <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-slate-100 py-1 z-50 text-xs">
-                  {["Tous types", "Stage", "Alternance", "CDI / Autre"].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => {
-                        setSelectedType(t);
-                        setFilterTypeOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Filter 2: Location */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterLocOpen(!filterLocOpen);
-                  setFilterTypeOpen(false);
-                  setFilterDurationOpen(false);
-                }}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs text-slate-700 hover:text-slate-900 rounded-md border border-slate-200 hover:bg-slate-50 bg-white transition-colors"
-              >
-                <span>{selectedLoc}</span>
-                <ChevronDown size={13} className="text-slate-400" />
-              </button>
-              {filterLocOpen && (
-                <div className="absolute top-full left-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-slate-100 py-1 z-50 text-xs">
-                  {["Toutes localisations", "Île-de-France (Paris)", "Auvergne-Rhône-Alpes (Lyon)", "Grenoble", "Télétravail"].map((loc) => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => {
-                        setSelectedLoc(loc);
-                        setFilterLocOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                    >
-                      {loc}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Filter 3: Duration */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterDurationOpen(!filterDurationOpen);
-                  setFilterTypeOpen(false);
-                  setFilterLocOpen(false);
-                }}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs text-slate-700 hover:text-slate-900 rounded-md border border-slate-200 hover:bg-slate-50 bg-white transition-colors"
-              >
-                <span>{selectedDuration}</span>
-                <ChevronDown size={13} className="text-slate-400" />
-              </button>
-              {filterDurationOpen && (
-                <div className="absolute top-full left-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-slate-100 py-1 z-50 text-xs">
-                  {["6 mois", "4-5 mois", "3 mois", "Toutes durées"].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDuration(d);
-                        setFilterDurationOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Filtres avancés button */}
-            <button
-              type="button"
-              onClick={() => setAdvancedFiltersOpen(!advancedFiltersOpen)}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
-            >
-              <SlidersHorizontal size={13} className="text-slate-500" />
-              <span>Filtres avancés</span>
-            </button>
+            <select aria-label="Filtrer les offres par contrat" value={pathname === "/app/offres" ? offerFilters.contracts.join(",") : ""} onChange={e => changeFilter("contracts", e.target.value)} className="max-w-40 border border-slate-200 rounded-lg bg-white p-2 text-xs">
+              <option value="">Tous contrats</option><option value="stage-6">Stage de 6 mois</option><option value="alternance">Alternance</option><option value="autre">Autres contrats</option>
+              {offerFilters.contracts.length > 1 && <option value={offerFilters.contracts.join(",")}>Plusieurs contrats</option>}
+            </select>
+            <select aria-label="Filtrer les offres par région" value={pathname === "/app/offres" ? offerFilters.region : "all"} onChange={e => changeFilter("region", e.target.value)} className="max-w-40 border border-slate-200 rounded-lg bg-white p-2 text-xs">
+              <option value="all">Toutes les régions</option><option value="idf">Île-de-France</option><option value="ara">Auvergne-Rhône-Alpes</option><option value="paca">Provence-Alpes-Côte d’Azur</option><option value="ge">Grand Est</option>
+            </select>
+            <Link href="/app/offres#offer-filters" className="flex items-center gap-1.5 whitespace-nowrap px-2.5 py-2 text-xs font-medium text-blue-700 border border-slate-200 rounded-lg hover:bg-blue-50"><SlidersHorizontal size={13} />Filtres avancés</Link>
           </div>
 
           {/* Right utility icons */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto md:ml-0">
-            {/* Dark mode placeholder icon */}
-            <button
-              type="button"
-              className="p-1.5 text-slate-500 hover:text-slate-800 rounded-md hover:bg-slate-100 transition-colors"
-              aria-label="Mode sombre / clair"
-            >
-              <Sun size={17} />
-            </button>
-
-            {/* Notifications with red indicator */}
-            <button
-              type="button"
-              className="relative p-1.5 text-slate-500 hover:text-slate-800 rounded-md hover:bg-slate-100 transition-colors"
-              aria-label="Notifications"
-            >
+            <Link href="/app/candidatures" className="relative p-1.5 text-slate-500 hover:text-blue-700 rounded-md hover:bg-blue-50" aria-label={`Mes candidatures : ${stats.interviews} entretien(s)`}>
               <Bell size={17} />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            </button>
+              {stats.interviews > 0 && <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white" />}
+            </Link>
 
             {/* User Avatar Circle */}
             <Link

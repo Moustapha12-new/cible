@@ -20,7 +20,8 @@ async function main() {
   assert.equal(pfeEligibility(complete).status, "eligible");
   for (const title of ["Alternance ingénieur électricité", "CDI ingénieur énergie", "Stage technicien électrique"]) assert.equal(pfeEligibility({ ...complete, title }).status, "excluded", title);
   assert.equal(pfeEligibility({ ...complete, duration: "3 mois" }).status, "excluded");
-  assert.equal(pfeEligibility({ ...complete, startDate: "2027-03" }).status, "verify");
+  // Politique « à partir de début 2027 » (commit 4679532) : tout début en 2027 est acceptable ; seul un début avant 2027 est écarté.
+  assert.equal(pfeEligibility({ ...complete, startDate: "2027-03" }).status, "eligible");
   assert.equal(pfeEligibility({ ...complete, location: "Dubaï" }).status, "excluded");
   assert.equal(pfeEligibility({ ...complete, location: undefined }).status, "verify");
   assert.equal(pfeEligibility({ title: "Stage ingénieur énergie" }).status, "verify");

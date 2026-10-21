@@ -3117,3 +3117,11 @@ textarea.input { height: auto; padding: 14px 16px; line-height: 1.65; resize: ve
 @media(max-width:900px) { .cv-home-workspace,.cv-adaptation-layout { grid-template-columns:1fr; }.cv-home-guidance,.cv-adaptation-changes { grid-column:auto; }.cv-home-offer-empty { min-height:220px; }.applications-layout { grid-template-columns:1fr; } }
 @media(max-width:650px) { .applications-list-head { display:none; }.applications-list .application-row { grid-template-columns:minmax(0,1fr) auto; gap:5px 8px; }.application-row-company { grid-column:1; }.applications-list .application-row-title { grid-column:1; }.application-row-date { grid-column:1; }.applications-list .application-status { grid-column:2; grid-row:1; margin:0; }.application-row-action { grid-column:2; grid-row:2 / span 2; } }
 @media(max-width:767px) { .app-root .app-topbar { gap:10px; }.app-global-search { min-height:36px; }.app-global-search input { font-size:12px; }.app-global-search button,.app-root .app-top-goal { display:none; }.app-root .app-content { padding:20px 15px 55px; }.cv-home-grid { grid-template-columns:1fr; }.cv-home-action { grid-column:auto; }.cv-home-card { min-height:0; }.cv-home-guidance { grid-template-columns:1fr; }.cv-home-guidance h2,.cv-home-guidance p,.cv-home-guidance>a { grid-column:auto; } }
+
+/* The dashboard follows the sans-serif reference; landing typography stays independent. */
+.cible-app { font-family: var(--font-sans); line-height: 1.5; }
+.cible-app :is(h1, h2, h3, h4) { font-family: inherit; font-weight: 700; }
+.cible-app :focus-visible { outline-color: #2563eb; }
+.cible-app ::selection { background: #dbeafe; color: #172554; }
+.cible-app button:not(:disabled), .cible-app select { cursor: pointer; }
+.cible-app button:disabled { cursor: not-allowed; }

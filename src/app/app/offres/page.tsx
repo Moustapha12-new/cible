@@ -1,5 +1,6 @@
 "use client";
 import { currentCareerReport } from "@/lib/career-evaluation";
+import { appliedOfferIds as getAppliedOfferIds, visibleInOfferTab } from "@/lib/applied-offers";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -17,6 +18,8 @@ import { useAuth } from "@/lib/auth";
 import {
   getOrCreateData,
   saveData,
+  offerSnapshot,
+  mergeUserData,
   type Application,
   type DetectedOffer,
   type UserData,
@@ -173,7 +176,29 @@ export default function OffresPage() {
     "all" | "new" | "todo" | "applied" | "favorites" | "expired"
   >("all");
   const [companyFilter, setCompanyFilter] = useState("");
-  const [sideFilters, setSideFilters] = useState<OfferListFilters>(EMPTY_FILTERS);
+  const sideFilters: OfferListFilters = useMemo(() => ({
+    contracts: (searchParams.get("contracts") || "").split(",").filter(x => ["stage-6", "alternance", "autre"].includes(x)),
+    domains: (searchParams.get("domains") || "").split(",").filter(Boolean),
+    region: searchParams.get("region") || "all",
+    period: searchParams.get("period") || "all",
+  }), [searchParams]);
+  const setSideFilters = (filters: OfferListFilters) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(filters)) {
+      const text = Array.isArray(value) ? value.join(",") : value;
+      if (text && text !== "all") params.set(key, text); else params.delete(key);
+    }
+    router.replace(`/app/offres?${params.toString()}`, { scroll: false });
+  };
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("cible:offer-filters", { detail: sideFilters }));
+  }, [sideFilters]);
+  useEffect(() => {
+    if (data) window.dispatchEvent(new CustomEvent("cible:catalog-stats", { detail: {
+      offers: data.offers.length, applications: data.applications.length,
+      interviews: data.applications.filter(a => a.status === "interview").length,
+    } }));
+  }, [data]);
 
   // Modal states
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
@@ -191,20 +216,36 @@ export default function OffresPage() {
 
   const recordVersionRef = useRef(0);
 
-  /* ── Sauvegarde serveur best-effort (versionnement optimiste) ── */
+  /* ── Sauvegarde serveur best-effort ──
+     Le dossier serveur contient des candidatures écrites par d'autres écrans
+     (/api/candidatures/apply, Gmail, adaptation) qui n'existent pas en local.
+     On recharge son état courant, on FUSIONNE l'ajout local dedans, puis on
+     écrit : jamais d'écrasement du serveur par un état local incomplet. */
   const pushToServer = useCallback(async (next: UserData) => {
-    try {
-      const res = await fetch("/api/user-data", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: next, version: recordVersionRef.current }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; version?: number };
-      if (res.ok && json.ok && typeof json.version === "number") {
-        recordVersionRef.current = json.version;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const current = (await fetch("/api/user-data", { cache: "no-store" })
+          .then((r) => r.json().catch(() => null))
+          .catch(() => null)) as { ok?: boolean; record?: { data: UserData; version: number } } | null;
+        const remote = current?.ok && current.record?.data ? current.record.data : null;
+        const version = current?.ok && typeof current.record?.version === "number"
+          ? current.record.version
+          : recordVersionRef.current;
+        const res = await fetch("/api/user-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: remote ? mergeUserData(remote, next) : next, version }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { ok?: boolean; version?: number };
+        if (res.ok && json.ok && typeof json.version === "number") {
+          recordVersionRef.current = json.version;
+          return;
+        }
+        /* Version périmée (écriture concurrente) : une seule relance avec l'état serveur frais. */
+      } catch {
+        /* Sauvegarde serveur indisponible : les données locales restent conservées. */
+        return;
       }
-    } catch {
-      /* Sauvegarde serveur indisponible : les données locales restent conservées. */
     }
   }, []);
 
@@ -343,6 +384,27 @@ export default function OffresPage() {
     });
     return () => {
       cancelled = true;
+    };
+  }, [loadOffers]);
+
+  // Une confirmation d'envoi dans un autre onglet doit retirer l'offre au retour.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      clearTimeout(timer);
+      timer = setTimeout(() => { void loadOffers(); }, 250);
+    };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("storage", refresh);
+    window.addEventListener("cible:data-changed", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("cible:data-changed", refresh);
+      document.removeEventListener("visibilitychange", refresh);
     };
   }, [loadOffers]);
 
@@ -489,6 +551,7 @@ export default function OffresPage() {
         daysAgo: 0,
         source: "Mes offres (marqué manuellement)",
         date: now,
+        offerSnapshot: offerSnapshot(offer),
         notes: "Marqué comme postulé depuis Mes offres ; aucun CV n'est encore archivé pour cette candidature.",
       });
     }
@@ -586,11 +649,14 @@ export default function OffresPage() {
     [demoMode, data]
   );
 
-  const realOffersById = new Map<string, DetectedOffer>();
-  for (const offer of data?.offers || []) realOffersById.set(offer.id, offer);
+  const realOffersById = useMemo(() => {
+    const map = new Map<string, DetectedOffer>();
+    for (const offer of data?.offers || []) map.set(offer.id, offer);
+    return map;
+  }, [data]);
 
   const appliedOfferIds = useMemo(
-    () => new Set((data?.applications || []).map((a) => a.offerId).filter(Boolean) as string[]),
+    () => data ? getAppliedOfferIds(data) : new Set<string>(),
     [data]
   );
 
@@ -604,9 +670,9 @@ export default function OffresPage() {
 
   const tabCounts = useMemo<OffersTabCounts | undefined>(() => {
     if (demoMode) return undefined;
-    const favoritesCount = baseRows.filter((r) => favorites.has(r.id)).length;
+    const favoritesCount = baseRows.filter((r) => r.status !== "postulee" && favorites.has(r.id)).length;
     return {
-      all: baseRows.length,
+      all: baseRows.filter((r) => r.status !== "postulee").length,
       new: baseRows.filter((r) => r.status === "nouvelle").length,
       todo: baseRows.filter((r) => r.status === "a_traiter").length,
       applied: baseRows.filter((r) => r.status === "postulee").length,
@@ -615,9 +681,10 @@ export default function OffresPage() {
     };
   }, [demoMode, baseRows, favorites]);
 
-  const filteredOffers = (() => {
+  const filteredOffers = useMemo(() => {
     return baseRows.filter((offer) => {
       // Tab filter
+      if (!visibleInOfferTab(offer.status, activeTab)) return false;
       if (activeTab === "favorites" && !favorites.has(offer.id)) return false;
       if (activeTab === "new" && offer.status !== "nouvelle") return false;
       if (activeTab === "todo" && offer.status !== "a_traiter") return false;
@@ -644,7 +711,7 @@ export default function OffresPage() {
 
       return true;
     });
-  })();
+  }, [baseRows, activeTab, favorites, searchQuery, companyFilter]);
 
   /* ── Statistiques réelles (compte du dossier, indépendant des filtres) ── */
   const realTotal = demoMode ? DEMO_USER_PROFILE.stats.totalOffers : data?.offers.length ?? 0;
@@ -941,7 +1008,7 @@ export default function OffresPage() {
         </div>
 
         {/* Right filter sidebar (~25%) — filtres réels */}
-        <div className="lg:col-span-1">
+        <div id="offer-filters" className="lg:col-span-1 scroll-mt-20">
           <FiltersSidebar
             filters={sideFilters}
             onFiltersChange={setSideFilters}

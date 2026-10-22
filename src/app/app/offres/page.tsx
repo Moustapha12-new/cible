@@ -45,6 +45,7 @@ import {
   applyOfferFilters,
   computeFacetCounts,
   EMPTY_FILTERS,
+  SOURCE_SITES,
   type OfferListFilters,
 } from "@/lib/offres-filters";
 import { DailyOfferCard } from "@/components/offers/DailyOfferCard";
@@ -179,6 +180,7 @@ export default function OffresPage() {
   const sideFilters: OfferListFilters = useMemo(() => ({
     contracts: (searchParams.get("contracts") || "").split(",").filter(x => ["stage-6", "alternance", "autre"].includes(x)),
     domains: (searchParams.get("domains") || "").split(",").filter(Boolean),
+    sources: (searchParams.get("sources") || "").split(",").filter(x => x in SOURCE_SITES),
     region: searchParams.get("region") || "all",
     period: searchParams.get("period") || "all",
   }), [searchParams]);

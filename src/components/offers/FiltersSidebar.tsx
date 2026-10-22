@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Search, ChevronDown, SlidersHorizontal } from "lucide-react";
-import type { OfferListFilters } from "@/lib/offres-filters";
+import { SOURCE_SITES, type OfferListFilters } from "@/lib/offres-filters";
 
 interface FiltersSidebarProps {
   /** Filtres réels pilotés par la page (aucun état démo local). */
@@ -9,7 +9,11 @@ interface FiltersSidebarProps {
   onSearchChange: (search: string) => void;
   onReset: () => void;
   /** Compteurs réels du catalogue — absents = aucun compte affiché. */
-  facetCounts?: { contracts: Record<string, number>; domains: Record<string, number> };
+  facetCounts?: {
+    contracts: Record<string, number>;
+    domains: Record<string, number>;
+    sources?: Record<string, number>;
+  };
 }
 
 export function FiltersSidebar({
@@ -33,6 +37,9 @@ export function FiltersSidebar({
 
   const toggleDomain = (id: string) =>
     onFiltersChange({ ...filters, domains: toggleIn(filters.domains, id) });
+
+  const toggleSource = (id: string) =>
+    onFiltersChange({ ...filters, sources: toggleIn(filters.sources, id) });
 
   const handleCompanyInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -110,6 +117,33 @@ export function FiltersSidebar({
                   className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20"
                 />
                 <span className="flex-1">{option.label}</span>
+                {optionCount !== undefined && (
+                  <span className="text-[10px] text-slate-400 font-medium">({optionCount})</span>
+                )}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Group: Source de l'offre (site d'origine du lien) */}
+      <div className="flex flex-col gap-2">
+        <span className="text-[11px] font-bold text-slate-700">Source de l&apos;offre</span>
+        <div className="flex flex-col gap-1.5 text-xs">
+          {Object.entries(SOURCE_SITES).map(([id, site]) => {
+            const optionCount = facetCounts?.sources?.[id];
+            return (
+              <label
+                key={id}
+                className="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-slate-900"
+              >
+                <input
+                  type="checkbox"
+                  checked={filters.sources.includes(id)}
+                  onChange={() => toggleSource(id)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20"
+                />
+                <span className="flex-1">{site.label}</span>
                 {optionCount !== undefined && (
                   <span className="text-[10px] text-slate-400 font-medium">({optionCount})</span>
                 )}

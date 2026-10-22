@@ -9,6 +9,9 @@ import {
   matchesDomains,
   matchesPeriod,
   matchesRegion,
+  matchesSourceSite,
+  offerSourceSite,
+  SOURCE_SITES,
 } from "./offres-filters";
 import type { DetectedOffer } from "./data";
 
@@ -68,12 +71,41 @@ assert.equal(matchesPeriod(sansDate, "all", now), true);
 const elecStage6 = makeOffer({ id: "es6", title: "Stage électrotechnique", duration: "6 mois" });
 const offres = [stage6, stage3, alternance, elec, elecStage6, lyon, recent, vieux];
 assert.equal(applyOfferFilters(offres, EMPTY_FILTERS, now).length, offres.length);
-const filtered = applyOfferFilters(offres, { contracts: ["stage-6"], domains: ["genie-electrique"], region: "all", period: "all" }, now);
+const filtered = applyOfferFilters(offres, { ...EMPTY_FILTERS, contracts: ["stage-6"], domains: ["genie-electrique"] }, now);
 assert.deepEqual(filtered.map((o) => o.id), ["es6"]);
 const regionOnly = applyOfferFilters(offres, { ...EMPTY_FILTERS, region: "ara" }, now);
 assert.deepEqual(regionOnly.map((o) => o.id), ["l"]);
 const periodOnly = applyOfferFilters(offres, { ...EMPTY_FILTERS, period: "24h" }, now);
 assert.deepEqual(periodOnly.map((o) => o.id), ["r"]);
+
+/* Source de l'offre : classification par hostname réel de l'URL. */
+const linkedin = makeOffer({ id: "li", url: "https://www.linkedin.com/jobs/view/123" });
+const linkedinShort = makeOffer({ id: "li2", url: "https://lnkd.in/abc" });
+const indeed = makeOffer({ id: "in", url: "https://fr.indeed.com/jobs?q=stage" });
+const hellowork = makeOffer({ id: "hw", url: "https://www.hellowork.com/fr-fr/offres/stage.html" });
+const jobteaser = makeOffer({ id: "jt", url: "https://jobteaser.com/fr/jobs/456" });
+const wttj = makeOffer({ id: "wj", url: "https://www.welcometothejungle.com/fr/jobs/stage" });
+const sitePerso = makeOffer({ id: "sp", url: "https://entreprise-exemple.fr/careers/stage" });
+const sansLien = makeOffer({ id: "sl" });
+assert.equal(offerSourceSite(linkedin), "linkedin");
+assert.equal(offerSourceSite(linkedinShort), "linkedin");
+assert.equal(offerSourceSite(indeed), "indeed");
+assert.equal(offerSourceSite(hellowork), "hellowork");
+assert.equal(offerSourceSite(jobteaser), "jobteaser");
+assert.equal(offerSourceSite(wttj), "wttj");
+assert.equal(offerSourceSite(sitePerso), "autre");
+assert.equal(offerSourceSite(sansLien), "sans-lien");
+/* Anti-spoofing : un sous-domaine malveillant n'est pas du vrai LinkedIn. */
+assert.equal(offerSourceSite(makeOffer({ id: "ph", url: "https://linkedin.com.evil.io/jobs" })), "autre");
+assert.equal(offerSourceSite(makeOffer({ id: "ph2", url: "not a url linkedin.com" })), "autre");
+/* Filtre : OR dans le groupe, vide = sans effet. */
+const siteOffres = [linkedin, indeed, hellowork, jobteaser, wttj, sitePerso, sansLien];
+assert.equal(matchesSourceSite(linkedin, []), true);
+assert.equal(matchesSourceSite(linkedin, ["linkedin"]), true);
+assert.equal(matchesSourceSite(indeed, ["linkedin"]), false);
+assert.equal(matchesSourceSite(sansLien, ["sans-lien"]), true);
+const multi = applyOfferFilters(siteOffres, { ...EMPTY_FILTERS, sources: ["linkedin", "wttj"] }, now);
+assert.deepEqual(multi.map((o) => o.id), ["li", "wj"]);
 
 /* Compteurs réels par facette. */
 const counts = computeFacetCounts(offres);
@@ -81,5 +113,7 @@ assert.equal(counts.contracts["stage-6"], 2);
 assert.equal(counts.contracts["alternance"], 1);
 assert.equal(counts.contracts["autre"], offres.length - 3);
 assert.ok(counts.domains["genie-electrique"] >= 1);
+const siteCounts = computeFacetCounts(siteOffres);
+for (const id of Object.keys(SOURCE_SITES)) assert.equal(siteCounts.sources[id], siteOffres.filter((o) => offerSourceSite(o) === id).length, `compteur ${id}`);
 
-process.stdout.write("offres-filters: contrats, domaines, régions, périodes, combinaison, compteurs passed\n");
+process.stdout.write("offres-filters: contrats, domaines, régions, périodes, sources, combinaison, compteurs passed\n");

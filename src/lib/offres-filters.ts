@@ -7,6 +7,7 @@ import type { DetectedOffer } from "./data";
 export type OfferListFilters = {
   contracts: string[];
   domains: string[];
+  sources: string[];
   region: string;
   period: string;
 };
@@ -14,6 +15,7 @@ export type OfferListFilters = {
 export const EMPTY_FILTERS: OfferListFilters = {
   contracts: [],
   domains: [],
+  sources: [],
   region: "all",
   period: "all",
 };
@@ -76,6 +78,47 @@ export function matchesDomains(offer: DetectedOffer, domainIds: string[]): boole
   return domainIds.some((id) => (DOMAIN_KEYWORDS[id] || []).some((k) => h.includes(k)));
 }
 
+/* ── Source de l'offre (site d'origine du lien) ──────────────────────
+   Classification déterministe sur le hostname réel de l'URL de l'offre,
+   que l'offre vienne de Gmail ou d'un ajout manuel. */
+
+export const SOURCE_SITES: Record<string, { label: string; hosts: string[] }> = {
+  linkedin: { label: "LinkedIn", hosts: ["linkedin.com", "lnkd.in"] },
+  indeed: { label: "Indeed", hosts: ["indeed.com", "indeed.co.uk"] },
+  hellowork: { label: "HelloWork", hosts: ["hellowork.com", "hellowork.fr"] },
+  jobteaser: { label: "JobTeaser", hosts: ["jobteaser.com"] },
+  wttj: { label: "Welcome to the Jungle", hosts: ["welcometothejungle.com", "wttj.fr"] },
+  autre: { label: "Autre site", hosts: [] },
+  "sans-lien": { label: "Sans lien", hosts: [] },
+};
+
+export const SOURCE_SITE_IDS = Object.keys(SOURCE_SITES);
+
+/** Identifiant du site d'origine d'une offre, déduit de son hostname.
+    - hostname connu → l'identifiant du site ;
+    - URL présente mais hôte inconnu → « autre » ;
+    - aucune URL → « sans-lien ». */
+export function offerSourceSite(offer: DetectedOffer): string {
+  const raw = (offer.url || "").trim();
+  if (!raw) return "sans-lien";
+  let host = "";
+  try {
+    host = new URL(raw).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    host = raw.toLowerCase().replace(/^www\./, "").split("/")[0];
+  }
+  if (!host) return "sans-lien";
+  for (const [id, site] of Object.entries(SOURCE_SITES)) {
+    if (site.hosts.some((h) => host === h || host.endsWith(`.${h}`))) return id;
+  }
+  return "autre";
+}
+
+export function matchesSourceSite(offer: DetectedOffer, sourceIds: string[]): boolean {
+  if (!sourceIds.length) return true;
+  return sourceIds.includes(offerSourceSite(offer));
+}
+
 export function matchesRegion(offer: DetectedOffer, region: string): boolean {
   if (!region || region === "all") return true;
   const keywords = REGION_KEYWORDS[region];
@@ -107,6 +150,7 @@ export function applyOfferFilters(
     (o) =>
       (!filters.contracts.length || filters.contracts.some((c) => matchesContractOption(o, c))) &&
       matchesDomains(o, filters.domains) &&
+      matchesSourceSite(o, filters.sources) &&
       matchesRegion(o, filters.region) &&
       matchesPeriod(o, filters.period, now)
   );
@@ -116,10 +160,13 @@ export function applyOfferFilters(
 export function computeFacetCounts(offers: DetectedOffer[]): {
   contracts: Record<string, number>;
   domains: Record<string, number>;
+  sources: Record<string, number>;
 } {
   const contracts: Record<string, number> = { "stage-6": 0, alternance: 0, autre: 0 };
   const domains: Record<string, number> = {};
+  const sources: Record<string, number> = {};
   for (const id of Object.keys(DOMAIN_KEYWORDS)) domains[id] = 0;
+  for (const id of SOURCE_SITE_IDS) sources[id] = 0;
   for (const offer of offers) {
     for (const option of Object.keys(contracts)) {
       if (matchesContractOption(offer, option)) contracts[option] += 1;
@@ -127,6 +174,8 @@ export function computeFacetCounts(offers: DetectedOffer[]): {
     for (const id of Object.keys(domains)) {
       if (matchesDomains(offer, [id])) domains[id] += 1;
     }
+    const site = offerSourceSite(offer);
+    if (site in sources) sources[site] += 1;
   }
-  return { contracts, domains };
+  return { contracts, domains, sources };
 }

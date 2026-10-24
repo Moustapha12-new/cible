@@ -65,7 +65,7 @@ export function canSelectProof(item: SkillEvidence): boolean {
 function explicitEvidence(item: SkillEvidence): boolean {
   return item.status === "demonstrated" && canSelectProof(item);
 }
-function termsFromOffer(offer: DetectedOffer): string[] {
+export function termsFromOffer(offer: DetectedOffer): string[] {
   const text = offerSource(offer);
   const supplied = [...(offer.skills || []), ...(offer.keywords || [])]
     .filter(term => typeof term === "string" && term.trim().length >= 2)

@@ -23,9 +23,14 @@ export const EMPTY_FILTERS: OfferListFilters = {
 const norm = (s: string) =>
   (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-/** Texte recherché pour les filtres de domaine (titre, description, compétences). */
-const domainHaystack = (offer: DetectedOffer) =>
-  norm(
+/** Texte recherché pour les filtres de domaine (titre, description, compétences).
+    Mémoïsé par objet d'offre : le catalogue est analysé plusieurs fois (compteurs
+    de facettes, liste filtrée, recherche) sans reconstruire la même chaîne. */
+const haystackCache = new WeakMap<DetectedOffer, string>();
+const domainHaystack = (offer: DetectedOffer) => {
+  const cached = haystackCache.get(offer);
+  if (cached !== undefined) return cached;
+  const text = norm(
     [
       offer.title,
       offer.description,
@@ -37,6 +42,9 @@ const domainHaystack = (offer: DetectedOffer) =>
       ...(offer.missions || []),
     ].join(" ")
   );
+  haystackCache.set(offer, text);
+  return text;
+};
 
 export const DOMAIN_KEYWORDS: Record<string, string[]> = {
   "genie-electrique": ["electri", "automat", "courant fort", "courant faible", "unifilaire", "dimensionnement", "electrotech", "habilitation"],
@@ -81,6 +89,54 @@ export function matchesDomains(offer: DetectedOffer, domainIds: string[]): boole
 /* ── Source de l'offre (site d'origine du lien) ──────────────────────
    Classification déterministe sur le hostname réel de l'URL de l'offre,
    que l'offre vienne de Gmail ou d'un ajout manuel. */
+
+/* ── File d'attente du mode Rafale ───────────────────────────────
+   Les identifiants des offres du filtre actif, dans l'ordre affiché, sont
+   partagés entre Mes offres et Mon CV pour que l'offre suivante reste celle
+   du même filtre — jamais une offre hors filtre. */
+export const RAFALE_QUEUE_KEY = "cible:rafale-queue:v1";
+
+export function readRafaleQueue(): string[] {
+  try {
+    const raw = sessionStorage.getItem(RAFALE_QUEUE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string").slice(0, 500) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeRafaleQueue(ids: string[]): void {
+  try {
+    sessionStorage.setItem(RAFALE_QUEUE_KEY, JSON.stringify(ids.slice(0, 500)));
+  } catch {
+    /* stockage indisponible : le filtre reste actif, seule la file est perdue */
+  }
+}
+
+/** Offres restantes dans l'ordre du filtre actif, une fois la candidature
+    courante enregistrée. La file du filtre passe en premier ; les offres du
+    dossier complètent si elle est absente. L'offre courante et les offres
+    déjà postulées sont toujours exclues. */
+export function nextRafaleCandidates<T extends { id: string; title?: string }>(
+  offers: T[],
+  appliedIds: Set<string>,
+  currentId: string,
+  queue: readonly string[] = []
+): T[] {
+  const byId = new Map(offers.map((offer) => [offer.id, offer]));
+  const ordered: T[] = [
+    ...queue.map((id) => byId.get(id)).filter((offer): offer is T => Boolean(offer)),
+    ...offers,
+  ];
+  const seen = new Set<string>();
+  return ordered.filter((offer) => {
+    if (!offer.id || !offer.title || offer.id === currentId || appliedIds.has(offer.id) || seen.has(offer.id)) return false;
+    seen.add(offer.id);
+    return true;
+  });
+}
 
 export const SOURCE_SITES: Record<string, { label: string; hosts: string[] }> = {
   linkedin: { label: "LinkedIn", hosts: ["linkedin.com", "lnkd.in"] },
@@ -141,19 +197,27 @@ export function matchesPeriod(offer: DetectedOffer, period: string, now = Date.n
 }
 
 /** AND entre groupes, OR à l'intérieur d'un groupe ; groupe vide = sans effet. */
+export function matchesOfferFilters(
+  offer: DetectedOffer,
+  filters: OfferListFilters,
+  now = Date.now()
+): boolean {
+  return (
+    (!filters.contracts.length || filters.contracts.some((c) => matchesContractOption(offer, c))) &&
+    matchesDomains(offer, filters.domains) &&
+    matchesSourceSite(offer, filters.sources) &&
+    matchesRegion(offer, filters.region) &&
+    matchesPeriod(offer, filters.period, now)
+  );
+}
+
 export function applyOfferFilters(
   offers: DetectedOffer[],
   filters: OfferListFilters,
   now = Date.now()
 ): DetectedOffer[] {
-  return offers.filter(
-    (o) =>
-      (!filters.contracts.length || filters.contracts.some((c) => matchesContractOption(o, c))) &&
-      matchesDomains(o, filters.domains) &&
-      matchesSourceSite(o, filters.sources) &&
-      matchesRegion(o, filters.region) &&
-      matchesPeriod(o, filters.period, now)
-  );
+  if (!offers.length) return offers;
+  return offers.filter((o) => matchesOfferFilters(o, filters, now));
 }
 
 /** Compteurs réels par facette, calculés sur le catalogue complet (sans filtre actif). */

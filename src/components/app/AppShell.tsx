@@ -54,8 +54,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
     };
   }, []);
   const changeFilter = (key: string, value: string) => {
-    const params = new URLSearchParams(pathname === "/app/offres" ? window.location.search : "");
-    if (value && value !== "all") params.set(key, value); else params.delete(key);
+    /* Sur Mes offres, les filtres vivent dans la page : un événement local évite
+       une transition de route (et son rendu complet) à chaque changement. */
+    if (pathname === "/app/offres") {
+      window.dispatchEvent(new CustomEvent("cible:offer-filter-request", { detail: { key, value } }));
+      return;
+    }
+    const params = new URLSearchParams();
+    if (value && value !== "all") params.set(key, value);
     router.push(`/app/offres?${params.toString()}`, { scroll: false });
   };
 
@@ -140,7 +146,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const handleGlobalSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const val = globalSearchRef.current?.value.trim() || "";
-    router.push(`/app/offres?q=${encodeURIComponent(val)}`);
+    if (pathname === "/app/offres") {
+      const params = new URLSearchParams(window.location.search);
+      if (val) params.set("q", val); else params.delete("q");
+      window.history.replaceState(null, "", `/app/offres?${params.toString()}`);
+    } else router.push(`/app/offres?q=${encodeURIComponent(val)}`);
   };
 
   const sidebar = (

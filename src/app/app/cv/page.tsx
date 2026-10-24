@@ -37,6 +37,7 @@ import {
   type OfferCvFile,
 } from "@/lib/data";
 import { DEFAULT_CV_DESIGN, parseCvText, cvToText, type CvData } from "@/lib/cv";
+import { nextRafaleCandidates, readRafaleQueue, writeRafaleQueue } from "@/lib/offres-filters";
 import { applyPlanToCv, type ApplicableOperation } from "@/lib/cv-plan-apply";
 import { CompanyLogo } from "@/components/app/CompanyLogo";
 import { DocumentSheet } from "@/components/cv/DocumentSheet";
@@ -131,6 +132,12 @@ export default function CvPage() {
   const [preparedCv, setPreparedCv] = useState<CvData | null>(null);
   const [customCv, setCustomCv] = useState<OfferCvFile | null>(null);
   const [generatedFile, setGeneratedFile] = useState<OfferCvFile | null>(null);
+
+  /* ── Mode Rafale : après l'envoi, proposer l'offre suivante du même filtre ── */
+  const rafaleMode = searchParams.get("rafale") === "1";
+  const [rafaleNext, setRafaleNext] = useState<
+    { id: string; company: string; title: string; url?: string; remaining: number } | null
+  >(null);
   const [customBusy, setCustomBusy] = useState(false);
   const customInput = useRef<HTMLInputElement>(null);
 
@@ -513,6 +520,23 @@ export default function CvPage() {
           try { saveData(user.email, { ...latest, applications: [json.application, ...latest.applications] }); } catch { /* Le dossier serveur reste la source de vérité. */ }
         }
       }
+      /* Mode Rafale : on ne quitte pas la page — on propose la suite du filtre. */
+      if (rafaleMode) {
+        const latest = getOrCreateData(user?.name || "", user?.email || "");
+        const applied = new Set(latest.applications.flatMap((a) => (a.offerId ? [a.offerId] : [])));
+        const remaining = nextRafaleCandidates(latest.offers, applied, selectedOffer.id, readRafaleQueue());
+        const next = remaining[0];
+        setRafaleNext(next
+          ? { id: next.id, company: next.company || "Entreprise non précisée", title: next.title, url: next.url, remaining: remaining.length }
+          : { id: "", company: "", title: "", remaining: 0 });
+        setGeneratedFile(null);
+        setCustomCv(null);
+        writeRafaleQueue(remaining.map((offer) => offer.id));
+        setToastMessage(next
+          ? "Candidature enregistrée. Offre suivante proposée en haut de page."
+          : "Candidature enregistrée. Plus aucune offre restante dans ce filtre.");
+        return;
+      }
       router.push(`/app/candidatures?open=${encodeURIComponent(json.application.id)}`);
     } catch (error) { setToastMessage(error instanceof Error ? error.message : "Archivage impossible."); }
     finally { setCustomBusy(false); }
@@ -587,6 +611,53 @@ export default function CvPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Mode Rafale : offre suivante du même filtre ── */}
+      {rafaleNext && (
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                <CheckCircle2 size={14} />
+                Candidature enregistrée en mode Rafale
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {rafaleNext.id
+                  ? `${rafaleNext.remaining} offre${rafaleNext.remaining > 1 ? "s" : ""} restante${rafaleNext.remaining > 1 ? "s" : ""} dans ton filtre. Ton filtre reste actif jusqu'à sa réinitialisation.`
+                  : "Plus aucune offre ne correspond à ce filtre. Élargis les filtres depuis Mes offres pour continuer."}
+              </p>
+            </div>
+            <Link href="/app/candidatures" className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 whitespace-nowrap">
+              Voir mes candidatures →
+            </Link>
+          </div>
+
+          {rafaleNext.id && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-slate-500">{rafaleNext.company}</p>
+                <h4 className="text-sm font-bold text-slate-900 leading-snug">{rafaleNext.title}</h4>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {rafaleNext.url && (
+                  <a href={rafaleNext.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800">
+                    <ExternalLink size={12} />
+                    Ouvrir l&apos;offre
+                  </a>
+                )}
+                <Link
+                  href={`/app/cv?offer=${encodeURIComponent(rafaleNext.id)}&start=1&rafale=1`}
+                  onClick={() => setRafaleNext(null)}
+                  className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-blue-700"
+                >
+                  Adapter mon CV pour cette offre
+                  <ArrowRight size={12} />
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Top Three Cards Row ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -739,6 +810,23 @@ export default function CvPage() {
             <p className="text-[11px] text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-xl p-2.5 mt-2">
               {selectedOffer.description || "Aucune description détaillée n’est disponible pour cette offre."}
             </p>
+
+            {/* Retour direct à l'annonce : le lien exact de l'offre de stage */}
+            {selectedOffer.url ? (
+              <a
+                href={selectedOffer.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 flex items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                <ExternalLink size={12} />
+                Voir l&apos;offre et postuler sur le site
+              </a>
+            ) : (
+              <p className="mt-1 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-[10px] text-slate-400">
+                Aucun lien de candidature n&apos;est enregistré pour cette offre.
+              </p>
+            )}
           </div>
         </div>
 

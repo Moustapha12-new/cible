@@ -2,7 +2,7 @@
 import { currentCareerReport } from "@/lib/career-evaluation";
 import { appliedOfferIds as getAppliedOfferIds, visibleInOfferTab } from "@/lib/applied-offers";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -13,6 +13,8 @@ import {
   Star,
   X,
   FileText,
+  ExternalLink,
+  SkipForward,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import {
@@ -26,14 +28,14 @@ import {
 } from "@/lib/data";
 import { loadGmailStore, normalizeUrl } from "@/lib/gmail-client";
 import { discoveryUrlKey } from "@/lib/discovery-identity";
-import { offerCvCoverage } from "@/lib/offer-cv-coverage";
+import { cvMasterText, offerCvCoverage } from "@/lib/offer-cv-coverage";
 import { offerToDetectedOffer, type OfferLike } from "@/lib/gmail-bridge";
 import {
   eligibleOffers,
   fallbackSelection,
   selectionSignature,
 } from "@/lib/daily-recommendations";
-import { cvToText } from "@/lib/cv";
+
 import {
   DEMO_USER_PROFILE,
   DEMO_RECOMMENDED_OFFERS,
@@ -42,10 +44,12 @@ import {
   type DemoTableOffer,
 } from "@/lib/demo-data";
 import {
-  applyOfferFilters,
   computeFacetCounts,
+  DOMAIN_KEYWORDS,
   EMPTY_FILTERS,
+  matchesOfferFilters,
   SOURCE_SITES,
+  writeRafaleQueue,
   type OfferListFilters,
 } from "@/lib/offres-filters";
 import { DailyOfferCard } from "@/components/offers/DailyOfferCard";
@@ -100,6 +104,100 @@ function mergeOffers(groups: DetectedOffer[][]): DetectedOffer[] {
 /* Identifiants locaux générés hors du composant (règle de pureté React). */
 const newLocalId = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+/* ── Filtres de la page : état local, jamais une navigation ──
+   Chaque clic sur une case ne déclenche plus de transition de route (c'était
+   la cause du gel) ; l'URL ne sert plus qu'à l'entrée (lien direct, ?rafale=1)
+   et les filtres survivent au rechargement via sessionStorage. */
+const FILTERS_STORAGE_KEY = "cible:offres-filters:v1";
+const CONTRACT_IDS = ["stage-6", "alternance", "autre"];
+const REGION_IDS = ["all", "idf", "ara", "paca", "ge"];
+const PERIOD_IDS = ["all", "24h", "7d", "30d"];
+
+function filtersFromParams(params: URLSearchParams): OfferListFilters {
+  return {
+    contracts: (params.get("contracts") || "").split(",").filter((x) => CONTRACT_IDS.includes(x)),
+    domains: (params.get("domains") || "").split(",").filter((x) => x in DOMAIN_KEYWORDS),
+    sources: (params.get("sources") || "").split(",").filter((x) => x in SOURCE_SITES),
+    region: REGION_IDS.includes(params.get("region") || "") ? params.get("region")! : "all",
+    period: PERIOD_IDS.includes(params.get("period") || "") ? params.get("period")! : "all",
+  };
+}
+
+const hasActiveFilters = (filters: OfferListFilters) =>
+  !!filters.contracts.length ||
+  !!filters.domains.length ||
+  !!filters.sources.length ||
+  (filters.region !== "all" && !!filters.region) ||
+  (filters.period !== "all" && !!filters.period);
+
+function readStoredFilters(): OfferListFilters | null {
+  try {
+    const raw = sessionStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<OfferListFilters>;
+    const list = (value: unknown, allowed: (id: string) => boolean) =>
+      Array.isArray(value) ? value.filter((id): id is string => typeof id === "string" && allowed(id)) : [];
+    return {
+      contracts: list(parsed.contracts, (id) => CONTRACT_IDS.includes(id)),
+      domains: list(parsed.domains, (id) => id in DOMAIN_KEYWORDS),
+      sources: list(parsed.sources, (id) => id in SOURCE_SITES),
+      region: typeof parsed.region === "string" && REGION_IDS.includes(parsed.region) ? parsed.region : "all",
+      period: typeof parsed.period === "string" && PERIOD_IDS.includes(parsed.period) ? parsed.period : "all",
+    };
+  } catch {
+    return null;
+  }
+}
+
+/* ── Dernier catalogue connu, gardé sur l'appareil ──
+   L'écran n'attend plus le serveur pour afficher les offres : la copie locale
+   s'affiche tout de suite, puis le serveur la remplace. Le texte des annonces
+   est tronqué pour rester sous le quota du navigateur. */
+const catalogCacheKey = (email: string) => `cible:catalogue-cache:v1:${email.trim().toLowerCase()}`;
+const CACHED_TEXT_LIMIT = 2000;
+
+function readCatalogCache(email: string): DetectedOffer[] {
+  try {
+    const raw = localStorage.getItem(catalogCacheKey(email));
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (offer): offer is DetectedOffer =>
+        !!offer && typeof offer === "object" && typeof (offer as DetectedOffer).id === "string" && typeof (offer as DetectedOffer).title === "string"
+    );
+  } catch {
+    return [];
+  }
+}
+
+function writeCatalogCache(email: string, offers: DetectedOffer[]): void {
+  try {
+    const light = offers.slice(0, 300).map((offer) => ({
+      id: offer.id,
+      title: offer.title,
+      company: offer.company,
+      location: offer.location,
+      salary: offer.salary,
+      match: offer.match,
+      keywords: (offer.keywords || []).slice(0, 20),
+      skills: (offer.skills || []).slice(0, 20),
+      text: (offer.text || "").slice(0, CACHED_TEXT_LIMIT),
+      url: offer.url,
+      source: offer.source,
+      contract: offer.contract,
+      duration: offer.duration,
+      deadline: offer.deadline,
+      receivedAt: offer.receivedAt,
+      gmailStatus: offer.gmailStatus,
+      cvCoverage: offer.cvCoverage,
+    }));
+    localStorage.setItem(catalogCacheKey(email), JSON.stringify(light));
+  } catch {
+    /* quota atteint : le catalogue serveur reste la source de vérité */
+  }
+}
 
 const isExpiredOffer = (o: DetectedOffer) =>
   !!o.deadline &&
@@ -177,21 +275,73 @@ export default function OffresPage() {
     "all" | "new" | "todo" | "applied" | "favorites" | "expired"
   >("all");
   const [companyFilter, setCompanyFilter] = useState("");
-  const sideFilters: OfferListFilters = useMemo(() => ({
-    contracts: (searchParams.get("contracts") || "").split(",").filter(x => ["stage-6", "alternance", "autre"].includes(x)),
-    domains: (searchParams.get("domains") || "").split(",").filter(Boolean),
-    sources: (searchParams.get("sources") || "").split(",").filter(x => x in SOURCE_SITES),
-    region: searchParams.get("region") || "all",
-    period: searchParams.get("period") || "all",
-  }), [searchParams]);
-  const setSideFilters = (filters: OfferListFilters) => {
-    const params = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(filters)) {
-      const text = Array.isArray(value) ? value.join(",") : value;
-      if (text && text !== "all") params.set(key, text); else params.delete(key);
+  /* Les frappes restent instantanées : le filtrage suit un cran derrière. */
+  const deferredSearch = useDeferredValue(searchQuery);
+  const deferredCompany = useDeferredValue(companyFilter);
+
+  /* ── Mode Rafale : enchaîner les candidatures sans perdre le filtre ── */
+  const [rafaleMode, setRafaleMode] = useState(false);
+  const [rafaleSkipped, setRafaleSkipped] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (searchParams.get("rafale") !== "1") return;
+    queueMicrotask(() => setRafaleMode(true));
+  }, [searchParams]);
+
+  const [sideFilters, setSideFiltersState] = useState<OfferListFilters>(EMPTY_FILTERS);
+  const setSideFilters = useCallback((filters: OfferListFilters) => {
+    setSideFiltersState(filters);
+    /* Nouveau filtre = nouvelle file Rafale : les offres passées redeviennent éligibles. */
+    setRafaleSkipped(new Set());
+    try {
+      sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+    } catch {
+      /* stockage indisponible : les filtres restent valables pour la session */
     }
-    router.replace(`/app/offres?${params.toString()}`, { scroll: false });
-  };
+  }, []);
+
+  /* Restauration des filtres (lien direct puis session) + filtres rapides du
+     bandeau, envoyés par AppShell sans passer par l'URL. */
+  useEffect(() => {
+    const fromUrl = filtersFromParams(new URLSearchParams(window.location.search));
+    const restored = hasActiveFilters(fromUrl) ? fromUrl : readStoredFilters();
+    if (restored) {
+      /* Un lien direct avec filtres devient aussi l'état de la session. */
+      try {
+        sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(restored));
+      } catch {
+        /* stockage indisponible */
+      }
+      queueMicrotask(() => setSideFiltersState(restored));
+    }
+    const onRequest = (event: Event) => {
+      const detail = (event as CustomEvent<{ key?: keyof OfferListFilters; value?: string }>).detail;
+      if (!detail?.key) return;
+      const key = detail.key;
+      const value = detail.value ?? "";
+      setRafaleSkipped(new Set());
+      setSideFiltersState((prev) => {
+        const list = value ? value.split(",").filter(Boolean) : [];
+        const next: OfferListFilters = key === "region"
+          ? { ...prev, region: value || "all" }
+          : key === "period"
+            ? { ...prev, period: value || "all" }
+            : key === "contracts"
+              ? { ...prev, contracts: list }
+              : key === "domains"
+                ? { ...prev, domains: list }
+                : { ...prev, sources: list };
+        try {
+          sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          /* stockage indisponible */
+        }
+        return next;
+      });
+    };
+    window.addEventListener("cible:offer-filter-request", onRequest);
+    return () => window.removeEventListener("cible:offer-filter-request", onRequest);
+  }, []);
+
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("cible:offer-filters", { detail: sideFilters }));
   }, [sideFilters]);
@@ -252,25 +402,54 @@ export default function OffresPage() {
   }, []);
 
   /* ── Chargement des offres réelles : serveur d'abord, appareil en secours ── */
+  const previousCatalogs = useRef<{ email: string; snapshot: DetectedOffer[]; discovery: DetectedOffer[] }>({ email: "", snapshot: [], discovery: [] });
+  const loadRevision = useRef(0);
+  const lastRefresh = useRef(0);
   const loadOffers = useCallback(async () => {
     if (!user) return;
+    const revision = ++loadRevision.current;
+    lastRefresh.current = Date.now();
+    // Start independent reads together; bound both the request and JSON body time.
+    const requests = ["/api/user-data", "/api/offres/snapshot", "/api/offres/discovery"].map(async url => {
+      try {
+        const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(15000) });
+        return { ok: res.ok, json: await res.json() };
+      } catch { return { ok: false, json: null }; }
+    });
     const local = getOrCreateData(user.name, user.email);
     const localGmail = loadGmailStore(user.email).offers
       .filter((o) => o.status !== "doublon")
       .map((o) => offerToDetectedOffer(o));
 
+    /* Affichage immédiat : le dernier catalogue connu s'affiche pendant que le
+       serveur répond, au lieu d'une page vide qui ressemble à un compte vide. */
+    const cachedOffers = readCatalogCache(user.email);
+    if (cachedOffers.length) {
+      const quick = mergeOffers([cachedOffers, local.offers, localGmail]);
+      if (quick.length) {
+        setData({ ...local, offers: quick });
+        setLoadState({
+          loading: false,
+          error: null,
+          note: "Catalogue de cet appareil affiché — mise à jour avec le serveur en cours.",
+          snapshotCount: cachedOffers.length,
+        });
+      }
+    }
+
     let remoteOffers: DetectedOffer[] = [];
     let remoteData: UserData | null = null;
     let remoteApplications: Application[] | null = null;
-    let snapshotOffers: DetectedOffer[] = [];
-    let discoveryOffers: DetectedOffer[] = [];
+    if (previousCatalogs.current.email !== user.email) previousCatalogs.current = { email: user.email, snapshot: [], discovery: [] };
+    let snapshotOffers = previousCatalogs.current.snapshot;
+    let discoveryOffers = previousCatalogs.current.discovery;
     let snapshotCount: number | null = null;
     const notes: string[] = [];
 
     // 1 — Dossier serveur (offres manuelles/sélectionnées + candidatures).
     try {
-      const res = await fetch("/api/user-data", { cache: "no-store" });
-      const json = (await res.json()) as {
+      const res = await requests[0];
+      const json = res.json as {
         ok?: boolean;
         record?: { data: UserData; version: number };
       };
@@ -290,8 +469,8 @@ export default function OffresPage() {
 
     // 2 — Catalogue Gmail persistant côté serveur (source de vérité pérenne).
     try {
-      const res = await fetch("/api/offres/snapshot", { cache: "no-store" });
-      const json = (await res.json()) as {
+      const res = await requests[1];
+      const json = res.json as {
         ok?: boolean;
         error?: string;
         offers?: (OfferLike & { atsScore?: number })[];
@@ -311,14 +490,16 @@ export default function OffresPage() {
 
     // 3 — Offres publiques vérifiées, conservées dans le stockage serveur.
     try {
-      const res = await fetch("/api/offres/discovery", { cache: "no-store" });
-      const json = await res.json() as { ok?: boolean; offers?: DetectedOffer[] };
+      const res = await requests[2];
+      const json = res.json as { ok?: boolean; offers?: DetectedOffer[] };
       if (res.ok && json.ok && Array.isArray(json.offers)) {
         discoveryOffers = json.offers;
       } else notes.push("Registre des stages découverts indisponible.");
     } catch { notes.push("Registre des stages découverts indisponible."); }
 
     // Fusion : dossier serveur → offres publiques → Gmail → appareil.
+    if (revision !== loadRevision.current) return;
+    previousCatalogs.current = { email: user.email, snapshot: snapshotOffers, discovery: discoveryOffers };
     const merged = mergeOffers([remoteOffers, discoveryOffers, snapshotOffers, local.offers, localGmail]);
     const applications = remoteApplications
       ? [
@@ -327,8 +508,20 @@ export default function OffresPage() {
         ]
       : local.applications;
     const effective: UserData = { ...(remoteData || local), offers: merged, applications };
-    effective.offers = merged.map(offer => ({ ...offer, cvCoverage: offerCvCoverage(offer, effective) }));
+    /* Texte du CV maître sérialisé une seule fois pour tout le catalogue. */
+    const masterCvText = cvMasterText(effective);
+    const scored: DetectedOffer[] = [];
+    for (let i = 0; i < merged.length; i++) {
+      if (i % 25 === 0) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+        if (revision !== loadRevision.current) return;
+      }
+      const offer = merged[i];
+      scored.push({ ...offer, cvCoverage: offerCvCoverage(offer, effective, masterCvText) });
+    }
+    effective.offers = scored;
     setData(effective);
+    writeCatalogCache(user.email, merged);
 
     const blocking =
       merged.length === 0 && (snapshotCount === 0 || snapshotCount === null) && notes.length > 0
@@ -342,7 +535,7 @@ export default function OffresPage() {
     });
 
     // 4 — Recommandations réelles du jour (moteur daily-recommendations).
-    const cvText = effective.originalCv?.text || (effective.cvData ? cvToText(effective.cvData) : "");
+    const cvText = masterCvText;
     const eligible = eligibleOffers(merged, effective);
     if (!eligible.length) {
       setRecommendedOffers([]);
@@ -386,14 +579,16 @@ export default function OffresPage() {
     });
     return () => {
       cancelled = true;
+      loadRevision.current += 1;
     };
   }, [loadOffers]);
 
   // Une confirmation d'envoi dans un autre onglet doit retirer l'offre au retour.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const refresh = () => {
+    const refresh = (event: Event) => {
       if (document.visibilityState === "hidden") return;
+      if ((event.type === "focus" || event.type === "visibilitychange") && Date.now() - lastRefresh.current < 30_000) return;
       clearTimeout(timer);
       timer = setTimeout(() => { void loadOffers(); }, 250);
     };
@@ -520,18 +715,29 @@ export default function OffresPage() {
     }
   };
 
-  /* ── Enregistre la vraie offre (texte complet) pour l'adaptation CV ── */
-  const handleSelectOffer = (id: string) => {
+  /* ── Enregistre les vraies offres (texte complet) pour l'adaptation CV ──
+     Une seule écriture pour plusieurs offres : en mode Rafale, l'offre courante
+     ET la suivante sont enregistrées, sinon Mon CV ne connaîtrait pas la suite. */
+  const handleSelectOffers = (ids: string[]) => {
     if (!user || demoMode) return;
-    const found = realOffersById.get(id);
-    if (!found) return;
     const local = getOrCreateData(user.name, user.email);
-    const keys = new Set(offerKeys(found));
-    if (local.offers.some((o) => offerKeys(o).some((k) => keys.has(k)))) return;
-    const next = { ...local, offers: [found, ...local.offers] };
+    const present = new Set(local.offers.flatMap((offer) => offerKeys(offer)));
+    const additions: DetectedOffer[] = [];
+    for (const id of ids) {
+      const found = realOffersById.get(id);
+      if (!found) continue;
+      const keys = offerKeys(found);
+      if (keys.some((key) => present.has(key))) continue;
+      for (const key of keys) present.add(key);
+      additions.push(found);
+    }
+    if (!additions.length) return;
+    const next = { ...local, offers: [...additions, ...local.offers] };
     saveData(user.email, next);
     pushToServer(next);
   };
+
+  const handleSelectOffer = (id: string) => handleSelectOffers([id]);
 
   /* ── Marquage « postulé » : enregistre une vraie candidature, sans inventaire ── */
   const handleMarkApplied = async (ids: string[]) => {
@@ -566,7 +772,11 @@ export default function OffresPage() {
     await pushToServer(next);
     setSelectedIds(new Set());
     await loadOffers();
-    setSyncNotice(`${additions.length} candidature${additions.length > 1 ? "s" : ""} enregistrée${additions.length > 1 ? "s" : ""}.`);
+    setSyncNotice(
+      rafaleMode
+        ? `${additions.length} candidature${additions.length > 1 ? "s" : ""} enregistrée${additions.length > 1 ? "s" : ""}. L'offre suivante du même filtre est prête — tu peux enchaîner.`
+        : `${additions.length} candidature${additions.length > 1 ? "s" : ""} enregistrée${additions.length > 1 ? "s" : ""}.`
+    );
   };
 
   /* ── Ajout par URL : extraction réelle puis formulaire de confirmation ── */
@@ -662,13 +872,21 @@ export default function OffresPage() {
     [data]
   );
 
-  const baseRows = useMemo<DemoTableOffer[]>(() => {
-    if (demoMode) return demoRows;
+  /* Une ligne par offre, calculée une seule fois par chargement : changer de
+     filtre ne recalcule plus le rapport carrière de chaque offre. */
+  const offerRows = useMemo(() => {
+    if (demoMode) return demoRows.map((row) => ({ row, offer: null as DetectedOffer | null }));
     if (!data) return [];
-    return applyOfferFilters(data.offers, sideFilters).map((o) =>
-      toTableRow(o, appliedOfferIds.has(o.id), currentCareerReport(o, data))
-    );
-  }, [demoMode, demoRows, data, sideFilters, appliedOfferIds]);
+    return data.offers.map((offer) => ({
+      offer,
+      row: toTableRow(offer, appliedOfferIds.has(offer.id), currentCareerReport(offer, data)),
+    }));
+  }, [demoMode, demoRows, data, appliedOfferIds]);
+
+  const baseRows = useMemo<DemoTableOffer[]>(() => {
+    if (demoMode) return offerRows.map((item) => item.row);
+    return offerRows.filter((item) => item.offer && matchesOfferFilters(item.offer, sideFilters)).map((item) => item.row);
+  }, [demoMode, offerRows, sideFilters]);
 
   const tabCounts = useMemo<OffersTabCounts | undefined>(() => {
     if (demoMode) return undefined;
@@ -694,8 +912,8 @@ export default function OffresPage() {
       if (activeTab === "expired" && offer.status !== "expiree") return false;
 
       // Search query filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (deferredSearch.trim()) {
+        const q = deferredSearch.toLowerCase();
         const matches =
           offer.title.toLowerCase().includes(q) ||
           offer.company.toLowerCase().includes(q) ||
@@ -705,15 +923,24 @@ export default function OffresPage() {
       }
 
       // Company filter from sidebar
-      if (companyFilter.trim()) {
-        if (!offer.company.toLowerCase().includes(companyFilter.toLowerCase())) {
+      if (deferredCompany.trim()) {
+        if (!offer.company.toLowerCase().includes(deferredCompany.toLowerCase())) {
           return false;
         }
       }
 
       return true;
     });
-  }, [baseRows, activeTab, favorites, searchQuery, companyFilter]);
+  }, [baseRows, activeTab, favorites, deferredSearch, deferredCompany]);
+
+  /* Offre proposée par le mode Rafale : la première du filtre encore ouverte. */
+  const rafaleRows = useMemo(
+    () => (rafaleMode
+      ? filteredOffers.filter((row) => !rafaleSkipped.has(row.id) && row.status !== "postulee" && row.status !== "expiree")
+      : []),
+    [rafaleMode, filteredOffers, rafaleSkipped]
+  );
+  const rafaleCurrent = rafaleRows[0];
 
   /* ── Statistiques réelles (compte du dossier, indépendant des filtres) ── */
   const realTotal = demoMode ? DEMO_USER_PROFILE.stats.totalOffers : data?.offers.length ?? 0;
@@ -856,22 +1083,34 @@ export default function OffresPage() {
           </div>
 
           {/* Mode Rafale Header CTA Card */}
-          <Link
-            href="/app/offres?rafale=1"
-            className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100/80 hover:to-purple-100/80 border border-indigo-100/80 rounded-xl px-3.5 py-2 transition-all shadow-2xs group"
+          <button
+            type="button"
+            onClick={() => {
+              setRafaleMode((prev) => !prev);
+              setActiveTab("all");
+              setRafaleSkipped(new Set());
+            }}
+            aria-pressed={rafaleMode}
+            className={`flex items-center gap-3 rounded-xl px-3.5 py-2 transition-all shadow-2xs text-left cursor-pointer border ${rafaleMode
+              ? "bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-500 text-white"
+              : "bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100/80 hover:to-purple-100/80 border-indigo-100/80"}`}
           >
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <div className={`w-7 h-7 rounded-lg text-white flex items-center justify-center shrink-0 shadow-xs ${rafaleMode ? "bg-white/20" : "bg-gradient-to-br from-indigo-500 to-purple-600"}`}>
               <Zap size={14} className="fill-white" />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-900">Mode Rafale ⚡</span>
+                <span className={`text-xs font-bold ${rafaleMode ? "text-white" : "text-slate-900"}`}>
+                  {rafaleMode ? "Quitter le mode Rafale" : "Mode Rafale ⚡"}
+                </span>
               </div>
-              <span className="text-[10px] text-slate-500">
-                Sélectionne plusieurs offres et génère tous tes CV en une fois. →
+              <span className={`text-[10px] ${rafaleMode ? "text-indigo-100" : "text-slate-500"}`}>
+                {rafaleMode
+                  ? "Candidatures enchaînées avec le même filtre."
+                  : "Postule offre après offre sans perdre tes filtres. →"}
               </span>
             </div>
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -975,6 +1214,84 @@ export default function OffresPage() {
       <section className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-4 gap-4 items-start">
         {/* Main table column (~75%) */}
         <div className="lg:col-span-3">
+          {/* Mode Rafale : l'offre à traiter maintenant, dans le filtre courant */}
+          {rafaleMode && (
+            <div className="mb-4 rounded-2xl border border-indigo-200/90 bg-gradient-to-br from-indigo-50/90 to-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="flex items-center gap-1.5 text-xs font-bold text-indigo-900">
+                    <Zap size={13} className="fill-indigo-600 text-indigo-600" />
+                    Mode Rafale · {rafaleRows.length} offre{rafaleRows.length > 1 ? "s" : ""} restante{rafaleRows.length > 1 ? "s" : ""} avec ces filtres
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Après chaque candidature, l&apos;offre suivante du même filtre est proposée. Les filtres restent actifs tant que tu ne les réinitialises pas.
+                  </p>
+                </div>
+                <a href="#offer-filters" className="text-[11px] font-semibold text-indigo-700 hover:underline">
+                  Gérer mes filtres ↓
+                </a>
+              </div>
+
+              {rafaleCurrent ? (
+                <div className="mt-3 flex flex-col gap-2.5 rounded-xl border border-slate-200 bg-white p-3">
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-500">{rafaleCurrent.company}</p>
+                    <h4 className="text-sm font-bold text-slate-900 leading-snug">{rafaleCurrent.title}</h4>
+                    <p className="text-[11px] text-slate-500">
+                      {rafaleCurrent.location} · {rafaleCurrent.date}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {rafaleCurrent.url && (
+                      <a
+                        href={rafaleCurrent.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800"
+                      >
+                        <ExternalLink size={12} />
+                        Ouvrir l&apos;offre et postuler
+                      </a>
+                    )}
+                    <Link
+                      href={`/app/cv?offer=${encodeURIComponent(rafaleCurrent.id)}&start=1&rafale=1`}
+                      onClick={() => {
+                        /* L'offre courante et la suivante rejoignent le dossier :
+                           Mon CV pourra enchaîner sans perdre la file du filtre. */
+                        handleSelectOffers([rafaleCurrent.id, rafaleRows[1]?.id].filter((id): id is string => !!id));
+                        writeRafaleQueue(rafaleRows.map((row) => row.id));
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-blue-700"
+                    >
+                      <FileText size={12} />
+                      Adapter mon CV
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => void handleMarkApplied([rafaleCurrent.id])}
+                      className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-700 cursor-pointer"
+                    >
+                      <Star size={12} />
+                      J&apos;ai postulé → offre suivante
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRafaleSkipped((prev) => new Set(prev).add(rafaleCurrent.id))}
+                      className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <SkipForward size={12} />
+                      Passer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 rounded-xl border border-dashed border-indigo-200 bg-white px-3 py-4 text-[11px] text-slate-500">
+                  Aucune offre restante avec ces filtres. Modifie ou réinitialise les filtres pour continuer.
+                </p>
+              )}
+            </div>
+          )}
+
           <OffersTable
             offers={filteredOffers}
             totalOffersCount={realTotal}

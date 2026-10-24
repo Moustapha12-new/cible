@@ -8,8 +8,10 @@ import {
   matchesContractOption,
   matchesDomains,
   matchesPeriod,
+  matchesOfferFilters,
   matchesRegion,
   matchesSourceSite,
+  nextRafaleCandidates,
   offerSourceSite,
   SOURCE_SITES,
 } from "./offres-filters";
@@ -116,4 +118,55 @@ assert.ok(counts.domains["genie-electrique"] >= 1);
 const siteCounts = computeFacetCounts(siteOffres);
 for (const id of Object.keys(SOURCE_SITES)) assert.equal(siteCounts.sources[id], siteOffres.filter((o) => offerSourceSite(o) === id).length, `compteur ${id}`);
 
-process.stdout.write("offres-filters: contrats, domaines, régions, périodes, sources, combinaison, compteurs passed\n");
+/* Mode Rafale : l'offre suivante reste dans l'ordre du filtre et exclut
+   l'offre courante comme les candidatures déjà enregistrées. */
+const rafaleCatalogue = [
+  { id: "a", title: "Offre A" },
+  { id: "b", title: "Offre B" },
+  { id: "c", title: "Offre C" },
+  { id: "d", title: "" },
+];
+assert.deepEqual(
+  nextRafaleCandidates(rafaleCatalogue, new Set(["b"]), "a", ["c", "b", "a"].map(String)).map((o) => o.id),
+  ["c"],
+  "rafale : ordre du filtre, offre courante et déjà postulée exclues"
+);
+assert.deepEqual(
+  nextRafaleCandidates(rafaleCatalogue, new Set(), "b").map((o) => o.id),
+  ["a", "c"],
+  "rafale : sans file, le dossier complète et les offres sans titre sont ignorées"
+);
+assert.deepEqual(
+  nextRafaleCandidates(rafaleCatalogue, new Set(["a", "b", "c"]), "a").map((o) => o.id),
+  [],
+  "rafale : plus aucune offre disponible"
+);
+
+/* Scénario complet du mode Rafale : filtre actif, une candidature, puis
+   l'offre suivante doit rester dans ce filtre (et jamais une postulée). */
+{
+  const catalogue = [
+    makeOffer({ id: "r1", title: "Stage A", duration: "6 mois" }),
+    makeOffer({ id: "r2", title: "Stage B", duration: "6 mois" }),
+    makeOffer({ id: "r3", title: "Alternance C", contract: "Alternance" }),
+    makeOffer({ id: "r4", title: "Stage D", duration: "6 mois" }),
+  ];
+  const filtre = { ...EMPTY_FILTERS, contracts: ["stage-6"] };
+  const liste = catalogue.filter((offer) => matchesOfferFilters(offer, filtre));
+  assert.deepEqual(liste.map((o) => o.id), ["r1", "r2", "r4"], "rafale : le filtre réduit la liste");
+  const apresCandidature = new Set([liste[0].id]);
+  const file = liste.map((o) => o.id);
+  assert.equal(
+    nextRafaleCandidates(catalogue, apresCandidature, liste[0].id, file)[0].id,
+    "r2",
+    "rafale : l'offre suivante reste la suivante du filtre"
+  );
+  /* Une offre déjà postulée ne peut pas revenir par la file. */
+  assert.equal(
+    nextRafaleCandidates(catalogue, apresCandidature, "r2", ["r1", "r4"])[0].id,
+    "r4",
+    "rafale : offre postulée écartée, file respectée"
+  );
+}
+
+process.stdout.write("offres-filters: contrats, domaines, régions, périodes, sources, combinaison, compteurs, file rafale, scénario rafale passed\n");

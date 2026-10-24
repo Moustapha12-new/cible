@@ -1,3 +1,4 @@
+import { mergeUserData } from "@/lib/data";
 import { NextResponse } from "next/server";
 import { securedRoute } from "@/lib/auth-server";
 import { loadUserRecord, saveUserRecord } from "@/lib/candidature-server";
@@ -19,7 +20,23 @@ export const POST = securedRoute(async (req, auth) => {
     return NextResponse.json({ ok: false, error: "Dossier invalide." }, { status: 400 });
   }
   try {
-    await saveUserRecord(auth.user, { data: body.data, version: body.version });
+    const current = await loadUserRecord(auth.user);
+    if (current.version !== body.version) {
+      return NextResponse.json({ ok: false, error: "Le dossier a changé ailleurs. Recharge avant de réessayer." }, { status: 409 });
+    }
+    // A general backup is not a deletion or status-update command.
+    // Keep the server's archived applications; recover entries present only locally.
+    const protectedData = mergeUserData(current.data, body.data);
+    await saveUserRecord(auth.user, { data: {
+      ...body.data,
+      applications: [
+        ...current.data.applications,
+        ...protectedData.applications.filter(app => !current.data.applications.some(saved => saved.id === app.id || (saved.offerId && saved.offerId === app.offerId))),
+      ],
+      offers: protectedData.offers,
+      dossiers: protectedData.dossiers,
+      documents: protectedData.documents,
+    }, version: current.version });
     return NextResponse.json({ ok: true, version: body.version + 1 }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     /* Conflit de version (écriture concurrente) : contrat 409 documenté —

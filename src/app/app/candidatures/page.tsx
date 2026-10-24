@@ -83,8 +83,8 @@ export default function CandidaturesPage() {
 
     fetch("/api/user-data", { cache: "no-store" })
       .then((r) => r.json())
-      .then((json) => {
-        if (!json.ok || !json.record?.data) return;
+      .then(async (json) => {
+        if (!json.ok || !json.record?.data) { setToastMessage("Serveur indisponible : affichage des candidatures de cet appareil."); return; }
         const remote = json.record.data as UserData;
         /* Fusion serveur (source de vérité) + apports de l'appareil, puis
            mise en cache local : une candidature archivée depuis un autre
@@ -92,6 +92,13 @@ export default function CandidaturesPage() {
         const merged = mergeUserData(remote, local);
         setData(merged);
         try { saveData(user.email, merged); } catch { /* Cache local facultatif. */ }
+        const recovered = merged.applications.filter(app => !remote.applications.some(saved => saved.id === app.id || (saved.offerId && saved.offerId === app.offerId)));
+        if (recovered.length) {
+          const response = await fetch("/api/user-data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: merged, version: json.record.version }) });
+          setToastMessage(response.ok
+            ? `${recovered.length} candidature(s) de cet appareil récupérée(s) et sauvegardée(s) sur le serveur.`
+            : "Tes candidatures locales restent visibles, mais leur sauvegarde serveur a échoué. Recharge pour réessayer.");
+        }
       })
       .catch(() => {});
   }, [user]);

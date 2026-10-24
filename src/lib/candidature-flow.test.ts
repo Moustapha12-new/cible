@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
@@ -25,7 +26,7 @@ async function main() {
   };
 
   // PostgreSQL WASM exécute le SQL original ; Auth/PostgREST/Storage = fixtures.
-  const { PGlite } = await import(join(process.cwd(), ".validation-tools/node_modules/@electric-sql/pglite"));
+  const { PGlite } = createRequire(import.meta.url)(join(process.cwd(), ".validation-tools/node_modules/@electric-sql/pglite"));
   const db = new PGlite();
   await db.exec("create role anon; create role authenticated; create role service_role bypassrls;");
   await db.exec(readFileSync("docs/security-rpc.sql", "utf8"));
@@ -38,6 +39,7 @@ async function main() {
 
   const objects = new Map<string, Uint8Array>();
   const nativeFetch = globalThis.fetch;
+  const nativeNow = Date.now;
   globalThis.fetch = async (input, init) => {
     const url = new URL(String(input));
     assert.equal(url.hostname, "cible-fixture.invalid");
@@ -135,8 +137,8 @@ async function main() {
     const oldPush = await userDataPost(req("POST", "/api/user-data", { data: localNext, version: before.version }));
     assert.equal(oldPush.status, 200, "l'ancien push passait bien (c'est le bug)");
     record = await readRecord();
-    assert.equal(record.data.applications.length, 0, "contrôle négatif : l'ancien comportement effaçait la candidature");
-    console.log("Contrôle négatif confirmé : l'ancien push local sans fusion effaçait la candidature archivée.");
+    assert.equal(record.data.applications.length, 1, "le serveur protège la candidature même face à un ancien client sans fusion");
+    console.log("Régression corrigée : une sauvegarde locale incomplète ne supprime plus la candidature archivée.");
 
     // ── 3b. Ré-archivage, puis NOUVEAU push (logique fusionnée de la page) ──
     const reapplyJson = await (await applyPost(req("POST", "/api/candidatures/apply", applyBody))).json();
@@ -168,9 +170,21 @@ async function main() {
     record = await readRecord();
     assert.equal(record.data.applications.length, 1, "pas de doublon de candidature");
 
-    console.log("Parcours complet OK : offre manuelle → envoi CV → contrôle négatif (ancien bug reproduit) → push fusionné → candidature préservée, pas de doublon.");
+    Date.now = () => nativeNow() + 120_000;
+    const twentyFive = { ...record.data, applications: Array.from({ length: 25 }, (_, i) => ({ ...record.data.applications[0], id: `app-${i}`, offerId: `offer-${i}` })) };
+    assert.equal((await userDataPost(req("POST", "/api/user-data", { data: twentyFive, version: record.version }))).status, 200);
+    const full = await readRecord();
+    const incomplete = { ...full.data, applications: full.data.applications.slice(0, 11) };
+    assert.equal((await userDataPost(req("POST", "/api/user-data", { data: incomplete, version: full.version }))).status, 200);
+    const preserved = await readRecord();
+    assert.deepEqual(preserved.data.applications, full.data.applications, "une sauvegarde de 11 ne peut supprimer les autres candidatures ni leurs CV");
+    assert.equal((await userDataPost(req("POST", "/api/user-data", { data: incomplete, version: full.version }))).status, 409, "une version périmée est refusée");
+    console.log("Sauvegarde partielle de 11 candidatures : toutes les candidatures et tous les CV serveur conservés ; conflit concurrent refusé.");
+
+    console.log("Parcours complet OK : offre manuelle → envoi CV → sauvegarde incomplète bloquée → push fusionné → candidature préservée, pas de doublon.");
   } finally {
     globalThis.fetch = nativeFetch;
+    Date.now = nativeNow;
     await db.close();
   }
 }

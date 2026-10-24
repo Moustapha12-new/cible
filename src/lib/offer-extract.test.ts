@@ -175,6 +175,9 @@ async function main() {
     "MIME: titre accentué préservé après décodage"
   );
   // Un e-mail sans HTML (texte seul) ne doit pas lever : il rend 0 offre, sans crash.
+  const confirmation = extractOffersFromEmail({ id: "confirmation-hw", from: "HelloWork <info@hellowork.com>", subject: "Votre candidature est enregistrée", html: `<table><tr><td>Hello Moustapha ! Votre candidature est enregistrée pour EPI.</td></tr><tr><td><a href="https://emails.hellowork.com/clic/example/4/company">Tout savoir sur l'entreprise</a></td></tr></table>` });
+  assert.equal(confirmation.offers.length, 0, "un lien entreprise dans une confirmation de candidature n'est pas une offre");
+
   const textOnly = extractOffersFromEmail({ id: "txt", from: "x@y.z", subject: "alerte", html: "" });
   assert.equal(textOnly.offers.length, 0, "MIME: e-mail sans HTML → 0 offre, pas d'erreur");
   // Un HTML corrompu/garbage ne doit pas crasher (tolérance d'erreur).

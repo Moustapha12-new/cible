@@ -43,6 +43,7 @@ interface OffersTableProps {
   onBulkEnqueue: () => void;
   onBulkMarkApplied: () => void;
   onBulkDelete: () => void;
+  onDeleteOffer?: (id: string) => void;
 }
 
 export function OffersTable({
@@ -61,6 +62,7 @@ export function OffersTable({
   onBulkEnqueue,
   onBulkMarkApplied,
   onBulkDelete,
+  onDeleteOffer,
 }: OffersTableProps) {
   const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [sortOrder, setSortOrder] = useState<"recent" | "match" | "company" | "expert">("recent");
@@ -281,9 +283,10 @@ export function OffersTable({
                     <button
                       type="button"
                       className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
-                      aria-label="Options"
+                      aria-label={`Supprimer ${offer.title}`}
+                      onClick={() => onDeleteOffer?.(offer.id)}
                     >
-                      <MoreVertical size={15} />
+                      <Trash2 size={15} />
                     </button>
                   )}
                 </div>
@@ -310,6 +313,7 @@ export function OffersTable({
               </div>
               <h4 className="text-xs font-bold text-slate-900">{offer.title}</h4>
               <p className="text-[11px] text-slate-500">{offer.location}</p>
+              {showDelete && <button type="button" className="text-xs text-rose-600 self-end" onClick={() => onDeleteOffer?.(offer.id)}>Supprimer</button>}
               <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100">
                 <span className="text-[10px] text-slate-400">{offer.date}</span>
                 <Link href={`/app/cv?offer=${encodeURIComponent(offer.id)}`} className="text-[11px] font-semibold text-blue-700">Évaluer</Link>

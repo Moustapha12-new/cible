@@ -22,6 +22,7 @@ export function eligibleOffers(offers: DetectedOffer[], data: UserData): Detecte
   const applied = appliedOfferIds(data);
   const seen = new Set<string>();
   return offers.filter(o => {
+    if (data.dismissedOfferIds?.includes(o.id)) return false;
     if (applied.has(o.id)) return false;
     if (data.offerQualifications?.[o.id]?.state === "rejected") return false;
     if (o.gmailStatus && ["ignorée", "expirée", "doublon"].includes(o.gmailStatus)) return false;

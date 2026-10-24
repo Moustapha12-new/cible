@@ -34,6 +34,7 @@ export const POST = securedRoute(async (req, auth) => {
         ...protectedData.applications.filter(app => !current.data.applications.some(saved => saved.id === app.id || (saved.offerId && saved.offerId === app.offerId))),
       ],
       offers: protectedData.offers,
+      dismissedOfferIds: protectedData.dismissedOfferIds,
       dossiers: protectedData.dossiers,
       documents: protectedData.documents,
     }, version: current.version });

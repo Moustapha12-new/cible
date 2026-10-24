@@ -181,6 +181,18 @@ async function main() {
     assert.equal((await userDataPost(req("POST", "/api/user-data", { data: incomplete, version: full.version }))).status, 409, "une version périmée est refusée");
     console.log("Sauvegarde partielle de 11 candidatures : toutes les candidatures et tous les CV serveur conservés ; conflit concurrent refusé.");
 
+    Date.now = () => nativeNow() + 240_000;
+    const { POST: dismissPost } = await import("../app/api/offres/dismiss/route");
+    const beforeDismiss = await readRecord();
+    assert.equal((await dismissPost(req("POST", "/api/offres/dismiss", { ids: [offer.id] }))).status, 200);
+    const dismissed = await readRecord();
+    assert.ok(dismissed.data.dismissedOfferIds?.includes(offer.id));
+    assert.deepEqual(dismissed.data.applications, beforeDismiss.data.applications, "supprimer une offre conserve les candidatures et CV archivés");
+    assert.equal((await userDataPost(req("POST", "/api/user-data", { data: beforeDismiss.data, version: dismissed.version }))).status, 200);
+    assert.ok((await readRecord()).data.dismissedOfferIds?.includes(offer.id), "un ancien onglet ne réactive pas une offre supprimée");
+    assert.equal((await dismissPost(req("POST", "/api/offres/dismiss", { ids: [] }))).status, 400);
+    console.log("Suppression persistante : rechargement, sauvegarde ancienne, conservation des candidatures et validation vérifiés.");
+
     console.log("Parcours complet OK : offre manuelle → envoi CV → sauvegarde incomplète bloquée → push fusionné → candidature préservée, pas de doublon.");
   } finally {
     globalThis.fetch = nativeFetch;

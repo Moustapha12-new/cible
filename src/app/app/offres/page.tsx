@@ -401,6 +401,24 @@ export default function OffresPage() {
     }
   }, []);
 
+  const removeOffers = async (ids: string[]) => {
+    if (demoMode) { setDemoRows(rows => rows.filter(row => !ids.includes(row.id))); setSelectedIds(new Set()); return; }
+    if (!data || !user || !ids.length) return;
+
+    try {
+      const response = await fetch("/api/offres/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
+      if (!response.ok) throw new Error();
+      const result = await response.json();
+      loadRevision.current += 1;
+      const next = { ...data, dismissedOfferIds: [...new Set([...(data.dismissedOfferIds || []), ...result.dismissedOfferIds as string[]])] };
+      setData(current => current ? { ...current, dismissedOfferIds: [...new Set([...(current.dismissedOfferIds || []), ...next.dismissedOfferIds])] } : next);
+      setRecommendedOffers(rows => rows.filter(row => !next.dismissedOfferIds.includes(row.id)));
+      setSelectedIds(new Set());
+      try { saveData(user.email, next); } catch { /* Server has confirmed persistence. */ }
+      setSyncNotice(`${ids.length} offre(s) supprimée(s) de Mes offres. Tes candidatures et CV envoyés restent conservés.`);
+    } catch { setSyncNotice("Suppression non enregistrée. Réessaie : les offres ont été conservées."); }
+  };
+
   /* ── Chargement des offres réelles : serveur d'abord, appareil en secours ── */
   const previousCatalogs = useRef<{ email: string; snapshot: DetectedOffer[]; discovery: DetectedOffer[] }>({ email: "", snapshot: [], discovery: [] });
   const loadRevision = useRef(0);
@@ -877,7 +895,7 @@ export default function OffresPage() {
   const offerRows = useMemo(() => {
     if (demoMode) return demoRows.map((row) => ({ row, offer: null as DetectedOffer | null }));
     if (!data) return [];
-    return data.offers.map((offer) => ({
+    return data.offers.filter(offer => !data.dismissedOfferIds?.includes(offer.id)).map((offer) => ({
       offer,
       row: toTableRow(offer, appliedOfferIds.has(offer.id), currentCareerReport(offer, data)),
     }));
@@ -1296,7 +1314,8 @@ export default function OffresPage() {
             offers={filteredOffers}
             totalOffersCount={realTotal}
             tabCounts={tabCounts}
-            showDelete={demoMode}
+            showDelete={true}
+            onDeleteOffer={id => { void removeOffers([id]); }}
             selectedIds={selectedIds}
             favorites={favorites}
             activeTab={activeTab}
@@ -1318,11 +1337,7 @@ export default function OffresPage() {
               }
               handleMarkApplied([...selectedIds]);
             }}
-            onBulkDelete={() => {
-              if (!demoMode) return;
-              setDemoRows((prev) => prev.filter((o) => !selectedIds.has(o.id)));
-              setSelectedIds(new Set());
-            }}
+            onBulkDelete={() => { void removeOffers([...selectedIds]); }}
           />
         </div>
 

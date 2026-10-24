@@ -205,6 +205,7 @@ export type UserData = {
   profile: Profile;
   cvs: CvVersion[];
   applications: Application[];
+  dismissedOfferIds?: string[];
   letters: Letter[];
   offers: DetectedOffer[];
   recruiters: Recruiter[];
@@ -489,6 +490,7 @@ export function mergeUserData(base: UserData, addition: UserData): UserData {
     cvPreservedData: base.cvPreservedData || addition.cvPreservedData,
     autopilot: base.autopilot || addition.autopilot,
     cvs: unionById(base.cvs, addition.cvs),
+    dismissedOfferIds: [...new Set([...(base.dismissedOfferIds || []), ...(addition.dismissedOfferIds || [])])],
     /* Une seule candidature par offre : si deux appareils ont créé des entrées
        distinctes pour la même offre (marquage manuel + envoi archivé), on
        garde la plus informative (CV archivé > statut > la plus récente). */

@@ -114,7 +114,7 @@ function isChromeTitle(title: string): boolean {
   const t = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   if (!t) return true;
   if (t.length > 120) return false;
-  return /^(voir l'?offre|voir toutes|postuler|cliquez|acceder|en savoir plus|unsubscribe|se desabonner|desinscrire|gerer|instagram|facebook|youtube|tiktok|twitter|linkedin|hellowork|espace candidat|aide et contact|politique|mon compte|connexion|logo\b|offres? (d'?emploi|similaires)|voir plus|precedent|suivant)/i.test(
+  return /^(tout savoir sur l'entreprise|decouvrir l'entreprise|voir l'?offre|voir toutes|postuler|cliquez|acceder|en savoir plus|unsubscribe|se desabonner|desinscrire|gerer|instagram|facebook|youtube|tiktok|twitter|linkedin|hellowork|espace candidat|aide et contact|politique|mon compte|connexion|logo\b|offres? (d'?emploi|similaires)|voir plus|precedent|suivant)/i.test(
     t
   );
 }

@@ -170,3 +170,8 @@ assert.deepEqual(
 }
 
 process.stdout.write("offres-filters: contrats, domaines, régions, périodes, sources, combinaison, compteurs, file rafale, scénario rafale passed\n");
+
+// A completed filtered queue must never spill into unrelated catalogue jobs.
+assert.deepEqual(nextRafaleCandidates(rafaleCatalogue, new Set(["c"]), "a", ["a", "c"]), []);
+assert.deepEqual(nextRafaleCandidates(rafaleCatalogue, new Set(), "a", ["missing"]), []);
+assert.deepEqual(nextRafaleCandidates(rafaleCatalogue, new Set(), "a", ["c", "c"]).map(o => o.id), ["c"]);

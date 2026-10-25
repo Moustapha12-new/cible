@@ -520,21 +520,27 @@ export default function CvPage() {
           try { saveData(user.email, { ...latest, applications: [json.application, ...latest.applications] }); } catch { /* Le dossier serveur reste la source de vérité. */ }
         }
       }
-      /* Mode Rafale : on ne quitte pas la page — on propose la suite du filtre. */
+      // Advance only after the server confirms that the exact sent CV is archived.
       if (rafaleMode) {
         const latest = getOrCreateData(user?.name || "", user?.email || "");
-        const applied = new Set(latest.applications.flatMap((a) => (a.offerId ? [a.offerId] : [])));
-        const remaining = nextRafaleCandidates(latest.offers, applied, selectedOffer.id, readRafaleQueue());
+        const applied = new Set(latest.applications.flatMap(a => a.offerId ? [a.offerId] : []));
+        applied.add(selectedOffer.id);
+        const queue = readRafaleQueue().filter(id => !applied.has(id) && !latest.dismissedOfferIds?.includes(id));
+        const remaining = queue.length ? nextRafaleCandidates(latest.offers, applied, selectedOffer.id, queue) : [];
         const next = remaining[0];
-        setRafaleNext(next
-          ? { id: next.id, company: next.company || "Entreprise non précisée", title: next.title, url: next.url, remaining: remaining.length }
-          : { id: "", company: "", title: "", remaining: 0 });
+        writeRafaleQueue(queue);
         setGeneratedFile(null);
         setCustomCv(null);
-        writeRafaleQueue(remaining.map((offer) => offer.id));
-        setToastMessage(next
-          ? "Candidature enregistrée. Offre suivante proposée en haut de page."
-          : "Candidature enregistrée. Plus aucune offre restante dans ce filtre.");
+        setPreparedCv(null);
+        setRafaleNext(null);
+        const requestedReturn = searchParams.get("returnTo") || "";
+        const returnTo = /^\/app\/offres(?:\?|#|$)/.test(requestedReturn) ? requestedReturn : "/app/offres?rafale=1#rafale-session";
+        if (next) {
+          setToastMessage("Candidature enregistrée. Passage à l’offre suivante.");
+          router.replace(`/app/cv?offer=${encodeURIComponent(next.id)}&rafale=1&returnTo=${encodeURIComponent(returnTo)}`);
+        } else {
+          router.push(returnTo);
+        }
         return;
       }
       router.push(`/app/candidatures?open=${encodeURIComponent(json.application.id)}`);

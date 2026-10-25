@@ -281,6 +281,8 @@ export default function OffresPage() {
 
   /* ── Mode Rafale : enchaîner les candidatures sans perdre le filtre ── */
   const [rafaleMode, setRafaleMode] = useState(false);
+  const [savingApplication, setSavingApplication] = useState(false);
+  const applicationSaveLock = useRef(false);
   const [rafaleSkipped, setRafaleSkipped] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (searchParams.get("rafale") !== "1") return;
@@ -391,14 +393,15 @@ export default function OffresPage() {
         const json = (await res.json().catch(() => ({}))) as { ok?: boolean; version?: number };
         if (res.ok && json.ok && typeof json.version === "number") {
           recordVersionRef.current = json.version;
-          return;
+          return true;
         }
         /* Version périmée (écriture concurrente) : une seule relance avec l'état serveur frais. */
       } catch {
         /* Sauvegarde serveur indisponible : les données locales restent conservées. */
-        return;
+        return false;
       }
     }
+    return false;
   }, []);
 
   const removeOffers = async (ids: string[]) => {
@@ -759,7 +762,7 @@ export default function OffresPage() {
 
   /* ── Marquage « postulé » : enregistre une vraie candidature, sans inventaire ── */
   const handleMarkApplied = async (ids: string[]) => {
-    if (!user || demoMode) return;
+    if (!user || demoMode || applicationSaveLock.current) return;
     const local = getOrCreateData(user.name, user.email);
     const now = new Date().toISOString();
     const additions: Application[] = [];
@@ -786,8 +789,17 @@ export default function OffresPage() {
       return;
     }
     const next = { ...local, applications: [...additions, ...local.applications] };
-    saveData(user.email, next);
-    await pushToServer(next);
+    applicationSaveLock.current = true;
+    setSavingApplication(true);
+    const saved = await pushToServer(next);
+    applicationSaveLock.current = false;
+    setSavingApplication(false);
+    if (!saved) {
+      setSyncNotice("Enregistrement impossible. L’offre reste affichée : réessaie pour confirmer ta candidature.");
+      return;
+    }
+    try { saveData(user.email, next); } catch { /* Confirmed on server. */ }
+    setData(current => current ? mergeUserData(current, next) : next);
     setSelectedIds(new Set());
     await loadOffers();
     setSyncNotice(
@@ -1234,7 +1246,7 @@ export default function OffresPage() {
         <div className="lg:col-span-3">
           {/* Mode Rafale : l'offre à traiter maintenant, dans le filtre courant */}
           {rafaleMode && (
-            <div className="mb-4 rounded-2xl border border-indigo-200/90 bg-gradient-to-br from-indigo-50/90 to-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <div id="rafale-session" className="scroll-mt-20 mb-4 rounded-2xl border border-indigo-200/90 bg-gradient-to-br from-indigo-50/90 to-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="flex items-center gap-1.5 text-xs font-bold text-indigo-900">
@@ -1272,7 +1284,7 @@ export default function OffresPage() {
                       </a>
                     )}
                     <Link
-                      href={`/app/cv?offer=${encodeURIComponent(rafaleCurrent.id)}&start=1&rafale=1`}
+                      href={`/app/cv?offer=${encodeURIComponent(rafaleCurrent.id)}&start=1&rafale=1&returnTo=${encodeURIComponent("/app/offres?" + new URLSearchParams({ ...Object.fromEntries(searchParams.entries()), rafale: "1" }).toString() + "#rafale-session")}`}
                       onClick={() => {
                         /* L'offre courante et la suivante rejoignent le dossier :
                            Mon CV pourra enchaîner sans perdre la file du filtre. */
@@ -1286,11 +1298,12 @@ export default function OffresPage() {
                     </Link>
                     <button
                       type="button"
+                      disabled={savingApplication}
                       onClick={() => void handleMarkApplied([rafaleCurrent.id])}
                       className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-700 cursor-pointer"
                     >
                       <Star size={12} />
-                      J&apos;ai postulé → offre suivante
+                      {savingApplication ? "Enregistrement…" : "J’ai postulé → offre suivante"}
                     </button>
                     <button
                       type="button"

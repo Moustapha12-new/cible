@@ -128,7 +128,7 @@ export function nextRafaleCandidates<T extends { id: string; title?: string }>(
   const byId = new Map(offers.map((offer) => [offer.id, offer]));
   const ordered: T[] = [
     ...queue.map((id) => byId.get(id)).filter((offer): offer is T => Boolean(offer)),
-    ...offers,
+    ...(queue.length ? [] : offers),
   ];
   const seen = new Set<string>();
   return ordered.filter((offer) => {

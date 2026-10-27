@@ -101,5 +101,60 @@ for (const o of detText.offers) {
   assert(inMail, `url must exist in email: ${o.url}`);
 }
 
+// ── l'objet du mail n'est JAMAIS le titre d'une sous-offre ────
+const multiHtml = `<html><body>
+<p>Nos offres du jour</p>
+<a href="https://www.linkedin.com/jobs/view/2222222222/">Voir l'offre</a>
+<a href="https://www.hellowork.com/fr/fr/job-offre/88888-stage.html">Voir l'offre</a>
+</body></html>`;
+const multiMsg = {
+  id: "msg4",
+  payload: {
+    mimeType: "multipart/alternative",
+    headers: [
+      { name: "From", value: "alertes@linkedin.com" },
+      { name: "Subject", value: "Stage TFE - Ingénieur électricité (H/F)" },
+    ],
+    parts: [
+      { mimeType: "text/plain", body: { data: b64("Nos offres du jour") } },
+      { mimeType: "text/html", body: { data: b64(multiHtml) } },
+    ],
+  },
+};
+const detMulti = detectOffersInEmail(parseMessage(multiMsg));
+assert(detMulti.offers.length >= 2, `mail multi-offres, obtenu ${detMulti.offers.length}`);
+for (const o of detMulti.offers) {
+  assert(
+    o.title !== "Stage TFE - Ingénieur électricité (H/F)",
+    `l'objet du mail devient le titre d'une sous-offre : ${o.title}`
+  );
+  assert(o.company !== "alertes", `« alertes » n'est pas un employeur : ${o.company}`);
+}
+
+// ── mail à offre UNIQUE : l'objet peut nommer l'offre ─────────
+const singleHtml = `<html><body>
+<a href="https://www.linkedin.com/jobs/view/3333333333/">Voir l'offre</a>
+</body></html>`;
+const singleMsg = {
+  id: "msg5",
+  payload: {
+    mimeType: "multipart/alternative",
+    headers: [
+      { name: "From", value: "alertes@linkedin.com" },
+      { name: "Subject", value: "Stage TFE - Ingénieur électricité (H/F)" },
+    ],
+    parts: [
+      { mimeType: "text/plain", body: { data: b64("Une offre") } },
+      { mimeType: "text/html", body: { data: b64(singleHtml) } },
+    ],
+  },
+};
+const detSingle = detectOffersInEmail(parseMessage(singleMsg));
+assert(detSingle.offers.length === 1, `une seule offre, obtenu ${detSingle.offers.length}`);
+assert(
+  detSingle.offers[0]?.title === "Stage TFE - Ingénieur électricité (H/F)",
+  `mail à offre unique : l'objet nomme l'offre, obtenu ${detSingle.offers[0]?.title}`
+);
+
 console.log(`${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

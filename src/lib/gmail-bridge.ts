@@ -5,6 +5,8 @@
    candidature persistant (localStorage), sans réécrire les modules IA. */
 
 import type { DetectedOffer } from "@/lib/data";
+import { groundKeywords, repairOfferIdentity, UNKNOWN_COMPANY, UNKNOWN_TITLE } from "@/lib/offer-identity";
+import { offerDisplayKey } from "@/lib/offer-display-key";
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -49,21 +51,23 @@ export type OfferLike = {
   enrichOutcome?: string;
   status?: string;
   receivedAt?: string;
+  /** Lien de recherche (aucune URL d'annonce réelle) — jamais présenté
+      comme le lien de l'offre. */
+  searchFallback?: boolean;
+  /** Clé d'affichage gelée d'une annonce déjà connue : une réanalyse ne change
+      jamais l'identifiant d'une offre déjà reconnue (candidature intacte). */
+  stableKey?: string;
+  /** Ancienne annonce conservée « à vérifier » après réanalyse. */
+  needsReview?: boolean;
 };
 
 /* ── Clé d'identité (match dashboard ↔ page détail) ────────────── */
 
-/** Clé stable d'une offre Gmail : URL canonique si présente, sinon
-    titre|entreprise|localité (même logique que dedupKeyOf / urlKey). */
+/** Clé stable d'une offre Gmail : clé gelée d'une annonce déjà connue si elle
+    existe (une réanalyse conserve ainsi candidatures, CV envoyés et favoris),
+    sinon URL canonique, sinon titre|entreprise|localité. */
 export function offerBridgeKey(offer: OfferLike): string {
-  const url = (offer.applicationUrl || "").trim().toLowerCase();
-  if (url) return `u:${url}`;
-  const t = [
-    (offer.title || "").trim().toLowerCase(),
-    (offer.company || "").trim().toLowerCase(),
-    (offer.location || "").trim().toLowerCase(),
-  ].join("|");
-  return `t:${t}`;
+  return offerDisplayKey(offer);
 }
 
 /* ── Texte d'offre pour /api/ai (match / adapt / letter) ───────── */
@@ -83,8 +87,8 @@ const stripHtml = (s: string) =>
 export function offerToOfferText(offer: OfferLike): string {
   const parts: string[] = [];
   const head = [
-    offer.title,
-    offer.company,
+    offer.title === UNKNOWN_TITLE ? "" : offer.title,
+    offer.company === UNKNOWN_COMPANY ? "" : offer.company,
     offer.location,
     [offer.contract, offer.duration].filter(Boolean).join(" · "),
   ]
@@ -126,20 +130,38 @@ export function offerToOfferText(offer: OfferLike): string {
 }
 
 /** Convertit une offre Gmail en DetectedOffer (UserData.offers) pour que
-    Adaptation et Lettres la voient sans réécrire ces modules. */
+    Adaptation et Lettres la voient sans réécrire ces modules.
+    L'identité (titre, entreprise) est réparée ici : un fragment d'objet de mail
+    ou une initiale ne doit jamais devenir le nom d'une offre affichée. */
 export function offerToDetectedOffer(offer: OfferLike, match = 0): DetectedOffer {
-  const text = offerToOfferText(offer);
+  const identity = repairOfferIdentity({
+    title: offer.title,
+    company: offer.company,
+    location: offer.location,
+    url: offer.applicationUrl,
+    description: offer.description,
+    summary: offer.summary,
+    snippet: offer.snippet,
+    missions: offer.missions,
+    profile: offer.profile,
+  });
+  /* Badges : seuls les mots-clés attestés par le texte réel de l'annonce. */
+  const evidence = [offer.description, offer.summary, offer.snippet, offer.profile, ...(offer.missions || [])]
+    .filter((part): part is string => typeof part === "string" && !!part.trim())
+    .join("\n");
+  const keywords = groundKeywords([...new Set([...(offer.skills || []), ...(offer.keywords || [])])], evidence);
+  const text = offerToOfferText({ ...offer, title: identity.title, company: identity.company });
   return {
     id: `gmail-${encodeURIComponent(offerBridgeKey(offer))}`,
-    title: offer.title || "Offre Gmail",
-    company: offer.company || "Entreprise non précisée",
+    title: identity.title,
+    company: identity.company,
     location: offer.location || "",
     salary: offer.salary || "",
     match: Math.max(0, Math.min(100, Math.round(match))),
-    keywords: [...new Set([...(offer.skills || []), ...(offer.keywords || [])])].slice(0, 40),
+    keywords: keywords.slice(0, 40),
     text,
     summary: offer.summary || undefined,
-    url: offer.applicationUrl || undefined,
+    url: offer.searchFallback ? undefined : offer.applicationUrl || undefined,
     source: offer.source || "Alertes Gmail",
     contract: offer.contract,
     duration: offer.duration,

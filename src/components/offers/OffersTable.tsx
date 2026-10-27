@@ -29,8 +29,7 @@ interface OffersTableProps {
   totalOffersCount: number;
   /** Compteurs réels par onglet — absents = aucun compte affiché. */
   tabCounts?: OffersTabCounts;
-  /** Le bouton « Supprimer » n'existe que pour la démonstration : aucune offre
-      réelle n'est supprimable depuis cette page. */
+  /** Suppression logique persistante des offres réelles ou retrait local en démo. */
   showDelete?: boolean;
   selectedIds: Set<string>;
   favorites: Set<string>;
@@ -176,6 +175,15 @@ export function OffersTable({
           </div>
         </div>
       </div>
+
+      {offers.length > 0 && (
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2 text-xs">
+          <button type="button" onClick={onToggleSelectAll} className="font-semibold text-blue-700 hover:text-blue-800">
+            {allSelected ? "Désélectionner les offres du filtre" : `Tout sélectionner dans ce filtre (${offers.length})`}
+          </button>
+          <span className="text-slate-500">{selectedIds.size} sélectionnée(s)</span>
+        </div>
+      )}
 
       {/* Table Body / Rows */}
       {offers.length === 0 ? (

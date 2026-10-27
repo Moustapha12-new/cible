@@ -16,6 +16,7 @@
 
 import * as cheerio from "cheerio";
 import { inflateRawSync } from "node:zlib";
+import { isGenericTitle, isUnusableCompany } from "./offer-identity";
 
 export type Platform =
   | "LinkedIn"
@@ -64,6 +65,22 @@ type Rule = {
   match: (host: string, path: string, query: URLSearchParams) => boolean;
   canonical: (host: string, path: string, query: URLSearchParams) => { url: string; key: string } | null;
 };
+
+/** Identifiant d'offre porté par la fin du chemin d'une URL.
+    L'extension est retirée AVANT toute découpe : « /fr-fr/emploi/
+    stage-ingenieur-electricite-12345.html » donnait « html » comme identifiant,
+    donc la clé « hw:html » pour TOUTES les offres HelloWork d'un même mail —
+    un digest de huit annonces n'en produisait qu'une, et l'anti-doublon entre
+    mails considérait la 2 e alerte comme un doublon de la 1 re.
+    Priorité au segment numérique (id réel), sinon au dernier segment (slug). */
+function trailingId(path: string): string {
+  const clean = path.replace(/\.(?:html?|php|aspx?|jsp)$/i, "").replace(/\/+$/, "");
+  const segment = (clean.split("/").filter(Boolean).pop() || "").trim();
+  if (!segment) return "";
+  const digits = segment.match(/\d{3,}/g);
+  if (digits && digits.length) return digits[digits.length - 1];
+  return segment.replace(/^[-_.]+|[-_.]+$/g, "");
+}
 
 const RULES: Rule[] = [
   {
@@ -122,7 +139,7 @@ const RULES: Rule[] = [
     platform: "JobTeaser",
     match: (host, p) => /jobteaser\.com$/i.test(host) && /^\/(?:en|fr)\/(?:jobs|offres)\//i.test(p),
     canonical: (_h, p) => {
-      const id = (p.match(/(\d+)[\w-]*$/i) ?? [])[1];
+      const id = trailingId(p);
       return id ? { url: `https://www.jobteaser.com${p}`, key: `jt:${id}` } : null;
     },
   },
@@ -130,7 +147,7 @@ const RULES: Rule[] = [
     platform: "Welcome to the Jungle",
     match: (host, p) => /welcometothejungle\.com$/i.test(host) && /\/(?:jobs|offres|postings)\//i.test(p),
     canonical: (host, p) => {
-      const id = (p.match(/([\w-]+)$/i) ?? [])[1];
+      const id = trailingId(p);
       return id ? { url: `https://${host}${p}`, key: `wttj:${id}` } : null;
     },
   },
@@ -144,7 +161,7 @@ const RULES: Rule[] = [
        /emplois/\d+ → canonical null → ignorés. */
     match: (host, p) =>
       /(?:^|\.)hellowork\.com$/i.test(host) &&
-      (/\/(?:offres|offres\/[\w-]+|emploi)\//i.test(p) || /\/clic\//i.test(p)),
+      (/\/(?:offres|offres\/[\w-]+|emplois?)\//i.test(p) || /\/clic\//i.test(p)),
     canonical: (host, p) => {
       const clic = p.match(/\/clic\/[^/]+\/\d+\/[0-9a-f]+\/(.+)$/i);
       if (clic) {
@@ -158,7 +175,12 @@ const RULES: Rule[] = [
         }
         return null;
       }
-      const id = (p.match(/([\w-]+)$/i) ?? [])[1];
+      /* Lien de redirection SANS payload décodable : la fin du chemin est un
+         identifiant de campagne, jamais un identifiant d'offre. La prendre pour
+         telle donnait une même clé à des annonces différentes (« details ») —
+         donc des offres perdues. On ignore le lien, comme les logos/footers. */
+      if (/\/clic\//i.test(p)) return null;
+      const id = trailingId(p);
       return id ? { url: `https://${host}${p}`, key: `hw:${id}` } : null;
     },
   },
@@ -166,7 +188,7 @@ const RULES: Rule[] = [
     platform: "Apec",
     match: (host, p) => /apec\.fr$/i.test(host) && /\/emplois?\//i.test(p),
     canonical: (host, p) => {
-      const id = (p.match(/([\d]+)/i) ?? [])[1];
+      const id = trailingId(p);
       return id ? { url: `https://${host}${p}`, key: `apec:${id}` } : null;
     },
   },
@@ -449,8 +471,10 @@ export function extractOfferLinks(html: string | undefined): { offers: OfferAnch
       try {
       const canon = canonicalize(href);
       if (!canon) return;
-      /* Filtres chrome sur le texte VISIBLE (pas l'alt d'image). */
-      if (canon.platform === "HelloWork" && isHelloWorkNonOfferTitle(visibleText)) return;
+      /* Chrome HelloWork : le TEXTE ne doit jamais devenir un titre, mais l'ancre
+         reste une offre — dans certains digests le seul lien de l'offre s'appelle
+         « Voir l'offre ». La sauter faisait disparaître l'offre entière. */
+      const titleText = canon.platform === "HelloWork" && isHelloWorkNonOfferTitle(visibleText) ? "" : visibleText;
       if (
         canon.platform === "Indeed" &&
         (canon.key.startsWith("incts:") || canon.key.startsWith("ineng:") || canon.key.startsWith("inpk:")) &&
@@ -458,8 +482,13 @@ export function extractOfferLinks(html: string | undefined): { offers: OfferAnch
       ) {
         return;
       }
-      canon.rawTitle = title || rawTitleByHref.get(canon.canonicalUrl) || "";
-      if (title) rawTitleByHref.set(canon.canonicalUrl, title);
+      /* HelloWork : le chrome donne un titre vide (l'offre, elle, est gardée). */
+      const usableTitle =
+        canon.platform === "HelloWork" && !titleText
+          ? ""
+          : titleText || title;
+      canon.rawTitle = usableTitle || rawTitleByHref.get(canon.canonicalUrl) || "";
+      if (usableTitle) rawTitleByHref.set(canon.canonicalUrl, usableTitle);
       if (seenKey.has(canon.key)) return;
       seenKey.add(canon.key);
       if (!hrefsSeen.has(canon.href)) hrefsSeen.add(canon.href);
@@ -509,6 +538,12 @@ function pathOf(href: string): string {
   }
 }
 
+/** Aucun conteneur propre trouvé (mail à plat : toutes les offres au même
+    niveau) : on ne prend JAMAIS le mail entier comme bloc d'une offre. On garde
+    l'ancre et les nœuds qui suivent, jusqu'à l'ancre d'une AUTRE offre.
+    Sans cela, chaque offre d'un digest recevait le texte de tout le mail :
+    titre du premier lien, « entreprise » = titre de section, filtres par
+    domaine impossibles (toutes les offres partageaient le même texte). */
 /** Remonte le DOM pour isoler le bloc HTML qui encapsule CETTE offre : le plus
     petit ancêtre qui ne contient que ce lien d'offre (les ancres logo/titre/
     bouton pointent toutes vers la même offre) + un logo image.
@@ -574,7 +609,32 @@ export function isolateBlock(html: string, href: string): BlockInfo | null {
     if (onlyOffer && okSize && !$best) $best = $cur;
     $cur = $cur.parent();
   }
-  const $block = $best && $best.length ? $best : $(found).parent();
+  /* Aucun conteneur propre (mail à plat) : fenêtre locale autour de l'ancre,
+     jamais le mail entier — voir localWindow ci-dessus. */
+  let $block: ReturnType<typeof $> | null = $best && $best.length ? $best : null;
+  if (!$block) {
+    const wrap = $("<div></div>");
+    const anchorKey = targetKey || offerKeyOf(targetHref);
+    wrap.append($(found).clone());
+    let kept = 0;
+    $(found)
+      .nextAll()
+      .each((_i, node) => {
+        if (kept >= 8) return false;
+        const info = node as unknown as { tagName?: string; attribs?: Record<string, string> };
+        const tag = (info.tagName || "").toLowerCase();
+        const href = info.attribs?.href || "";
+        if (tag === "a" && href) {
+          const key = offerKeyOf(href);
+          /* Une autre offre commence : on s'arrête (jamais deux offres par bloc). */
+          if (!key || !anchorKey || key !== anchorKey) return false;
+        }
+        wrap.append($(node).clone());
+        kept += 1;
+        return undefined;
+      });
+    $block = wrap;
+  }
   const blockText = ($block.text() || "").replace(/\s+/g, " ").trim();
 
   let title = "";
@@ -594,12 +654,31 @@ export function isolateBlock(html: string, href: string): BlockInfo | null {
       l !== title &&
       !/\b(?:Copyright|©|Suivez-nous|Se désabonner|Unsubscribe)\b/i.test(l)
   );
-  const company = titleAt >= 0
-    ? (lines[titleAt + 1] || neighbors[0] || "").trim().replace(/^[|•\-\s]+/, "")
-    : (neighbors[0] || "").trim();
+  /* Entreprise : la première ligne voisine PLAUSIBLE. La ligne juste après le
+     titre est souvent une localité, une date, « Voir l'offre » ou le titre
+     répété — jamais un nom d'entreprise. */
+  const plausibleCompany = (line: string): string => {
+    const value = (line || "").trim().replace(/^[|•\-\s]+/, "").replace(/[\s|•\-]+$/, "").trim();
+    if (!value || value.length > 80) return "";
+    if (/^https?:/i.test(value)) return "";
+    if (title && value === title) return "";
+    if (isGenericTitle(value)) return "";
+    if (isUnusableCompany(value, title)) return "";
+    if (/^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/.test(value)) return "";
+    if (/\b(?:Paris|Lyon|Toulouse|Nantes|Bordeaux|Lille|Rennes|Marseille|Strasbourg|Grenoble|Montpellier|Nice|T[ée]l[ée]travail|Remote)\b/i.test(value) && value.split(/\s+/).length <= 3) return "";
+    return value;
+  };
+  /* Un nom d'entreprise est court : au-delà de quatre mots, c'est une phrase de
+     description (la vraie entreprise vient de « chez X », de l'hôte du lien ou
+     de l'expéditeur — jamais d'une phrase recopiée). */
+  const companyCandidates = (titleAt >= 0 ? [lines[titleAt + 1] || "", ...neighbors] : neighbors).filter(
+    (line) => (line || "").trim().split(/\s+/).length <= 4
+  );
+  const company = companyCandidates.map(plausibleCompany).find(Boolean) || "";
+  /* Localisation : seulement une ville/mention reconnue. La dernière ligne du
+     bloc n'est pas une localisation (« Missions : … », phrase de description). */
   const location =
-    (lines.find((l) => /(?:Paris|Lyon|Toulouse|Nantes|Bordeaux|Lille|Rennes|Marseille|Strasbourg|Grenoble|Montpellier|Nice|Télétravail|Remote|À distance|Full remote)/i.test(l)) || "").trim() ||
-    (lines[lines.length - 1] || "").trim();
+    (lines.find((l) => /(?:Paris|Lyon|Toulouse|Nantes|Bordeaux|Lille|Rennes|Marseille|Strasbourg|Grenoble|Montpellier|Nice|Télétravail|Remote|À distance|Full remote)/i.test(l)) || "").trim();
 
   return {
     title,

@@ -95,13 +95,33 @@ export function matchesDomains(offer: DetectedOffer, domainIds: string[]): boole
    partagés entre Mes offres et Mon CV pour que l'offre suivante reste celle
    du même filtre — jamais une offre hors filtre. */
 export const RAFALE_QUEUE_KEY = "cible:rafale-queue:v1";
+const RAFALE_OFFERS_KEY = "cible:rafale-offers:v1";
+
+/** Copie de session des offres de la file : permet de retrouver la suivante
+    même si elle ne faisait pas encore partie du dossier CV local. */
+export function writeRafaleOffers<T extends { id: string; text?: string; description?: string }>(offers: T[]): void {
+  try {
+    sessionStorage.setItem(RAFALE_OFFERS_KEY, JSON.stringify(offers.map(offer => ({
+      ...offer,
+      text: offer.text?.slice(0, 3000),
+      description: offer.description?.slice(0, 3000),
+    }))));
+  } catch { /* Le parcours garde le dossier déjà enregistré. */ }
+}
+
+export function readRafaleOffers<T extends { id: string }>(): T[] {
+  try {
+    const value: unknown = JSON.parse(sessionStorage.getItem(RAFALE_OFFERS_KEY) || "[]");
+    return Array.isArray(value) ? value.filter((offer): offer is T => !!offer && typeof offer.id === "string") : [];
+  } catch { return []; }
+}
 
 export function readRafaleQueue(): string[] {
   try {
     const raw = sessionStorage.getItem(RAFALE_QUEUE_KEY);
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string").slice(0, 500) : [];
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string").slice(0, 5000) : [];
   } catch {
     return [];
   }
@@ -109,7 +129,7 @@ export function readRafaleQueue(): string[] {
 
 export function writeRafaleQueue(ids: string[]): void {
   try {
-    sessionStorage.setItem(RAFALE_QUEUE_KEY, JSON.stringify(ids.slice(0, 500)));
+    sessionStorage.setItem(RAFALE_QUEUE_KEY, JSON.stringify(ids.slice(0, 5000)));
   } catch {
     /* stockage indisponible : le filtre reste actif, seule la file est perdue */
   }

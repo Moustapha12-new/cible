@@ -317,7 +317,29 @@ export function humanizeReason(reason: string): string {
 
 /* ── Validation actions POST /api/gmail/sync ──────────────────── */
 
-export type SyncAction = "sync" | "relaunch_errors" | "relaunch_email" | "relaunch_offer";
+export type SyncAction =
+  | "sync"
+  | "relaunch_errors"
+  | "relaunch_email"
+  | "relaunch_offer"
+  | "reanalyze_email"
+  | "reanalyze_queue";
+
+/** Liste unique des actions acceptées par POST /api/gmail/sync (route + UI). */
+export const SYNC_ACTIONS: readonly SyncAction[] = [
+  "relaunch_errors",
+  "relaunch_email",
+  "relaunch_offer",
+  "reanalyze_email",
+  "reanalyze_queue",
+];
+
+/** Action reconnue ou « sync » par défaut — jamais d'action inventée. */
+export const syncActionOf = (value: unknown): SyncAction =>
+  SYNC_ACTIONS.includes(value as SyncAction) ? (value as SyncAction) : "sync";
+
+/** Actions qui exigent l'identifiant d'un e-mail du compte. */
+const NEEDS_EMAIL_ID: readonly SyncAction[] = ["relaunch_email", "relaunch_offer", "reanalyze_email"];
 
 export type SyncBodyParsed =
   | { ok: true; email: string; action: SyncAction; emailId: string; debug: boolean; force: boolean }
@@ -331,16 +353,9 @@ export function parseSyncBody(raw: unknown): SyncBodyParsed {
   const body = raw as Record<string, unknown>;
   const email = String(body.email || "").trim().toLowerCase();
   if (!email) return { ok: false, error: "Compte utilisateur manquant", status: 400 };
-  let action: SyncAction = "sync";
-  if (
-    body.action === "relaunch_errors" ||
-    body.action === "relaunch_email" ||
-    body.action === "relaunch_offer"
-  ) {
-    action = body.action;
-  }
+  const action = syncActionOf(body.action);
   const emailId = String(body.emailId || "").trim();
-  if ((action === "relaunch_email" || action === "relaunch_offer") && !emailId) {
+  if (NEEDS_EMAIL_ID.includes(action) && !emailId) {
     return { ok: false, error: `emailId manquant pour ${action}`, status: 400 };
   }
   return {

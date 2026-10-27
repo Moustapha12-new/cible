@@ -994,6 +994,116 @@ async function main() {
     assert(migrateIndeedOffers([]).length === 0, "offres vides → inchangé");
   }
 
+  /* Réanalyse ciblée : un mail « done » est RELU en entier (titre, liens,
+     identité), alors que la synchro normale le saute. */
+  {
+    const html =
+      '<html><body><div class="job-item"><h3>Stage Ingénieur Électrotechnique H/F</h3>' +
+      "<p>Schneider Electric</p><p>Grenoble - 38</p>" +
+      '<a href="https://www.hellowork.com/fr-fr/emploi/stage-electrotechnique-4242.html">Voir l\'offre</a></div></body></html>';
+    const text = "Stage Ingénieur Électrotechnique H/F Schneider Electric Grenoble - 38";
+    const b64 = (value: string) => Buffer.from(value, "utf8").toString("base64url");
+    await saveCheckpoint("re1", {
+      status: "done",
+      at: "2026-10-01T10:00:00.000Z",
+      retries: 0,
+      isOffer: true,
+      reason: "Traité (checkpoint)",
+      subject: "Alerte stage",
+      from: "alertes@hellowork.com",
+      receivedAt: "2026-10-01",
+      offers: [
+        {
+          title: "Stage TFE -",
+          company: "",
+          location: "",
+          contract: "Stage",
+          duration: "",
+          deadline: "",
+          skills: [],
+          description: "",
+          applicationUrl: "https://www.hellowork.com/fr-fr/emploi/stage-electrotechnique-4242.html",
+          source: "HelloWork",
+        },
+      ],
+    });
+    const origFetch = globalThis.fetch;
+    const json = (data: unknown) =>
+      new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
+    globalThis.fetch = (async (input: string) => {
+      const url = String(input);
+      if (url.includes("/messages?")) {
+        return json({ messages: [{ id: "re1" }], resultSizeEstimate: 1 });
+      }
+      if (url.includes("/messages/")) {
+        return json({
+          id: "re1",
+          internalDate: "1789000000000",
+          payload: {
+            mimeType: "multipart/alternative",
+            headers: [
+              { name: "Subject", value: "Alerte stage" },
+              { name: "From", value: "alertes@hellowork.com" },
+              { name: "Date", value: "Thu, 01 Oct 2026 10:00:00 +0000" },
+            ],
+            parts: [
+              { mimeType: "text/plain", body: { data: b64(text) } },
+              { mimeType: "text/html", body: { data: b64(html) } },
+            ],
+          },
+        });
+      }
+      return json({});
+    }) as typeof fetch;
+    try {
+      const normal = await runSync({
+        accessToken: "tok",
+        label: { id: "Label_1", name: "Stages – Alertes offres" },
+        skipAi: true,
+        skipEnrich: true,
+        onlyEmailIds: ["re1"],
+        completedEmailIds: ["re1"],
+      });
+      assert(
+        normal.checkpointStats.processedThisRun === 0,
+        `synchro normale : mail done non relu (obtenu ${normal.checkpointStats.processedThisRun})`
+      );
+
+      const re = await runSync({
+        accessToken: "tok",
+        label: { id: "Label_1", name: "Stages – Alertes offres" },
+        skipAi: true,
+        skipEnrich: true,
+        onlyEmailIds: ["re1"],
+        reanalyzeIds: ["re1"],
+      });
+      assert(re.checkpointStats.processedThisRun === 1, "réanalyse : le mail done est relu");
+      const offers = re.emails[0]?.offers ?? [];
+      assert(offers.length === 1, `une annonce relue, obtenu ${offers.length}`);
+      const title = offers[0]?.title ?? "";
+      assert(
+        title === "Stage Ingénieur Électrotechnique H/F" || title === "Titre à vérifier",
+        `titre établi ou marqué à vérifier, obtenu « ${title} »`
+      );
+      assert(title !== "Voir l'offre", "le texte du bouton n'est jamais un titre");
+      assert(!!!offers[0]?.needsReview, "annonce retrouvée, pas mise à vérifier");
+      const report = re.reanalyze?.["re1"];
+      assert(!!report, "bilan de réanalyse renvoyé");
+      assert(report?.previous === 1 && report?.detected === 1, "bilan : 1 avant / 1 relue");
+      assert((report?.corrected ?? 0) === 1, "bilan : titre corrigé");
+      assert(!!offers[0]?.stableKey, "clé d'identité gelée pour la prochaine réanalyse");
+      const persisted = await loadCheckpoint("re1");
+      assert(
+        persisted?.offers[0]?.title === title,
+        `checkpoint réécrit avec la version corrigée, obtenu « ${persisted?.offers[0]?.title} »`
+      );
+      assert(!!persisted?.offers[0]?.stableKey, "clé d'identité persistée dans le checkpoint");
+    } finally {
+      globalThis.fetch = origFetch;
+      await storeSet("gmail:processed:re1", "");
+    }
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);
 }

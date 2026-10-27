@@ -377,6 +377,58 @@ console.log("11. P0-3 : jk valide, chrome accentué, décodage cts hors ligne");
   assert(!isIndeedOpaqueUrl("https://www.linkedin.com/jobs/view/123/"), "linkedin ≠ opaque");
 }
 
+console.log("9. HelloWork /emploi/<slug>-<id>.html : une offre par annonce");
+{
+  /* Régression : la clé prenait « [\w-]+$ » sur un chemin finissant par .html,
+     donc « hw:html » pour toutes → un mail de 3 offres n'en donnait qu'une. */
+  const html =
+    "<html><body><h2>3 nouvelles offres</h2>" +
+    '<a href="https://www.hellowork.com/fr-fr/emploi/stage-ingenieur-electricite-12345.html">Stage Ingénieur électricité HTA/BT</a>' +
+    '<p>Chez Enedis. Études de raccordement.</p>' +
+    '<a href="https://www.hellowork.com/fr-fr/emploi/stage-fpga-98765.html">Stage FPGA traitement du signal</a>' +
+    '<p>Chez Safran. VHDL.</p>' +
+    '<a href="https://www.hellowork.com/fr-fr/emploi/stage-reseaux-55555.html">Voir l\'offre</a>' +
+    "</body></html>";
+  const r = extractOfferLinks(html);
+  assert(r.summary.unique === 3, "3 offres HelloWork distinctes, obtenu " + r.summary.unique);
+  const keys = r.offers.map((o) => o.key).sort();
+  assert(keys.join(",") === "hw:12345,hw:55555,hw:98765", "clés = identifiants réels, obtenu " + keys.join(","));
+  assert(
+    r.offers.some((o) => o.rawTitle === "Stage Ingénieur électricité HTA/BT"),
+    "titre de chaque annonce conservé"
+  );
+  assert(
+    r.offers.every((o) => !/voir l/i.test(o.rawTitle)),
+    "« Voir l'offre » n'est jamais un titre"
+  );
+  assert(
+    r.offers.some((o) => o.key === "hw:55555"),
+    "une offre dont le seul lien s'appelle « Voir l'offre » n'est plus perdue"
+  );
+}
+
+console.log("10. Bloc d'offre : jamais le mail entier");
+{
+  const html =
+    "<html><body><h2>3 nouvelles offres</h2>" +
+    '<a href="https://www.hellowork.com/fr-fr/emploi/stage-ingenieur-electricite-12345.html">Stage Ingénieur électricité HTA/BT</a>' +
+    '<p>Chez Enedis. Études de raccordement.</p>' +
+    '<a href="https://www.hellowork.com/fr-fr/emploi/stage-fpga-98765.html">Stage FPGA traitement du signal</a>' +
+    '<p>Chez Safran. VHDL.</p>' +
+    "</body></html>";
+  const b1 = isolateBlock(html, "https://www.hellowork.com/fr-fr/emploi/stage-ingenieur-electricite-12345.html");
+  const b2 = isolateBlock(html, "https://www.hellowork.com/fr-fr/emploi/stage-fpga-98765.html");
+  assert(b1?.title === "Stage Ingénieur électricité HTA/BT", `bloc 1 = sa propre offre, obtenu « ${b1?.title} »`);
+  assert(b2?.title === "Stage FPGA traitement du signal", `bloc 2 = sa propre offre, obtenu « ${b2?.title} »`);
+  assert(!(b1?.snippet || "").includes("stage-fpga-98765"), "le bloc ne contient pas le lien de l'offre suivante");
+  assert(!(b1?.snippet || "").includes("3 nouvelles offres"), "le bloc n'est pas le mail entier");
+  assert(
+    (b1?.company || "") === "" || /^[A-ZÀ-Þ]/.test(b1?.company || ""),
+    `jamais un titre de section comme entreprise, obtenu « ${b1?.company} »`
+  );
+  assert((b1?.location || "") === "", "aucune localisation inventée depuis une phrase");
+}
+
 console.log("");
 console.log(passed + " passed, " + failed + " failed");
 if (failed > 0) process.exit(1);

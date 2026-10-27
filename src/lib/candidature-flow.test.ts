@@ -182,6 +182,10 @@ async function main() {
     console.log("Sauvegarde partielle de 11 candidatures : toutes les candidatures et tous les CV serveur conservés ; conflit concurrent refusé.");
 
     Date.now = () => nativeNow() + 240_000;
+    const { POST: rafalePost } = await import("../app/api/offres/rafale/route");
+    const rafaleOffer = { ...offer, id: "rafale-second", title: "Stage réseaux électriques", url: "https://example.org/jobs/123?utm_source=email" };
+    assert.equal((await rafalePost(req("POST", "/api/offres/rafale", { offer: rafaleOffer }))).status, 200);
+    assert.ok((await readRecord()).data.offers.some(row => row.id === rafaleOffer.id), "la fiche suivante est disponible pour l'adaptation CV");
     const { POST: dismissPost } = await import("../app/api/offres/dismiss/route");
     const beforeDismiss = await readRecord();
     assert.equal((await dismissPost(req("POST", "/api/offres/dismiss", { ids: [offer.id] }))).status, 200);
@@ -191,6 +195,8 @@ async function main() {
     assert.equal((await userDataPost(req("POST", "/api/user-data", { data: beforeDismiss.data, version: dismissed.version }))).status, 200);
     assert.ok((await readRecord()).data.dismissedOfferIds?.includes(offer.id), "un ancien onglet ne réactive pas une offre supprimée");
     assert.equal((await dismissPost(req("POST", "/api/offres/dismiss", { ids: [] }))).status, 400);
+    assert.equal((await dismissPost(req("POST", "/api/offres/dismiss", { ids: [rafaleOffer.id] }))).status, 200);
+    assert.equal((await rafalePost(req("POST", "/api/offres/rafale", { offer: { ...rafaleOffer, id: "rafale-renamed", url: "https://example.org/jobs/123" } }))).status, 409, "une annonce supprimée ne revient pas sous un autre identifiant");
     console.log("Suppression persistante : rechargement, sauvegarde ancienne, conservation des candidatures et validation vérifiés.");
 
     console.log("Parcours complet OK : offre manuelle → envoi CV → sauvegarde incomplète bloquée → push fusionné → candidature préservée, pas de doublon.");

@@ -165,6 +165,28 @@ function main() {
     assertEq(over.match, 100, "match clamp 100");
     const under = offerToDetectedOffer(sampleOffer(), -5);
     assertEq(under.match, 0, "match clamp 0");
+
+    /* Offres abîmées telles qu'observées dans le catalogue : le libellé
+       affiché n'est ni un fragment d'objet ni une initiale. */
+    const broken = offerToDetectedOffer({ title: "Stage TFE -", company: "ST", applicationUrl: "" });
+    assertEq(broken.title, "Titre à vérifier", "titre générique → libellé explicite");
+    assertEq(broken.company, "Entreprise non précisée", "sigle d'initiale refusé");
+    assert(!broken.url, "aucun lien inventé quand il n'y a pas d'URL d'annonce");
+
+    const recovered = offerToDetectedOffer({
+      title: "STAGE -",
+      company: "S-",
+      description:
+        "Stage de 6 mois chez RTE au sein du département réseaux : études HTA, dimensionnement des " +
+        "protections et suivi des essais. Missions : rédaction des notes de calcul, participation aux " +
+        "réunions de chantier avec les équipes d'exploitation, mise à jour des schémas unifilaires.",
+      applicationUrl: "https://www.linkedin.com/jobs/view/123",
+    });
+    assertEq(recovered.company, "RTE", "entreprise récupérée du texte réel");
+    assert(recovered.title !== "STAGE -", "le fragment d'objet n'est plus le titre affiché");
+
+    const fallback = offerToDetectedOffer(sampleOffer({ applicationUrl: "https://www.google.com/search?q=ACME+emploi", searchFallback: true }));
+    assert(!fallback.url, "un lien de recherche n'est pas présenté comme lien d'offre");
   }
 
   console.log("\n[4] Pipeline candidature — étiquettes + rangs");

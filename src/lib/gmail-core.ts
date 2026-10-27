@@ -29,6 +29,12 @@ import { stampAnalysis } from "@/lib/gmail-dashboard";
 import type { DetectSummary, AnchorEntry } from "@/lib/offer-links";
 import { groundedOfferData } from "./grounded-offer";
 import { extractOffersFromEmail } from "@/lib/offer-extract";
+import { evidenceText, groundKeywords, repairOfferIdentity } from "@/lib/offer-identity";
+import {
+  EMPTY_REANALYZE_REPORT,
+  mergeReanalyzedOffers,
+  type ReanalyzeReport,
+} from "@/lib/gmail-reanalyze";
 import type { Platform } from "@/lib/offer-links";
 
 export { stampAnalysis };
@@ -94,6 +100,12 @@ export type RawOffer = {
   /** P0-3 : redirection Indeed opaque non résoluble hors ligne (engage/cts/
       pagead) — l'UI affiche « Lien non direct ». absent/false = lien direct. */
   indirect?: boolean;
+  /** Clé d'affichage gelée d'une annonce déjà connue : conservée à l'identique
+      lors d'une réanalyse pour que candidatures, CV envoyés et favoris restent
+      rattachés à la même offre. */
+  stableKey?: string;
+  /** Ancienne annonce conservée mais introuvable après réanalyse (à vérifier). */
+  needsReview?: boolean;
 };
 
 export type EmailCheckpoint = {
@@ -203,6 +215,8 @@ export type SyncOutcome = {
   enrichDeferred?: boolean;
   /** P1-4 : compteurs d'une relance ciblée d'enrichissement (relaunch_offer). */
   enrichRetry?: EnrichCounts;
+  /** Réanalyse ciblée : bilan honnête par e-mail (avant/après/corrigées…). */
+  reanalyze?: Record<string, ReanalyzeReport>;
 };
 
 export type GmailAiResult = {
@@ -945,6 +959,41 @@ function mergeOffers(code: RawOffer[], ai: RawOffer[], realUrls: string[]): RawO
   return out;
 }
 
+/* ── Identité réelle à l'import ─────────────────────────────────
+   Un libellé d'offre ne doit jamais être un fragment d'objet de mail
+   (« Stage TFE - »), un type de contrat seul ni une initiale (« ST »).
+   L'objet du mail ne sert de titre que s'il nomme vraiment l'offre (mail à
+   offre unique) ; sinon le titre vient du texte réel, sinon il reste
+   explicitement à vérifier. Les compétences sont ancrées dans le texte. */
+function withRealIdentity(o: RawOffer, email: ParsedEmail, allowSubjectHint: boolean): RawOffer {
+  /* Le bloc d'annonce arrive en HTML : on le convertit en texte (lignes
+     conservées) AVANT de s'en servir comme preuve, sinon aucune ligne de titre
+     n'est reconnaissable. Le HTML brut reste sur l'offre (logo, enrichissement). */
+  const blockEvidence = evidenceText(o.snippet || "");
+  const evidence = [o.description, blockEvidence, ...(o.missions || [])]
+    .filter((part): part is string => !!part && !!part.trim())
+    .join("\n");
+  const identity = repairOfferIdentity({
+    title: o.title,
+    company: o.company,
+    location: o.location,
+    url: o.applicationUrl,
+    description: o.description,
+    snippet: blockEvidence || o.snippet,
+    missions: o.missions,
+    profile: o.profile,
+    subjectHint: allowSubjectHint ? email.subject : "",
+    fromHint: email.from,
+  });
+  const skills = o.skills?.length ? groundKeywords(o.skills, evidence) : o.skills;
+  const unchanged =
+    identity.title === o.title &&
+    identity.company === o.company &&
+    (o.skills?.length || 0) === (skills?.length || 0);
+  if (unchanged) return o;
+  return { ...o, title: identity.title, company: identity.company, skills };
+}
+
 function attachProofs(email: ParsedEmail, offers: RawOffer[], anchors: AnchorEntry[]): RawOffer[] {
   return offers.map((o) => {
     if (!o.applicationUrl || isSearchFallbackUrl(o.applicationUrl)) {
@@ -1164,10 +1213,14 @@ export async function processEmail(
      nettoyée (tracking retiré), sourceUrl conservée brute (preuve technique,
      jamais affichée telle quelle). P0-3 : applyIndeedTargets entre le
      nettoyage et le gel des clés (résolution cts / éjection chrome / indirect). */
+  const singleOfferEmail = merged.length === 1;
   const withProofs = applyIndeedTargets(
-    attachProofs(email, merged, anchors).map((o) =>
-      o.applicationUrl ? { ...o, applicationUrl: cleanJobUrl(o.applicationUrl) } : o
-    )
+    attachProofs(email, merged, anchors)
+      .map((o) =>
+        o.applicationUrl ? { ...o, applicationUrl: cleanJobUrl(o.applicationUrl) } : o
+      )
+      /* Avant le gel des clés anti-doublon : l'identité stockée est la vraie. */
+      .map((o) => withRealIdentity(o, email, singleOfferEmail))
   ).map((o) => {
       /* P1-6 : geler les clés ANTES enrichissement — l'IA réécrit ensuite
          titre/entreprise/localité et peut réécrire l'URL (matchRealUrl) :
@@ -1742,6 +1795,9 @@ export type RunSyncOptions = {
   onlyEmailIds?: string[];
   /** Reset des checkpoints error/pending_retry avant ce run (relance_errors). */
   resetErrors?: boolean;
+  /** Réanalyse ciblée : ces e-mails sont relus EN ENTIER même si leur
+      checkpoint est « done » (nouvelles annonces, titres et liens corrigés). */
+  reanalyzeIds?: string[];
   /** P1-4 : NE fait QUE retenter l'enrichissement (aucune détection IA). */
   enrichOnly?: boolean;
   /** Injection tests pour l'enrichissement. */
@@ -1796,6 +1852,13 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
       const inOnly = opts.onlyEmailIds?.length
         ? opts.onlyEmailIds.includes(id)
         : true;
+      /* Réanalyse ciblée : un mail déjà « done » est relu en entier — c'est
+         exactement ce que la synchro normale ne fait pas (et ne doit pas
+         faire : elle ne relance pas silencieusement toute la boîte). */
+      if (opts.reanalyzeIds?.length && opts.reanalyzeIds.includes(id)) {
+        plannedFull++;
+        return "full";
+      }
       if (opts.force) {
         if (inOnly) plannedFull++;
         return "full";
@@ -1973,10 +2036,18 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
     },
   });
 
+  /* Réanalyse : les offres AVANT relance doivent être capturées maintenant.
+     processEmail réécrit le checkpoint en cours de traitement — les relire
+     plus tard donnerait les nouvelles offres, jamais les anciennes, et un
+     titre corrigé ne pourrait plus être comparé (voire serait perdu). */
+  const priorReanalyzeOffers = new Map<string, RawOffer[]>();
   for (const email of emails) {
     if (only && !only.has(email.id)) continue;
     const cp = await loadCheckpoint(email.id);
     if (cp?.status === "done") doneCount++;
+    if (opts.reanalyzeIds?.includes(email.id) && cp?.offers?.length) {
+      priorReanalyzeOffers.set(email.id, cp.offers);
+    }
 
     /* P1-4 enrichOnly (relaunch_offer) : on ne fait QUE re-passer l'offre
        existante à l'enrichissement — vue checkpoint, aucune détection. */
@@ -1986,7 +2057,8 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
       continue;
     }
 
-    if (!opts.force && !shouldProcessEmail(cp)) {
+    const reanalyzing = opts.reanalyzeIds?.length ? opts.reanalyzeIds.includes(email.id) : false;
+    if (!reanalyzing && !opts.force && !shouldProcessEmail(cp)) {
       skippedDone++;
       if (cp && cp.status === "done") {
         emailsOut.push(viewFromCp(email, cp));
@@ -2086,6 +2158,35 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
     }
   }
 
+  /* Réanalyse ciblée : une annonce déjà connue garde son identité (candidature,
+     CV envoyé, favori, note) et une annonce introuvable est conservée « à
+     vérifier » au lieu d'être effacée. Le checkpoint est réécrit pour que la
+     prochaine synchro normale restitue la version corrigée, jamais l'ancienne. */
+  let reanalyzeReports: Record<string, ReanalyzeReport> | undefined;
+  if (opts.reanalyzeIds?.length) {
+    const allow = new Set(opts.reanalyzeIds);
+    const reports: Record<string, ReanalyzeReport> = {};
+    for (const item of emailsOut) {
+      if (!allow.has(item.id) || item.fromCheckpoint === true) continue;
+      const previous = priorReanalyzeOffers.get(item.id) ?? [];
+      if (previous.length === 0) {
+        reports[item.id] = {
+          ...EMPTY_REANALYZE_REPORT,
+          detected: item.offers.length,
+          added: item.offers.length,
+        };
+        continue;
+      }
+      const { offers, report } = mergeReanalyzedOffers(previous, item.offers);
+      item.offers = offers as typeof item.offers;
+      reports[item.id] = report;
+      changedIds.add(item.id);
+      const cp = await loadCheckpoint(item.id);
+      if (cp) await saveCheckpoint(item.id, { ...cp, offers: item.offers });
+    }
+    if (Object.keys(reports).length > 0) reanalyzeReports = reports;
+  }
+
   const detected = emailsOut.reduce((n, a) => n + a.offers.length, 0);
 
   /* Anti-doublon tardif : uniquement sur les offres de CE run (import). */
@@ -2182,5 +2283,6 @@ async function runSyncInner(opts: RunSyncOptions): Promise<SyncOutcome> {
     ...(arrivedDuringRun !== undefined ? { arrivedDuringRun } : {}),
     ...(enrichDeferred ? { enrichDeferred: true } : {}),
     ...(enrichRetry ? { enrichRetry } : {}),
+    ...(reanalyzeReports ? { reanalyze: reanalyzeReports } : {}),
   };
 }

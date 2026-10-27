@@ -1064,7 +1064,10 @@ async function main() {
     );
     assert(pageClient.includes("\"use client\""), "dashboard = client component");
     assert(pageClient.includes("/api/gmail/dashboard"), "dashboard appelle GET dashboard");
-    assert(pageClient.includes("/api/gmail/sync"), "dashboard appelle POST sync");
+    assert(
+      pageClient.includes('postGmailSync(email, action, emailId)') || pageClient.includes("/api/gmail/sync"),
+      "dashboard appelle POST sync (via le client partagé gmail-sync-client)"
+    );
     assert(pageClient.includes("/api/gmail/progress"), "dashboard poll GET progress (P0-9)");
     assert(pageClient.includes("relaunch_errors"), "action relaunch_errors présente");
     assert(pageClient.includes("relaunch_email"), "action relaunch_email présente");

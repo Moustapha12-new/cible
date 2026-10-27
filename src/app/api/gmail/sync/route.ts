@@ -10,8 +10,21 @@ import {
   getOauthConnection,
 } from "@/lib/gmail-server";
 import { runSync, type ProcessedEmail } from "@/lib/gmail-core";
-import { humanizeGmailError, buildSummary, mergeCatalogue, slimOffers } from "@/lib/gmail-dashboard";
+import { humanizeGmailError, buildSummary, mergeCatalogue, slimOffers, syncActionOf, type SyncAction } from "@/lib/gmail-dashboard";
 import { loadSnapshot, saveSnapshot } from "@/lib/gmail-snapshot";
+import {
+  advanceReanalyzeCursor,
+  EMPTY_REANALYZE_REPORT,
+  nextReanalyzeBatch,
+  sumReanalyzeReports,
+  type ReanalyzeReport,
+} from "@/lib/gmail-reanalyze";
+import {
+  buildReanalyzeQueue,
+  loadReanalyzeQueue,
+  saveReanalyzeQueue,
+  type ReanalyzeQueue,
+} from "@/lib/gmail-reanalyze-queue";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -27,37 +40,69 @@ type SyncBody = {
   email?: string;
   debug?: boolean;
   force?: boolean;
-  /** Relance sélective Module 2. */
-  action?: "sync" | "relaunch_errors" | "relaunch_email" | "relaunch_offer";
+  /** Relance sélective Module 2 + réanalyse ciblée des anciens mails. */
+  action?: SyncAction;
   emailId?: string;
+  /** File de réanalyse : reconstruire la file depuis le catalogue connu. */
+  queueReset?: boolean;
 };
 
-export const POST = securedRoute(async (req, auth) => {
-  let email = "";
-  let debug = false;
-  let force = false;
-  let action: NonNullable<SyncBody["action"]> = "sync";
-  let emailId = "";
+/** Corps de requête tolérant : un corps VIDE vaut « sync » (jamais un 400).
+    Un ancien client (ou un onglet en cache) qui poste sans corps continue de
+    fonctionner ; un corps non vide mais illisible reste une vraie erreur. */
+export function parseSyncBody(raw: string): SyncBody | null {
+  const text = (raw || "").trim();
+  if (!text) return {};
   try {
-    const body = (await req.json()) as SyncBody;
-    email = auth.user.email;
-    debug = body.debug === true;
-    force = body.force === true;
-    emailId = (body.emailId || "").trim();
-    if (
-      body.action === "relaunch_errors" ||
-      body.action === "relaunch_email" ||
-      body.action === "relaunch_offer"
-    ) {
-      action = body.action;
-    }
+    const parsed: unknown = JSON.parse(text);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return parsed as SyncBody;
   } catch {
-    return NextResponse.json({ ok: false, error: "Requête invalide" }, { status: 400 });
+    return null;
   }
+}
+
+/** E-mails de réanalyse traités dans une seul lot (sous le budget maxProcess). */
+const REANALYZE_BATCH = 5;
+
+type QueueState = {
+  total: number;
+  done: number;
+  remaining: number;
+  batches: number;
+  finished: boolean;
+  stats: ReanalyzeReport;
+};
+
+const queueStateOf = (queue: ReanalyzeQueue, cursor = queue.cursor): QueueState => ({
+  total: queue.ids.length,
+  done: cursor,
+  remaining: Math.max(0, queue.ids.length - cursor),
+  batches: queue.batches,
+  finished: cursor >= queue.ids.length,
+  stats: queue.stats,
+});
+
+const sumReports = (reports: Record<string, ReanalyzeReport> | undefined): ReanalyzeReport =>
+  Object.values(reports ?? {}).reduce<ReanalyzeReport>(
+    (total, report) => sumReanalyzeReports(total, report),
+    { ...EMPTY_REANALYZE_REPORT }
+  );
+
+export const POST = securedRoute(async (req, auth) => {
+  const body = parseSyncBody(await req.text().catch(() => ""));
+  if (!body) {
+    return NextResponse.json({ ok: false, error: "Corps de requête JSON invalide" }, { status: 400 });
+  }
+  const email = auth.user.email;
+  const debug = body.debug === true;
+  const force = body.force === true;
+  const emailId = (body.emailId || "").trim();
+  const action: SyncAction = syncActionOf(body.action);
   if (!email) {
     return NextResponse.json({ ok: false, error: "Compte utilisateur manquant" }, { status: 400 });
   }
-  if ((action === "relaunch_email" || action === "relaunch_offer") && !emailId) {
+  if ((action === "relaunch_email" || action === "relaunch_offer" || action === "reanalyze_email") && !emailId) {
     return NextResponse.json(
       { ok: false, error: `emailId manquant pour ${action}` },
       { status: 400 }
@@ -142,6 +187,41 @@ export const POST = securedRoute(async (req, auth) => {
     );
   }
 
+  /* 2 bis — Réanalyse ciblée : e-mails relus EN ENTIER même si leur checkpoint
+     est « done ». La file persiste un curseur : chaque lot avance réellement et
+     un rechargement de page reprend là où le traitement s'est arrêté. */
+  let queueBefore: ReanalyzeQueue | null = null;
+  let queueStart = 0;
+  let reanalyzeIds: string[] | undefined;
+  if (action === "reanalyze_email") {
+    reanalyzeIds = [emailId];
+  } else if (action === "reanalyze_queue") {
+    queueBefore = await loadReanalyzeQueue(email);
+    /* File absente, terminée (nouveau passage complet) ou réinitialisée. */
+    if (!queueBefore || body.queueReset === true || queueBefore.cursor >= queueBefore.ids.length) {
+      const saved = await loadSnapshot(email);
+      queueBefore = buildReanalyzeQueue(saved?.emails ?? []);
+      await saveReanalyzeQueue(email, queueBefore);
+    }
+    const step = nextReanalyzeBatch(queueBefore.ids, queueBefore.cursor, REANALYZE_BATCH);
+    queueStart = step.start;
+    reanalyzeIds = step.batch;
+    if (step.done || step.batch.length === 0) {
+      return NextResponse.json({
+        ok: true,
+        action,
+        labelFound: true,
+        label: label.name,
+        emailsRead: 0,
+        totalInLabel: 0,
+        detected: 0,
+        emails: [],
+        reanalyze: {},
+        queue: queueStateOf(queueBefore),
+      });
+    }
+  }
+
   try {
   /* 3–4 — Fetch + traitement email-unique avec checkpoints (gmail-core).
      Relance sélective : resetErrors repasse les cp error → pending (resolveMode
@@ -149,20 +229,26 @@ export const POST = securedRoute(async (req, auth) => {
   let outcome;
   try {
     const saved = await loadSnapshot(email);
+    const reanalyzing = reanalyzeIds !== undefined;
     outcome = await runSync({
-      completedEmailIds: !force && !["relaunch_offer", "relaunch_email"].includes(action)
+      completedEmailIds: !force && !reanalyzing && !["relaunch_offer", "relaunch_email"].includes(action)
         ? saved?.emails.filter(item => item.checkpoint?.status === "done" || (item.checkpoint?.status === "error" && item.checkpoint.retries >= 3)).map(item => item.id) : undefined,
       accessToken,
       label,
       force,
-      resetErrors: action === "relaunch_errors" || action === "relaunch_email",
-      onlyEmailIds:
-        action === "relaunch_email" || action === "relaunch_offer" ? [emailId] : undefined,
+      resetErrors: action === "relaunch_errors" || action === "relaunch_email" || reanalyzing,
+      onlyEmailIds: reanalyzing
+        ? reanalyzeIds
+        : action === "relaunch_email" || action === "relaunch_offer"
+          ? [emailId]
+          : undefined,
+      /* Relit un mail « done » de bout en bout (détection, titres, liens, enrich). */
+      reanalyzeIds,
       /* P1-4 : relance d'enrichissement seule (aucune détection IA). */
       enrichOnly: action === "relaunch_offer",
       userKey: email,
       deadlineMs: RUN_DEADLINE_MS,
-      maxProcess: 8,
+      maxProcess: reanalyzing ? Math.max(1, reanalyzeIds!.length) : 8,
       enrichMax: 8,
       enrichOpts: { groundedOnly: true },
     });
@@ -172,6 +258,24 @@ export const POST = securedRoute(async (req, auth) => {
       { ok: false, error: h.human, ...(h.detail ? { detail: h.detail } : {}) },
       { status: 502 }
     );
+  }
+
+  /* File de réanalyse : le curseur n'avance que sur les e-mails RÉELLEMENT
+     relus — les autres (budget ou deadline) restent en tête de file. */
+  let queueAfter: QueueState | undefined;
+  if (queueBefore) {
+    const processed = outcome.emails
+      .filter((item) => item.fromCheckpoint !== true)
+      .map((item) => item.id);
+    const cursor = advanceReanalyzeCursor(queueBefore.ids, queueStart, processed);
+    const next: ReanalyzeQueue = {
+      ...queueBefore,
+      cursor,
+      batches: queueBefore.batches + 1,
+      stats: sumReanalyzeReports(queueBefore.stats, sumReports(outcome.reanalyze)),
+    };
+    await saveReanalyzeQueue(email, next);
+    queueAfter = queueStateOf(next, cursor);
   }
 
   /* Run réussi → on valide la date de synchronisation. */
@@ -261,6 +365,8 @@ export const POST = securedRoute(async (req, auth) => {
     ...((outcome.fetchSkipped ?? 0) > 0
       ? { fetchSkipped: outcome.fetchSkipped, fetchErrors: outcome.fetchErrors ?? [] }
       : {}),
+    ...(outcome.reanalyze ? { reanalyze: outcome.reanalyze } : {}),
+    ...(queueAfter ? { queue: queueAfter } : {}),
     summary: outcome.summary,
     ...(mailDebug ? { mailDebug } : {}),
   });

@@ -101,6 +101,15 @@ export default function OfferCard({
         {offer.salary && <span className="chip chip--mint">{offer.salary}</span>}
         {offer.deadline && <span className="chip chip--amber">limite {offer.deadline}</span>}
         {offer.source && <span className="chip chip--muted">{offer.source}</span>}
+        {offer.needsReview && (
+          <span
+            className="chip chip--amber"
+            data-testid="needs-review-badge"
+            title="Cette annonce était déjà connue mais n'a pas été retrouvée dans le mail lors de la dernière réanalyse : elle est conservée telle quelle, à vérifier."
+          >
+            à vérifier
+          </span>
+        )}
         {offer.searchFallback && (
           <span className="chip" title="Aucun lien direct dans l'e-mail — recherche ouverte">
             lien (recherche)

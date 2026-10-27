@@ -22,6 +22,8 @@ import type {
   SyncAction,
 } from "@/lib/gmail-dashboard";
 import { clearPayloadCache, emptySummary, etaMinutes, humanizeGmailError, loadLastRun, loadPayloadCache, loadRunHist, saveLastRun, savePayloadCache, saveRunHist } from "@/lib/gmail-dashboard";
+import { postGmailSync } from "@/lib/gmail-sync-client";
+import type { ReanalyzeReport } from "@/lib/gmail-reanalyze";
 import GmailConnectionStatus, { type ConnState } from "./GmailConnectionStatus";
 import SyncSummaryCard, { type LiveProgress } from "./SyncSummaryCard";
 import RunHistory from "./RunHistory";
@@ -58,6 +60,10 @@ export default function AlertesGmailDashboard() {
   const [runHist, setRunHist] = useState<RunHistEntry[]>([]);
   const [runProgress, setRunProgress] = useState<LiveProgress>(null);
   const [runEta, setRunEta] = useState<number | null>(null);
+  /* Réanalyse ciblée : bilan du dernier e-mail relu + état de la file. */
+  const [lastReanalyze, setLastReanalyze] = useState<ReanalyzeReport | null>(null);
+  const [queueNotice, setQueueNotice] = useState<string | null>(null);
+  const [queueing, setQueueing] = useState(false);
   const email = user?.email ?? "";
   const bootRef = useRef(false);
   const syncStartRef = useRef(0);
@@ -216,13 +222,8 @@ export default function AlertesGmailDashboard() {
         let batchNumber = 0;
         while (true) {
         batchNumber++;
-        const body: Record<string, unknown> = { email, action };
-        if (emailId) body.emailId = emailId;
-        const sendBatch = () => fetch("/api/gmail/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
+        /* Protocole partagé avec « Mes offres » : même corps JSON, même action. */
+        const sendBatch = () => postGmailSync(email, action, emailId);
         let res = await sendBatch();
         // An enrichment batch already running finishes before this sync starts.
         for (let attempt = 0; res.status === 409 && attempt < 24; attempt++) {
@@ -236,6 +237,8 @@ export default function AlertesGmailDashboard() {
           truncated?: boolean; interrupted?: boolean; remaining?: number;
           arrivedDuringRun?: number; enrichDeferred?: boolean; fetchSkipped?: number;
           enrichRetry?: { tried: number; okNow: number; stillBlocked: number };
+          reanalyze?: Record<string, ReanalyzeReport>;
+          queue?: { total: number; done: number; remaining: number; batches: number; finished: boolean; stats: ReanalyzeReport };
         }>(res);
         if (!res.ok || !json.ok) {
           const err = new Error(json.error || "Synchronisation impossible") as Error & {
@@ -311,6 +314,13 @@ export default function AlertesGmailDashboard() {
           );
         }
         const nfr = (n: number, s: string, p: string) => `${n} ${n > 1 ? p : s}`;
+        /* Bilan honnête de la réanalyse : ce qui a été corrigé, retrouvé, et ce
+           qui reste à vérifier — jamais un simple « c'est bon ». */
+        const reports = Object.values(json.reanalyze ?? {});
+        const reanalyzeNote = reports.length
+          ? `E-mail réanalysé : ${nfr(reports.reduce((n, r) => n + r.corrected, 0), "offre corrigée", "offres corrigées")} · ${nfr(reports.reduce((n, r) => n + r.added, 0), "annonce retrouvée", "annonces retrouvées")}${reports.some(r => r.retained) ? ` · ${reports.reduce((n, r) => n + r.retained, 0)} à vérifier` : ""}.`
+          : "E-mail réanalysé — aucun changement à signaler.";
+        setLastReanalyze(reports[0] ?? null);
         const analyzed = lr.processedThisRun;
         const found = s?.totalOffersDetected ?? 0;
         const dupes = s?.duplicatesIgnored ?? 0;
@@ -326,7 +336,9 @@ export default function AlertesGmailDashboard() {
             ? errLeft === 0
               ? "Erreurs relancées — plus aucune en erreur."
               : `Erreurs relancées — ${nfr(errLeft, "reste en erreur", "restent en erreur")}.`
-            : action === "relaunch_email"
+            : action === "reanalyze_email"
+              ? reanalyzeNote
+              : action === "relaunch_email"
               ? "E-mail relancé."
               : action === "relaunch_offer"
                 ? `Enrichissement relancé : ${nfr(er?.tried ?? 0, "tentative", "tentatives")} · ${nfr(er?.okNow ?? 0, "réussie", "réussies")} · ${nfr(er?.stillBlocked ?? 0, "bloquée", "bloquées")} (site protégé).`
@@ -382,9 +394,42 @@ export default function AlertesGmailDashboard() {
     }
   };
 
+  /* Réanalyse ciblée : un ancien mail est RELU en entier (nouvelles annonces,
+     titres corrigés, liens corrigés, enrichissement) — contrairement à
+     relaunch_email qui ne reprend que les checkpoints en erreur. */
   const relaunchOne = async (id: string) => {
     setRelaunchingId(id);
-    await runAction("relaunch_email", id);
+    await runAction("reanalyze_email", id);
+  };
+
+  /* File de réanalyse : révise les anciens mails déjà importés, lot après lot,
+     avec un curseur persistant (un rechargement de page reprend la file). */
+  const reanalyzeQueue = async () => {
+    setQueueing(true);
+    setQueueNotice(null);
+    try {
+      for (let batch = 0; batch < 40; batch++) {
+        const res = await postGmailSync(email, "reanalyze_queue");
+        const json = (await res.json().catch(() => ({}))) as {
+          ok?: boolean; error?: string; queue?: { total: number; done: number; remaining: number; finished: boolean; stats: ReanalyzeReport };
+        };
+        if (!res.ok || !json.ok) throw new Error(json.error || "Réanalyse impossible");
+        const queue = json.queue;
+        if (!queue) break;
+        setQueueNotice(
+          queue.remaining > 0
+            ? `Réanalyse : ${queue.done} / ${queue.total} anciens mails relus (${queue.stats.corrected} offres corrigées, ${queue.stats.added} retrouvées).`
+            : `Réanalyse terminée : ${queue.stats.previous} offres réexaminées, ${queue.stats.corrected} corrigées, ${queue.stats.added} retrouvées${queue.stats.retained ? `, ${queue.stats.retained} à vérifier` : ""}.`
+        );
+        if (queue.finished) break;
+        await new Promise((resolve) => window.setTimeout(resolve, 3000));
+      }
+      await refreshDashboard();
+    } catch (e) {
+      setError(toShownError(e));
+    } finally {
+      setQueueing(false);
+    }
   };
 
   /* P1-4 : relance ciblée de l'enrichissement d'un e-mail (sans détection). */
@@ -539,7 +584,7 @@ export default function AlertesGmailDashboard() {
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 mb-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               <label className="mono-label" htmlFor="relaunch-select">
-                relancer un e-mail
+                réanalyser un e-mail
               </label>
               <select
                 id="relaunch-select"
@@ -563,6 +608,15 @@ export default function AlertesGmailDashboard() {
             <button
               type="button"
               className="btn-line btn-sm"
+              onClick={() => void reanalyzeQueue()}
+              disabled={syncing || queueing || emails.length === 0}
+              data-testid="btn-reanalyze-queue"
+            >
+              {queueing ? "Réanalyse en cours…" : "Réanalyser les anciens mails"}
+            </button>
+            <button
+              type="button"
+              className="btn-line btn-sm"
               onClick={exportReport}
               disabled={!exportReady}
               data-testid="btn-export"
@@ -570,6 +624,20 @@ export default function AlertesGmailDashboard() {
               Exporter le rapport
             </button>
           </div>
+
+          {queueNotice && (
+            <p className="text-[0.8rem] text-text-dim mb-4" role="status" data-testid="queue-notice">
+              {queueNotice}
+            </p>
+          )}
+
+          {lastReanalyze && (lastReanalyze.corrected + lastReanalyze.added + lastReanalyze.retained > 0) && (
+            <p className="text-[0.78rem] text-muted mb-4" role="status" data-testid="reanalyze-balance">
+              Dernière réanalyse : {lastReanalyze.previous} offre(s) connue(s), {lastReanalyze.detected} relue(s),{" "}
+              {lastReanalyze.corrected} corrigée(s), {lastReanalyze.added} retrouvée(s)
+              {lastReanalyze.retained > 0 ? `, ${lastReanalyze.retained} conservée(s) « à vérifier »` : ""}.
+            </p>
+          )}
 
           <div className="flex items-baseline justify-between gap-4 mb-4">
             <h2 className="font-display text-xl font-semibold">

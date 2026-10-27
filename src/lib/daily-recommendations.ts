@@ -1,5 +1,6 @@
 import type { DetectedOffer, UserData } from "./data";
 import { appliedOfferIds } from "./applied-offers";
+import { isOfferDismissed } from "./offer-dismissal";
 
 export type DailyPick = { id: string; reason: string; present: string[]; missing: string[]; priority: boolean };
 export type DailySelection = { date: string; signature: string; picks: DailyPick[]; usedAi: boolean };
@@ -22,7 +23,7 @@ export function eligibleOffers(offers: DetectedOffer[], data: UserData): Detecte
   const applied = appliedOfferIds(data);
   const seen = new Set<string>();
   return offers.filter(o => {
-    if (data.dismissedOfferIds?.includes(o.id)) return false;
+    if (isOfferDismissed(o, data.dismissedOfferIds)) return false;
     if (applied.has(o.id)) return false;
     if (data.offerQualifications?.[o.id]?.state === "rejected") return false;
     if (o.gmailStatus && ["ignorée", "expirée", "doublon"].includes(o.gmailStatus)) return false;

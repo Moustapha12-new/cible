@@ -37,7 +37,8 @@ import {
   type OfferCvFile,
 } from "@/lib/data";
 import { DEFAULT_CV_DESIGN, parseCvText, cvToText, type CvData } from "@/lib/cv";
-import { nextRafaleCandidates, readRafaleQueue, writeRafaleQueue } from "@/lib/offres-filters";
+import { nextRafaleCandidates, readRafaleOffers, readRafaleQueue, writeRafaleQueue } from "@/lib/offres-filters";
+import { isOfferDismissed } from "@/lib/offer-dismissal";
 import { applyPlanToCv, type ApplicableOperation } from "@/lib/cv-plan-apply";
 import { CompanyLogo } from "@/components/app/CompanyLogo";
 import { DocumentSheet } from "@/components/cv/DocumentSheet";
@@ -224,7 +225,9 @@ export default function CvPage() {
 
     /* L'offre vient TOUJOURS du dossier réel : paramètre d'URL s'il pointe une
        offre du dossier, sinon la première offre réelle — jamais la démo. */
-    const rows = (local.offers || []).map(offerRow);
+    const rows = [...(local.offers || []), ...readRafaleOffers<DetectedOffer>()]
+      .filter((o, index, all) => all.findIndex(candidate => candidate.id === o.id) === index && !isOfferDismissed(o, local.dismissedOfferIds))
+      .map(offerRow);
     const match = (offerParam ? rows.find((o) => o.id === offerParam) : undefined) || rows[0];
     if (match) {
       setSelectedOffer(match);
@@ -502,6 +505,52 @@ export default function CvPage() {
   };
 
   // Confirm application
+  const advanceRafale = async (currentId: string, latest: UserData) => {
+    const applied = new Set(latest.applications.flatMap(a => a.offerId ? [a.offerId] : []));
+    applied.add(currentId);
+    const allCandidates = [...latest.offers, ...readRafaleOffers<DetectedOffer>()];
+    const queue = readRafaleQueue().filter(id => !applied.has(id) && !allCandidates.some(offer => offer.id === id && isOfferDismissed(offer, latest.dismissedOfferIds)));
+    const next = nextRafaleCandidates(allCandidates, applied, currentId, queue)[0];
+    writeRafaleQueue(queue);
+    const requestedReturn = searchParams.get("returnTo") || "";
+    const returnTo = /^\/app\/offres(?:\?|#|$)/.test(requestedReturn) ? requestedReturn : "/app/offres?rafale=1#rafale-session";
+    if (!next) { router.push(returnTo); return; }
+    const response = await fetch("/api/offres/rafale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ offer: next }) });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || "L'offre suivante n'a pas pu être préparée.");
+    const updated = { ...latest, offers: latest.offers.some(o => o.id === next.id) ? latest.offers : [next, ...latest.offers] };
+    setData(updated);
+    if (user?.email) try { saveData(user.email, updated); } catch { /* La fiche est enregistrée côté serveur. */ }
+    setSelectedOffer(offerRow(next));
+    setGeneratedFile(null);
+    setCustomCv(null);
+    setPreparedCv(null);
+    setRafaleNext(null);
+    router.replace(`/app/cv?offer=${encodeURIComponent(next.id)}&start=1&rafale=1&returnTo=${encodeURIComponent(returnTo)}`);
+  };
+
+  const handleDeleteSelectedOffer = async () => {
+    if (!selectedOffer.id || !user) return;
+    setCustomBusy(true);
+    let deleted = false;
+    try {
+      const response = await fetch("/api/offres/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [selectedOffer.id], offers: [{ id: selectedOffer.id, url: selectedOffer.url, title: selectedOffer.title, company: selectedOffer.company, location: selectedOffer.location }] }) });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "Suppression non enregistrée.");
+      deleted = true;
+      const latest = getOrCreateData(user.name, user.email);
+      const updated = { ...latest, dismissedOfferIds: [...new Set([...(latest.dismissedOfferIds || []), ...(result.dismissedOfferIds as string[])])] };
+      setData(updated);
+      try { saveData(user.email, updated); } catch { /* Suppression confirmée côté serveur. */ }
+      if (rafaleMode) await advanceRafale(selectedOffer.id, updated);
+      else router.push("/app/offres");
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : "Suppression impossible.");
+      if (deleted) router.push("/app/offres?rafale=1#rafale-session");
+    }
+    finally { setCustomBusy(false); }
+  };
+
   const handleApplyWithCv = async () => {
     const file = customCv || generatedFile;
     if (!file || file.offerId !== selectedOffer.id) { setToastMessage("Importe ton PDF personnel ou télécharge d'abord le PDF généré avant de confirmer l'envoi."); return; }
@@ -523,24 +572,7 @@ export default function CvPage() {
       // Advance only after the server confirms that the exact sent CV is archived.
       if (rafaleMode) {
         const latest = getOrCreateData(user?.name || "", user?.email || "");
-        const applied = new Set(latest.applications.flatMap(a => a.offerId ? [a.offerId] : []));
-        applied.add(selectedOffer.id);
-        const queue = readRafaleQueue().filter(id => !applied.has(id) && !latest.dismissedOfferIds?.includes(id));
-        const remaining = queue.length ? nextRafaleCandidates(latest.offers, applied, selectedOffer.id, queue) : [];
-        const next = remaining[0];
-        writeRafaleQueue(queue);
-        setGeneratedFile(null);
-        setCustomCv(null);
-        setPreparedCv(null);
-        setRafaleNext(null);
-        const requestedReturn = searchParams.get("returnTo") || "";
-        const returnTo = /^\/app\/offres(?:\?|#|$)/.test(requestedReturn) ? requestedReturn : "/app/offres?rafale=1#rafale-session";
-        if (next) {
-          setToastMessage("Candidature enregistrée. Passage à l’offre suivante.");
-          router.replace(`/app/cv?offer=${encodeURIComponent(next.id)}&rafale=1&returnTo=${encodeURIComponent(returnTo)}`);
-        } else {
-          router.push(returnTo);
-        }
+        await advanceRafale(selectedOffer.id, latest);
         return;
       }
       router.push(`/app/candidatures?open=${encodeURIComponent(json.application.id)}`);
@@ -832,6 +864,12 @@ export default function CvPage() {
               <p className="mt-1 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-[10px] text-slate-400">
                 Aucun lien de candidature n&apos;est enregistré pour cette offre.
               </p>
+            )}
+            {selectedOffer.id && (
+              <button type="button" disabled={customBusy} onClick={() => void handleDeleteSelectedOffer()}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-rose-200 px-3 py-2 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50">
+                <Trash2 size={12} /> Supprimer cette offre définitivement de Mes offres
+              </button>
             )}
           </div>
         </div>

@@ -27,7 +27,9 @@ import {
   type UserData,
 } from "@/lib/data";
 import { loadGmailStore, normalizeUrl } from "@/lib/gmail-client";
+import { postGmailSyncLocked } from "@/lib/gmail-sync-client";
 import { discoveryUrlKey } from "@/lib/discovery-identity";
+import { isOfferDismissed } from "@/lib/offer-dismissal";
 import { cvMasterText, offerCvCoverage } from "@/lib/offer-cv-coverage";
 import { offerToDetectedOffer, type OfferLike } from "@/lib/gmail-bridge";
 import {
@@ -50,6 +52,7 @@ import {
   matchesOfferFilters,
   SOURCE_SITES,
   writeRafaleQueue,
+  writeRafaleOffers,
   type OfferListFilters,
 } from "@/lib/offres-filters";
 import { DailyOfferCard } from "@/components/offers/DailyOfferCard";
@@ -409,13 +412,13 @@ export default function OffresPage() {
     if (!data || !user || !ids.length) return;
 
     try {
-      const response = await fetch("/api/offres/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
+      const response = await fetch("/api/offres/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids, offers: data.offers.filter(offer => ids.includes(offer.id)).map(({ id, url, title, company, location }) => ({ id, url, title, company, location })) }) });
       if (!response.ok) throw new Error();
       const result = await response.json();
       loadRevision.current += 1;
       const next = { ...data, dismissedOfferIds: [...new Set([...(data.dismissedOfferIds || []), ...result.dismissedOfferIds as string[]])] };
       setData(current => current ? { ...current, dismissedOfferIds: [...new Set([...(current.dismissedOfferIds || []), ...next.dismissedOfferIds])] } : next);
-      setRecommendedOffers(rows => rows.filter(row => !next.dismissedOfferIds.includes(row.id)));
+      setRecommendedOffers(rows => rows.filter(row => !isOfferDismissed(row, next.dismissedOfferIds)));
       setSelectedIds(new Set());
       try { saveData(user.email, next); } catch { /* Server has confirmed persistence. */ }
       setSyncNotice(`${ids.length} offre(s) supprimée(s) de Mes offres. Tes candidatures et CV envoyés restent conservés.`);
@@ -672,7 +675,9 @@ export default function OffresPage() {
       let remaining = 0;
       while (batches < 10 && idle < 3) {
         setSyncNotice(`Synchronisation… lot ${batches + 1}`);
-        const res = await fetch("/api/gmail/sync", { method: "POST" });
+        /* Même protocole que le tableau « Alertes Gmail » : corps JSON explicite
+           et attente du verrou (409) — sans corps, le serveur répondait 400. */
+        const res = await postGmailSyncLocked(user.email, "sync");
         const json = (await res.json().catch(() => ({}))) as {
           ok?: boolean;
           error?: string;
@@ -729,11 +734,13 @@ export default function OffresPage() {
   };
 
   const handleToggleSelectAll = () => {
-    if (selectedIds.size === filteredOffers.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredOffers.map((o) => o.id)));
-    }
+    const ids = filteredOffers.map((offer) => offer.id);
+    setSelectedIds(previous => {
+      const next = new Set(previous);
+      const allInFilter = ids.every(id => next.has(id));
+      ids.forEach(id => allInFilter ? next.delete(id) : next.add(id));
+      return next;
+    });
   };
 
   /* ── Enregistre les vraies offres (texte complet) pour l'adaptation CV ──
@@ -759,6 +766,25 @@ export default function OffresPage() {
   };
 
   const handleSelectOffer = (id: string) => handleSelectOffers([id]);
+
+  const launchRafale = async (ids: string[]) => {
+    if (!user || demoMode || !ids.length) return;
+    const offers = ids.flatMap(id => realOffersById.get(id) || []);
+    if (!offers.length) return;
+    writeRafaleQueue(offers.map(offer => offer.id));
+    writeRafaleOffers(offers);
+    try {
+      const response = await fetch("/api/offres/rafale", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ offer: offers[0] }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "Offre non enregistrée.");
+      handleSelectOffers([offers[0].id]);
+      router.push(`/app/cv?offer=${encodeURIComponent(offers[0].id)}&start=1&rafale=1&returnTo=${encodeURIComponent("/app/offres?rafale=1#rafale-session")}`);
+    } catch (error) {
+      setSyncNotice(error instanceof Error ? error.message : "La session Rafale n'a pas démarré.");
+    }
+  };
 
   /* ── Marquage « postulé » : enregistre une vraie candidature, sans inventaire ── */
   const handleMarkApplied = async (ids: string[]) => {
@@ -907,7 +933,7 @@ export default function OffresPage() {
   const offerRows = useMemo(() => {
     if (demoMode) return demoRows.map((row) => ({ row, offer: null as DetectedOffer | null }));
     if (!data) return [];
-    return data.offers.filter(offer => !data.dismissedOfferIds?.includes(offer.id)).map((offer) => ({
+    return data.offers.filter(offer => !isOfferDismissed(offer, data.dismissedOfferIds)).map((offer) => ({
       offer,
       row: toTableRow(offer, appliedOfferIds.has(offer.id), currentCareerReport(offer, data)),
     }));
@@ -973,7 +999,7 @@ export default function OffresPage() {
   const rafaleCurrent = rafaleRows[0];
 
   /* ── Statistiques réelles (compte du dossier, indépendant des filtres) ── */
-  const realTotal = demoMode ? DEMO_USER_PROFILE.stats.totalOffers : data?.offers.length ?? 0;
+  const realTotal = demoMode ? DEMO_USER_PROFILE.stats.totalOffers : data?.offers.filter(offer => !isOfferDismissed(offer, data.dismissedOfferIds)).length ?? 0;
   const lastSyncLabel = (() => {
     if (demoMode) return DEMO_USER_PROFILE.lastGmailSync.time;
     if (!gmailStatus) return "…";
@@ -1116,9 +1142,12 @@ export default function OffresPage() {
           <button
             type="button"
             onClick={() => {
-              setRafaleMode((prev) => !prev);
-              setActiveTab("all");
+              if (rafaleMode) { setRafaleMode(false); return; }
+              setRafaleMode(true);
               setRafaleSkipped(new Set());
+              const candidates = filteredOffers.filter(row => row.status !== "postulee" && row.status !== "expiree");
+              const chosen = selectedIds.size ? candidates.filter(row => selectedIds.has(row.id)) : candidates;
+              if (chosen.length && !demoMode) void launchRafale(chosen.map(row => row.id));
             }}
             aria-pressed={rafaleMode}
             className={`flex items-center gap-3 rounded-xl px-3.5 py-2 transition-all shadow-2xs text-left cursor-pointer border ${rafaleMode
@@ -1283,19 +1312,14 @@ export default function OffresPage() {
                         Ouvrir l&apos;offre et postuler
                       </a>
                     )}
-                    <Link
-                      href={`/app/cv?offer=${encodeURIComponent(rafaleCurrent.id)}&start=1&rafale=1&returnTo=${encodeURIComponent("/app/offres?" + new URLSearchParams({ ...Object.fromEntries(searchParams.entries()), rafale: "1" }).toString() + "#rafale-session")}`}
-                      onClick={() => {
-                        /* L'offre courante et la suivante rejoignent le dossier :
-                           Mon CV pourra enchaîner sans perdre la file du filtre. */
-                        handleSelectOffers([rafaleCurrent.id, rafaleRows[1]?.id].filter((id): id is string => !!id));
-                        writeRafaleQueue(rafaleRows.map((row) => row.id));
-                      }}
+                    <button
+                      type="button"
+                      onClick={() => void launchRafale(rafaleRows.map(row => row.id))}
                       className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-blue-700"
                     >
                       <FileText size={12} />
                       Adapter mon CV
-                    </Link>
+                    </button>
                     <button
                       type="button"
                       disabled={savingApplication}
@@ -1338,7 +1362,9 @@ export default function OffresPage() {
             onToggleFavorite={handleToggleFavorite}
             onSelectOffer={handleSelectOffer}
             onBulkEnqueue={() => {
-              router.push("/app/cv?bulk=1");
+              const queue = filteredOffers.map(row => row.id).filter(id => selectedIds.has(id) && realOffersById.has(id));
+              if (!queue.length) { setSyncNotice("Sélectionne au moins une offre disponible dans ce filtre."); return; }
+              void launchRafale(queue);
             }}
             onBulkMarkApplied={() => {
               if (demoMode) {

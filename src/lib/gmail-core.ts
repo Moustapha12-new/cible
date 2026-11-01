@@ -1482,10 +1482,15 @@ export function buildEnrichCandidates(
         const block = isolateBlock(email.html, o.sourceUrl || o.applicationUrl);
         frag = (block?.snippet || frag).trim();
       }
-      const emailText =
-        frag.replace(/\s+/g, " ").length >= 80
-          ? `${a.subject}\n${frag}`
-          : `${a.subject}\n${(email?.text ?? "").slice(0, 2500)}`;
+      // Une relance peut ne plus disposer du mail brut : réutiliser les
+      // preuves propres à l'offre, sans emprunter le texte d'une voisine.
+      const ownEvidence = [o.description, o.summary, o.profile, ...(o.missions ?? []), ...(o.prerequisites ?? [])]
+        .filter(Boolean).join("\n");
+      const emailText = frag.replace(/\s+/g, " ").length >= 80
+        ? `${o.title}\n${frag}`
+        : ownEvidence.trim()
+          ? `${o.title}\n${ownEvidence}`
+          : a.offers.length === 1 ? `${o.title}\n${(email?.text ?? "").slice(0, 2500)}` : o.title;
       out.push({
         id: `${a.id}#${idx}`,
         title: o.title,

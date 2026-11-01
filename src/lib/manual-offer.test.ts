@@ -34,3 +34,8 @@ data.originalCv = { name: "CV", text: "Formation en réseaux électriques. Proje
 assert.notEqual(offerCvCoverage(offer, data).score, null);
 assert.equal(analyzeAndPlan(offer, data).analysis.offerId, offer.id);
 console.log("Ajout par lien : JobPosting → champs → identité → couverture CV → analyse CV validé ; aucune donnée manquante inventée.");
+
+assert.ok(sameManualOfferUrl("https://entreprise.test/jobs/AbC?id=42&utm_source=gmail", "https://entreprise.test/jobs/AbC?id=42&utm_source=manual"));
+assert.equal(sameManualOfferUrl("https://entreprise.test/jobs?id=42", "https://entreprise.test/jobs?id=43"), false);
+assert.equal(sameManualOfferUrl("https://entreprise.test/jobs/AbC", "https://entreprise.test/jobs/abc"), false);
+assert.ok(sameManualOfferUrl("https://fr.indeed.com/viewjob?jk=abcdef1234567890&utm_source=email", "https://fr.indeed.com/rc/clk?jk=abcdef1234567890"));

@@ -1,3 +1,5 @@
+import { manualUrlExists, DUPLICATE_OFFER_MESSAGE } from "@/lib/manual-duplicate-server";
+import { loadUserRecord } from "@/lib/candidature-server";
 import { securedRoute } from "@/lib/auth-server";
 import { NextResponse } from "next/server";
 import { fetchOfferPage } from "@/lib/scrape";
@@ -7,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /* Récupère une fiche publique et prépare les champs déterministes.
    L'utilisateur confirme les champs avant la sauvegarde de l'offre. */
-export const POST = securedRoute(async (req) => {
+export const POST = securedRoute(async (req, { user }) => {
   let url = "";
   try {
     const b = (await req.json()) as { url?: string };
@@ -22,6 +24,10 @@ export const POST = securedRoute(async (req) => {
     );
   }
 
+  const record = await loadUserRecord(user);
+  if (await manualUrlExists(user, url, record.data.offers)) {
+    return NextResponse.json({ ok: false, code: "OFFER_ALREADY_EXISTS", error: DUPLICATE_OFFER_MESSAGE }, { status: 409 });
+  }
   const r = await fetchOfferPage(url);
   if (!r.ok) {
     return NextResponse.json({ ok: false, error: r.reason, outcome: r.outcome?.kind }, { status: 502 });

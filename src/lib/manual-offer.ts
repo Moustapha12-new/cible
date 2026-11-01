@@ -28,6 +28,17 @@ export function sameManualOfferUrl(a: string | undefined, b: string | undefined)
   if (!a || !b) return false;
   const strongA = discoveryUrlKey(a), strongB = discoveryUrlKey(b);
   if (strongA && strongB) return strongA === strongB;
-  const normalize = (url: string) => (canonicalizeOfferUrl(url) || url).replace(/\/$/, "");
+  const normalize = (value: string) => {
+    try {
+      const url = new URL(canonicalizeOfferUrl(value) || value.trim());
+      for (const key of [...url.searchParams.keys()]) {
+        if (/^utm_/i.test(key) || /^(gclid|fbclid|msclkid)$/i.test(key)) url.searchParams.delete(key);
+      }
+      url.searchParams.sort();
+      // Preserve path case and job-identifying parameters. Hash routes may identify jobs.
+      url.pathname = url.pathname.replace(/\/$/, "") || "/";
+      return url.href;
+    } catch { return value.trim(); }
+  };
   return normalize(a) === normalize(b);
 }

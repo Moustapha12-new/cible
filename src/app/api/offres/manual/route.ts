@@ -1,8 +1,9 @@
+import { manualUrlExists, DUPLICATE_OFFER_MESSAGE } from "@/lib/manual-duplicate-server";
 import { NextResponse } from "next/server";
 import { securedRoute } from "@/lib/auth-server";
 import { loadUserRecord, saveUserRecord } from "@/lib/candidature-server";
 import type { DetectedOffer } from "@/lib/data";
-import { prepareManualOffer, sameManualOfferUrl } from "@/lib/manual-offer";
+import { prepareManualOffer } from "@/lib/manual-offer";
 import { isSafeOfferUrl } from "@/lib/scrape";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ export const POST = securedRoute(async (req, { user }) => {
   }
   try {
     const record = await loadUserRecord(user);
-    if (record.data.offers.some(o => o.id === offer.id || sameManualOfferUrl(o.url, offerUrl))) return NextResponse.json({ ok: false, error: "Cette offre est déjà enregistrée." }, { status: 409 });
+    if (record.data.offers.some(o => o.id === offer.id) || await manualUrlExists(user, offerUrl, record.data.offers)) return NextResponse.json({ ok: false, code: "OFFER_ALREADY_EXISTS", error: DUPLICATE_OFFER_MESSAGE }, { status: 409 });
     const safe = prepareManualOffer({ title: offer.title, company: offer.company, text: offer.text, url: offerUrl }, `manual-${crypto.randomUUID()}`, new Date().toISOString());
     await saveUserRecord(user, { ...record, data: { ...record.data, offers: [safe, ...record.data.offers] } });
     return NextResponse.json({ ok: true, offer: safe });

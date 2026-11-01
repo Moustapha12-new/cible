@@ -1,3 +1,4 @@
+import { preferredEvidence } from "./offer-evidence";
 import { isCompleteOffer } from "./offer-quality";
 import { loadSnapshot, saveSnapshot } from "./gmail-snapshot";
 import { loadCheckpoint, saveCheckpoint, enrichProcessed, type ProcessedEmail } from "./gmail-core";
@@ -6,16 +7,22 @@ import { buildSummary, slimOffers } from "./gmail-dashboard";
 import { acquireSyncLock, releaseSyncLock } from "./gmail-server";
 
 const keyOf = (url: string) => jobKeyOf(url) || url;
-const fields = ["title", "company", "location", "contract", "duration", "deadline", "salary", "skills", "keywords", "missions", "prerequisites", "profile", "description", "summary", "applicationInfo", "enrichStatus", "enrichReason", "enrichedAt", "enrichAttempts", "enrichAttemptedAt"] as const;
+const fields = ["title", "company", "location", "contract", "duration", "deadline", "salary", "skills", "keywords", "missions", "prerequisites", "profile", "description", "summary", "applicationInfo", "enrichStatus", "enrichReason", "enrichLevel", "enrichOutcome", "enrichedAt", "enrichAttempts", "enrichAttemptedAt"] as const;
 const attemptsOf = (offer: { enrichAttempts?: number; enrichAttemptedAt?: string }) => offer.enrichAttemptedAt && Date.now() - Date.parse(offer.enrichAttemptedAt) > 86_400_000 ? 0 : (offer.enrichAttempts ?? 0);
 
 export function enrichmentTotals(emails: ProcessedEmail[]) {
-  const all = [...new Map(emails.flatMap(item => item.offers).filter(o => !o.searchFallback).map(o => [o.applicationUrl, o])).values()];
+  const unique = new Map<string, ProcessedEmail["offers"][number]>();
+  for (const offer of emails.flatMap(item => item.offers).filter(o => !o.searchFallback)) {
+    const key = keyOf(offer.applicationUrl) || `${offer.title}|${offer.company}|${offer.location}`;
+    const existing = unique.get(key);
+    unique.set(key, existing ? preferredEvidence(existing, offer) : offer);
+  }
+  const all = [...unique.values()];
   return {
     total: all.length, complete: all.filter(o => o.enrichStatus === "ok" && isCompleteOffer(o)).length,
     partial: all.filter(o => o.enrichStatus === "partial").length,
     blocked: all.filter(o => o.enrichStatus === "blocked").length,
-    pending: all.filter(o => (o.enrichStatus !== "ok" || !isCompleteOffer(o)) && attemptsOf(o) < 2 && !o.searchFallback).length,
+    pending: all.filter(o => (o.enrichStatus !== "ok" || !isCompleteOffer(o)) && attemptsOf(o) < 2 && /^https?:\/\//i.test(o.applicationUrl) && !o.searchFallback).length,
   };
 }
 
@@ -29,7 +36,7 @@ export async function enrichCatalogueBatch(email: string, limit = 4) {
     const donors = new Map(snapshot.emails.flatMap(e => e.offers).filter(o => o.enrichStatus === "ok" && isCompleteOffer(o)).map(o => [keyOf(o.applicationUrl), o]));
     const groups = new Map<string, { emailId: string; index: number; attempts: number }>();
     for (const item of snapshot.emails) item.offers.forEach((offer, index) => {
-      if ((offer.enrichStatus === "ok" && isCompleteOffer(offer)) || offer.searchFallback || !offer.applicationUrl) return;
+      if ((offer.enrichStatus === "ok" && isCompleteOffer(offer)) || offer.searchFallback || !/^https?:\/\//i.test(offer.applicationUrl)) return;
       const key = keyOf(offer.applicationUrl);
       if (!donors.has(key) && attemptsOf(offer) < 2 && !groups.has(key)) groups.set(key, { emailId: item.id, index, attempts: attemptsOf(offer) });
     });
@@ -41,11 +48,15 @@ export async function enrichCatalogueBatch(email: string, limit = 4) {
       checkpoints.set(entry.emailId, cp);
       const item = snapshot.emails.find(e => e.id === entry.emailId)!;
       const listed = item.offers[entry.index];
-      const offer = cp?.offers.find(o => keyOf(o.applicationUrl) === keyOf(listed.applicationUrl)) ?? listed;
+      const saved = cp?.offers.find(o => keyOf(o.applicationUrl) === keyOf(listed.applicationUrl));
+      const offer = { ...saved, ...listed, snippet: saved?.snippet || listed.snippet };
       work.push({ ...item, id: `${entry.emailId}-${entry.index}`, isOffer: true, offers: [{ ...offer }] });
     }
-    await enrichProcessed(work, new Map(), { retryOnly: true, groundedOnly: true, concurrency: 2, timeBudgetMs: 70_000 });
+    await enrichProcessed(work, new Map(), { retryOnly: true, skipCache: true, groundedOnly: true, concurrency: 2, timeBudgetMs: 70_000 });
+    let processed = 0;
     work.forEach((item, index) => {
+      if (item.offers[0].enrichStatus === "skipped") return;
+      processed++;
       const [key, entry] = selected[index];
       const previous = snapshot.emails.find(e => e.id === entry.emailId)!.offers[entry.index];
       if (item.offers[0].enrichStatus === "blocked" && previous.enrichStatus === "partial" && previous.description) {
@@ -59,7 +70,7 @@ export async function enrichCatalogueBatch(email: string, limit = 4) {
     const changed = new Set<string>();
     for (const item of snapshot.emails) item.offers.forEach(offer => {
       const donor = donors.get(keyOf(offer.applicationUrl));
-      if (!donor || donor === offer || offer.enrichStatus === "ok") return;
+      if (!donor || donor === offer || (offer.enrichStatus === "ok" && isCompleteOffer(offer))) return;
       for (const field of fields) {
         const value = donor[field];
         if (value !== undefined) (offer as unknown as Record<string, unknown>)[field] = value;
@@ -80,9 +91,10 @@ export async function enrichCatalogueBatch(email: string, limit = 4) {
         await saveCheckpoint(id, cp);
       }
     }
+    if (!changed.size) return { busy: false, processed, ...enrichmentTotals(snapshot.emails) };
     snapshot.emails = snapshot.emails.map(item => ({ ...item, offers: slimOffers(item.offers) }));
     snapshot.summary = buildSummary(snapshot.emails, snapshot.lastSync, snapshot.totalInLabel);
     await saveSnapshot(email, snapshot);
-    return { busy: false, processed: selected.length, ...enrichmentTotals(snapshot.emails) };
+    return { busy: false, processed, ...enrichmentTotals(snapshot.emails) };
   } finally { await releaseSyncLock(email, token); }
 }

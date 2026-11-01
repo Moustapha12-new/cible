@@ -3,7 +3,7 @@
    (403/login/CAPTCHA/404/429/timeout), sans jamais inventer de description. */
 
 import assert from "node:assert/strict";
-import { enrichProcessed, type ParsedEmail, type ProcessedEmail, type RawOffer } from "./gmail-core";
+import { buildEnrichCandidates, enrichProcessed, type ParsedEmail, type ProcessedEmail, type RawOffer } from "./gmail-core";
 import { enrichBadgeFor, maxLevelFor, outcomeLabel } from "./offer-enrich";
 
 function makeOffer(partial: Partial<RawOffer> = {}): RawOffer {
@@ -138,6 +138,21 @@ async function main() {
   assert.equal(new Set(labels).size, labels.length, "chaque issue a un libellé français distinct");
   assert.equal(outcomeLabel("not_found"), "offre absente (404/410)");
   assert.equal(outcomeLabel(undefined), "issue de page non relevée");
+
+  const isolated = makeEmail("multi", [
+    makeOffer({ description: "Preuve propre à la première offre", applicationUrl: "https://example.com/1" }),
+    makeOffer({ applicationUrl: "https://example.com/2" }),
+  ]);
+  const candidates = buildEnrichCandidates([isolated], new Map());
+  assert.ok(candidates[0].emailText.includes("Preuve propre"));
+  assert.ok(!candidates[1].emailText.includes("Preuve propre"));
+  assert.ok(!candidates[1].emailText.includes(isolated.subject));
+  const skipped = [makeEmail("budget", [makeOffer()])];
+  await enrichProcessed(skipped, new Map(), {
+    timeBudgetMs: -1, skipCache: true, groundedOnly: true,
+    fetchPageImpl: async () => { throw new Error("Ne doit pas lire la source après expiration du budget"); },
+  });
+  assert.equal(skipped[0].offers[0].enrichStatus, "skipped");
 
   /* 6 — Les niveaux des cinq offres sont cohérents entre eux. */
   const levels = offers.map((o) => o.enrichLevel).join(",");

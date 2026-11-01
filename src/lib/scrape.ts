@@ -64,6 +64,18 @@ export function extractJobPostingText(html: string): string {
   return [job.title ? `Poste : ${text(job.title)}` : "", org?.name ? `Entreprise : ${text(org.name)}` : "", place ? `Lieu : ${place}` : "", Array.isArray(job.employmentType) ? job.employmentType.map(text).join(", ") : text(job.employmentType), htmlToText(text(job.description)), text(job.qualifications), text(job.skills), text(job.responsibilities), job.validThrough ? `Date limite : ${text(job.validThrough)}` : ""].filter(Boolean).join("\n\n");
 }
 
+/** Follow only explicit navigation, never execute scripts from an email destination. */
+export function interstitialTarget(html: string, base: string): string | null {
+  const $ = cheerio.load(html);
+  const refresh = $('meta[http-equiv]').filter((_i, el) => ($(el).attr("http-equiv") || "").toLowerCase() === "refresh").first().attr("content");
+  const target = refresh?.match(/url\s*=\s*['"]?([^'";]+)/i)?.[1]?.trim();
+  const warning = /vous quittez un site sécurisé|redirection automatique|you are being redirected/i.test($.text());
+  const links = warning ? $("a[href]").toArray().filter(el => /continuer vers|continue to/i.test($(el).text())) : [];
+  const href = target || (links.length === 1 ? $(links[0]).attr("href") : undefined);
+  if (!href) return null;
+  try { return new URL(href, base).href; } catch { return null; }
+}
+
 /* Marqueurs de pages dédiées au bot/au login : même si la requête aboutit,
    le contenu n'est pas une annonce exploitable. */
 const BLOCK_MARKERS =
@@ -195,8 +207,9 @@ async function fetchOnce(url: string, ua: string, timeoutMs = 15_000): Promise<R
 /** Télécharge la page d'une annonce et renvoie son texte exploitable (≤ 9 000
     caractères). En cas de blocage anti-robot / login / page morte / URL non
     sûre, renvoie { ok:false, reason } pour repli propre côté appelant. */
-export async function fetchOfferPage(url: string, options: { timeoutMs?: number } = {}): Promise<PageResult> {
+export async function fetchOfferPage(url: string, options: { timeoutMs?: number; redirectBudget?: number } = {}): Promise<PageResult> {
   const deadline = Date.now() + (options.timeoutMs ?? 20_000);
+  const redirectBudget = Math.min(MAX_REDIRECTS, options.redirectBudget ?? MAX_REDIRECTS);
   if (!(await isSafeOfferUrlResolved(url))) {
     /* Lien refusé par politique locale : aucune page n'a été requise —
        pas d'invention d'issue HTTP, outcome volontairement absent. */
@@ -210,7 +223,7 @@ export async function fetchOfferPage(url: string, options: { timeoutMs?: number 
       let current = url;
       let res: Response | null = null;
       let redirects = 0;
-      while (redirects <= MAX_REDIRECTS) {
+      while (redirects <= redirectBudget) {
         if (Date.now() >= deadline) return { ok: false, reason: "Délai de lecture de l’annonce dépassé", outcome: { kind: "timeout" } };
         const r = await fetchOnce(current, ua, Math.min(15_000, deadline - Date.now()));
         if (r.status >= 300 && r.status < 400) {
@@ -230,7 +243,7 @@ export async function fetchOfferPage(url: string, options: { timeoutMs?: number 
         res = r;
         break;
       }
-      if (redirects > MAX_REDIRECTS) {
+      if (redirects > redirectBudget) {
         lastErr = "Redirections trop nombreuses";
         lastOutcome = { kind: "network" };
         continue;
@@ -265,6 +278,14 @@ export async function fetchOfferPage(url: string, options: { timeoutMs?: number 
         continue;
       }
       const html = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+      const destination = interstitialTarget(html, current);
+      if (destination) {
+        if (redirects >= redirectBudget || destination === current) return { ok: false, reason: "Boucle de redirection", outcome: { kind: "content_unusable", httpStatus: res.status } };
+        return fetchOfferPage(destination, { timeoutMs: Math.max(0, deadline - Date.now()), redirectBudget: redirectBudget - redirects - 1 });
+      }
+      if (/vous quittez un site sécurisé|redirection automatique/i.test(htmlToText(html))) {
+        return { ok: false, reason: "Page de redirection sans annonce accessible", outcome: { kind: "content_unusable", httpStatus: res.status } };
+      }
       const structured = extractJobPostingText(html);
       const $ = cheerio.load(html);
       const publicDescription = $(".description__text").first().text().trim();

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import EnrichmentQueue from "@/components/alertes-gmail/EnrichmentQueue";
+const noRefresh = async () => {};
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
@@ -447,6 +449,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           className="flex-1 p-4 md:p-6 lg:p-7 max-w-[1720px] w-full mx-auto"
         >
           {children}
+        {user && !pathname.startsWith("/app/alertes-gmail") && <EnrichmentQueue email={user.email} enabled paused={false} refresh={noRefresh} background />}
         </main>
       </div>
     </div>

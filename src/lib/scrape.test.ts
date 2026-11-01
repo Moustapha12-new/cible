@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { extractJobPostingText, fetchOfferPage } from "./scrape";
+import { interstitialTarget, extractJobPostingText, fetchOfferPage } from "./scrape";
 
 const job = { "@type": "JobPosting", title: "Stage développement", hiringOrganization: { name: "Atelier" }, description: "<p>Développer une application avec TypeScript.</p>", jobLocation: { address: { addressLocality: "Paris", addressCountry: "FR" } }, skills: "TypeScript", validThrough: "2026-11-01" };
 const html = (data: unknown) => `<html><script type="application/ld+json">${JSON.stringify(data)}</script><main>Accepter les cookies</main></html>`;
@@ -36,3 +36,8 @@ async function checkDeadline() {
   } finally { clearTimeout(keepAlive); globalThis.fetch = original; }
 }
 checkDeadline().catch(error => { console.error(error); process.exitCode = 1; });
+
+assert.equal(interstitialTarget('<meta http-equiv="refresh" content="0;url=/job/2">', 'https://example.com/1'), 'https://example.com/job/2');
+assert.equal(interstitialTarget('<p>Vous quittez un site sécurisé</p><a href="https://example.com/job">Continuer vers entreprise</a>', 'https://example.org'), 'https://example.com/job');
+assert.equal(interstitialTarget('<a href="https://example.com">Entreprise</a>', 'https://example.org'), null);
+assert.equal(interstitialTarget('<script>location="https://example.com"</script>', 'https://example.org'), null);

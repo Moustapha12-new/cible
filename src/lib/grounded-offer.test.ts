@@ -5,6 +5,8 @@ const offer = { title: "Stage", company: "Entreprise", location: "Paris", contra
 const email = { id: "test", isOffer: true, subject: "Stage", offers: [offer], from: "test", receivedAt: "", reason: "test", finalStatus: "detected" } as ProcessedEmail;
 async function main() {
   const text = "Stage ingénieur\nVous participez au dimensionnement et à la conception électrique avec Python et AutoCAD.\nFormation Bac+5, anglais souhaité. ".repeat(5);
+  const english = "You will develop and manage recruitment campaigns alongside our marketing team.";
+  assert.deepEqual(groundedOfferData(english).missions, [english]);
   const data = groundedOfferData(text);
   assert.ok(data.keywords?.includes("Python"));
   assert.ok(data.keywords?.includes("AutoCAD"));
@@ -27,7 +29,14 @@ async function main() {
   const incomplete = { ...offer, enrichStatus: "none" as const, snippet: "Annonce courte" };
   await enrichProcessed([{ ...email, offers: [incomplete] }], new Map(), { retryOnly: true, skipCache: true, groundedOnly: true,
     fetchPageImpl: async () => ({ ok: false, reason: "Page inaccessible" }) });
-  assert.equal(incomplete.enrichStatus, "blocked");
+  assert.equal(incomplete.enrichStatus, "partial", "les preuves déjà enregistrées restent utilisables malgré une page bloquée");
+  assert.ok(incomplete.description?.includes("dimensionnement"));
+  const empty = { ...incomplete, description: "", summary: "", profile: "", missions: [], prerequisites: [], skills: [], keywords: [] };
+  await enrichProcessed([{ ...email, offers: [empty] }], new Map(), {
+    retryOnly: true, skipCache: true, groundedOnly: true,
+    fetchPageImpl: async () => ({ ok: false, reason: "Page inaccessible" }),
+  });
+  assert.equal(empty.enrichStatus, "blocked", "aucune preuve ne doit être inventée");
   console.log("Extraction vérifiée : mots-clés sourcés, reprise des pages bloquées, secours sans Gemini et aucun faux enrichissement d’une source vide.");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

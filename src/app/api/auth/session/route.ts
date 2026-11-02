@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifiedUser, SESSION_COOKIE, REFRESH_COOKIE, authClient, cookieOptions, sameOrigin } from "@/lib/auth-server";
+import { verifiedUser, SESSION_COOKIE, REFRESH_COOKIE, authClient, authServiceRestricted, cookieOptions, sameOrigin } from "@/lib/auth-server";
 export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
   if (!refresh) return NextResponse.json({ ok: true, user: null });
   try {
     const { data, error } = await authClient().auth.refreshSession({ refresh_token: refresh });
+    if (authServiceRestricted(error)) return NextResponse.json({ ok: false, error: "Le service de comptes est momentanément indisponible (quota du projet dépassé chez Supabase). La session sera rétablie dès que le projet est remis en service." }, { status: 503, headers: { "Cache-Control": "no-store" } });
     if (error || !data.session) return NextResponse.json({ ok: true, user: null });
     const user = await verifiedUser(data.session.access_token);
     if (!user) return NextResponse.json({ ok: true, user: null });

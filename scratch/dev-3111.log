@@ -1,0 +1,16 @@
+
+> cible@0.1.0 dev
+> next dev --port 3111
+
+▲ Next.js 16.3.2 (Turbopack)
+- Local:         http://localhost:3111
+- Network:       http://172.24.208.1:3111
+- Environments: .env.local
+✓ Ready in 1453ms
+✓ Running next.config.ts took 202ms
+
+ GET /connexion 200 in 711ms (next.js: 372ms, application-code: 339ms)
+ POST /api/auth/login 503 in 475ms (next.js: 171ms, application-code: 304ms)
+ GET / 200 in 309ms (next.js: 111ms, application-code: 198ms)
+ GET / 200 in 114ms (next.js: 11ms, application-code: 102ms)
+[?25h

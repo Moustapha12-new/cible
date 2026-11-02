@@ -30,14 +30,37 @@ export function quotaClient() {
   });
 }
 
+/* Supabase peut restreindre le projet (quota egress dépassé, plan à upgrader).
+   L'erreur arrive en HTTP 402 avec un message explicite : il ne faut ni la
+   confondre avec de mauvais identifiants, ni la traiter comme une session
+   absente — sinon l'utilisateur croit à tort que son compte est le problème. */
+export function authServiceRestricted(error: { status?: number; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  return (error.status ?? 0) === 402 || /restricted|exceed_[a-z_]*quota|spend cap|upgrade (?:their|the) plan/i.test(error.message || "");
+}
+
 export async function verifiedUser(token?: string): Promise<VerifiedUser | null> {
   const access = token ?? (await cookies()).get(SESSION_COOKIE)?.value;
   if (!access) return null;
   const { data, error } = await authClient().auth.getUser(access);
-  if (error && ((error.status ?? 0) >= 500 || error.status === 429 || error.name === "AuthRetryableFetchError")) throw new Error("Vérification de session indisponible.");
+  if (error && (authServiceRestricted(error) || (error.status ?? 0) >= 500 || error.status === 429 || error.name === "AuthRetryableFetchError")) throw new Error("Vérification de session indisponible.");
   const user = data.user;
   if (error || !user?.email || !user.email_confirmed_at || user.is_anonymous) return null;
   return { id: user.id, email: user.email.trim().toLowerCase(), name: String(user.user_metadata?.name || user.email).slice(0, 100) };
+}
+
+/* Décodage sans vérification de signature : uniquement pour décider si la
+   page d'accueil doit court-circuiter la landing. L'authentification réelle
+   reste verifiedUser() côté serveur. Un cookie périmé ne doit pas empêcher
+   d'atteindre la racine du site. */
+export function accessTokenLooksFresh(value: string | undefined, now = Date.now()): boolean {
+  if (!value) return false;
+  try {
+    const payload = JSON.parse(Buffer.from(value.split(".")[1] || "", "base64url").toString()) as { exp?: number };
+    return typeof payload.exp === "number" && payload.exp * 1000 > now + 30_000;
+  } catch {
+    return false;
+  }
 }
 
 export function sameOrigin(req: NextRequest): boolean {

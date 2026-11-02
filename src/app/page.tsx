@@ -15,10 +15,14 @@ import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { REFRESH_COOKIE } from "@/lib/auth-server";
+import { SESSION_COOKIE, accessTokenLooksFresh } from "@/lib/auth-server";
 
 export default async function Home() {
-  if ((await cookies()).get(REFRESH_COOKIE)?.value) redirect("/connexion?next=/app/offres");
+  /* Redirige vers l'espace personnel seulement si la session est réellement
+     active (jeton d'accès encore valide). Un simple cookie de rafraîchissement
+     périmé — conservé jusqu'à 30 jours — ne doit plus envoyer tout le monde
+     sur /connexion : la racine du site reste accessible dans tous les cas. */
+  if (accessTokenLooksFresh((await cookies()).get(SESSION_COOKIE)?.value)) redirect("/connexion?next=/app/offres");
   return (
     <LanguageProvider>
       <SmoothScroll />

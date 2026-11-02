@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authClient, cookieOptions, sameOrigin, SESSION_COOKIE, REFRESH_COOKIE } from "@/lib/auth-server";
+import { authClient, cookieOptions, sameOrigin, authServiceRestricted, SESSION_COOKIE, REFRESH_COOKIE } from "@/lib/auth-server";
 
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) return NextResponse.json({ ok: false, error: "Origine refusée." }, { status: 403 });
@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
     
     const { data, error } = await authClient().auth.signInWithPassword({ email, password: body.password });
     if (error && ((error.status ?? 0) >= 500 || error.status === 429 || error.name === "AuthRetryableFetchError")) return NextResponse.json({ ok: false, error: "Service temporairement indisponible. Réessaie." }, { status: 503 });
+    if (authServiceRestricted(error)) return NextResponse.json({ ok: false, error: "Le service de comptes est momentanément indisponible (quota du projet dépassé chez Supabase). Aucun identifiant n'est en cause : le projet doit être remis en service puis la connexion redeviendra possible." }, { status: 503 });
     
     if (error || !data.session || !data.user.email_confirmed_at) {
       const msg = error?.message || "";
